@@ -49,7 +49,7 @@ function formatRp(n: number): string {
   return 'Rp ' + n.toLocaleString('id-ID');
 }
 
-function exportCycleToExcel(cycle: CycleEntry) {
+function exportCycleToExcel(cycle: CycleEntry, worksheets: { studentId: string; date: string; pages: number }[]) {
   const rows: (string | number)[][] = [];
 
   // Title
@@ -61,11 +61,14 @@ function exportCycleToExcel(cycle: CycleEntry) {
 
   for (const { student, rows: sessions } of cycle.studentGroups) {
     for (const { session: s, minutes } of sessions) {
+      const wsPages = worksheets
+        .filter(w => w.studentId === s.studentId && w.date === s.date)
+        .reduce((sum, w) => sum + w.pages, 0);
       rows.push([
         student?.name ?? '—',
         format(parseISO(s.date), 'd MMM yyyy', { locale: localeId }),
         Math.round((minutes / 60) * 100) / 100,
-        s.worksheetPages ?? 0,
+        wsPages,
       ]);
     }
     rows.push([]);
@@ -222,7 +225,7 @@ export default function Hours() {
               <div className="flex items-start gap-3">
                 {cycle.studentGroups.length > 0 && (
                   <button
-                    onClick={() => exportCycleToExcel(cycle)}
+                    onClick={() => exportCycleToExcel(cycle, data.worksheets)}
                     className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-colors mt-0.5 ${
                       cycle.isCurrent
                         ? 'border-white/30 text-white hover:bg-white/10'
