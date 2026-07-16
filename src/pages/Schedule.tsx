@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Plus, X, Check, Trash2, Clock, AlertTriangle, RefreshCw, ListChecks, Ban, CalendarClock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, X, Check, Trash2, Clock, AlertTriangle, RefreshCw, ListChecks, Ban, CalendarClock, Search } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { addWeeks, subWeeks, startOfWeek, addDays, isSameDay, parseISO, format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
@@ -86,6 +86,7 @@ export default function Schedule() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [rescheduleWeeks, setRescheduleWeeks] = useState('1');
   const [bulkConfirm, setBulkConfirm] = useState<'cancel' | 'reschedule' | null>(null);
+  const [bulkStudentFilter, setBulkStudentFilter] = useState('');
   const [form, setForm] = useState({
     teacherId: data.teachers[0]?.id ?? '',
     studentId: '',
@@ -190,6 +191,7 @@ export default function Schedule() {
     setBulkMode(false);
     setSelectedIds(new Set());
     setBulkConfirm(null);
+    setBulkStudentFilter('');
   };
 
   const toggleSelect = (id: string) => {
@@ -200,9 +202,13 @@ export default function Schedule() {
     });
   };
 
-  const bulkSessions = [...filteredSessions].sort((a, b) =>
-    a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime)
-  );
+  const bulkSessions = [...filteredSessions]
+    .filter(s => {
+      if (!bulkStudentFilter.trim()) return true;
+      const student = data.students.find(st => st.id === s.studentId);
+      return student?.name.toLowerCase().includes(bulkStudentFilter.toLowerCase());
+    })
+    .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
 
   const selectAll = () => setSelectedIds(new Set(bulkSessions.map(s => s.id)));
   const deselectAll = () => setSelectedIds(new Set());
@@ -307,6 +313,23 @@ export default function Schedule() {
       {/* Bulk list view */}
       {bulkMode && (
         <div className="space-y-3">
+          {/* Student filter */}
+          <div className="relative">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+            <input
+              type="text"
+              value={bulkStudentFilter}
+              onChange={e => setBulkStudentFilter(e.target.value)}
+              placeholder="Cari nama murid..."
+              className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            {bulkStudentFilter && (
+              <button onClick={() => setBulkStudentFilter('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
           {/* Select all bar */}
           <div className="flex items-center justify-between bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5">
             <span className="text-sm text-gray-600 dark:text-gray-400">
