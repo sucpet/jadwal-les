@@ -214,10 +214,7 @@ export default function Schedule() {
   const deselectAll = () => setSelectedIds(new Set());
 
   const bulkCancel = () => {
-    selectedIds.forEach(id => {
-      const s = data.sessions.find(s => s.id === id);
-      if (s) updateSession(id, { ...s, status: 'cancelled' });
-    });
+    selectedIds.forEach(id => deleteSession(id));
     exitBulkMode();
   };
 
@@ -541,7 +538,7 @@ export default function Schedule() {
                   onClick={() => setBulkConfirm('cancel')}
                   className="flex-1 flex items-center justify-center gap-1.5 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
                 >
-                  <Ban size={15} /> Batalkan Sesi
+                  <Trash2 size={15} /> Hapus Jadwal
                 </button>
                 <button
                   onClick={() => setBulkConfirm('reschedule')}
@@ -555,14 +552,14 @@ export default function Schedule() {
             {bulkConfirm === 'cancel' && (
               <div className="space-y-2">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Batalkan <strong>{selectedIds.size}</strong> sesi? Status akan berubah menjadi <span className="text-red-600 dark:text-red-400 font-medium">Batal</span>.
+                  Hapus <strong>{selectedIds.size}</strong> jadwal? Tindakan ini tidak bisa dibatalkan.
                 </p>
                 <div className="flex gap-2">
                   <button onClick={() => setBulkConfirm(null)} className="flex-1 text-sm px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">
                     Kembali
                   </button>
                   <button onClick={bulkCancel} className="flex-1 flex items-center justify-center gap-1.5 bg-red-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-red-700">
-                    <Ban size={15} /> Ya, Batalkan
+                    <Trash2 size={15} /> Ya, Hapus
                   </button>
                 </div>
               </div>
