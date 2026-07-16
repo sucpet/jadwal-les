@@ -59,16 +59,44 @@ function exportCycleToExcel(cycle: CycleEntry, worksheets: { studentId: string; 
   // Header
   rows.push(['Murid', 'Jumlah Halaman Worksheet', 'Tanggal', 'Durasi (jam)']);
 
+  // Cycle date range
+  const cycleEnd = (() => {
+    const start = parseISO(cycle.key);
+    return format(new Date(start.getFullYear(), start.getMonth() + 1, 25), 'yyyy-MM-dd');
+  })();
+
   for (const { student, rows: sessions } of cycle.studentGroups) {
-    for (const { session: s, minutes } of sessions) {
+    // Dates that have a session
+    const sessionDates = new Set(sessions.map(r => r.session.date));
+
+    // Session rows
+    const sessionEntries = sessions.map(({ session: s, minutes }) => {
       const wsPages = worksheets
         .filter(w => w.studentId === s.studentId && w.date === s.date)
         .reduce((sum, w) => sum + w.pages, 0);
+      return { date: s.date, minutes, wsPages };
+    });
+
+    // Worksheet-only rows (no session on that date)
+    const wsOnlyEntries = worksheets
+      .filter(w => w.studentId === student?.id && w.date >= cycle.key && w.date <= cycleEnd && !sessionDates.has(w.date))
+      .reduce<{ date: string; pages: number }[]>((acc, w) => {
+        const existing = acc.find(e => e.date === w.date);
+        if (existing) existing.pages += w.pages;
+        else acc.push({ date: w.date, pages: w.pages });
+        return acc;
+      }, [])
+      .map(({ date, pages }) => ({ date, minutes: 0, wsPages: pages }));
+
+    const allEntries = [...sessionEntries, ...wsOnlyEntries]
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    for (const { date, minutes, wsPages } of allEntries) {
       rows.push([
         student?.name ?? '—',
-        wsPages,
-        format(parseISO(s.date), 'd MMM yyyy', { locale: localeId }),
-        Math.round((minutes / 60) * 100) / 100,
+        wsPages || '',
+        format(parseISO(date), 'd MMM yyyy', { locale: localeId }),
+        minutes > 0 ? Math.round((minutes / 60) * 100) / 100 : '',
       ]);
     }
     rows.push([]);
