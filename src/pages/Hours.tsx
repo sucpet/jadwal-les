@@ -57,60 +57,24 @@ function exportCycleToExcel(cycle: CycleEntry) {
   rows.push([]);
 
   // Header
-  rows.push(['Murid', 'Tipe', 'Tanggal', 'Jam Mulai', 'Jam Selesai', 'Durasi (jam)', 'Biaya Les', 'Biaya Worksheet', 'Total']);
+  rows.push(['Murid', 'Tanggal', 'Durasi (jam)', 'Jumlah Halaman Worksheet']);
 
   for (const { student, rows: sessions } of cycle.studentGroups) {
-    for (const { session: s, minutes, earning } of sessions) {
-      const rate = student?.xuYuanType === 'semi-group' ? RATE_SEMI_GROUP : RATE_PRIVATE;
-      const lessonFee = Math.round((minutes / 60) * rate);
-      const wsFee = (s.worksheetPages ?? 0) * WORKSHEET_PRICE;
+    for (const { session: s, minutes } of sessions) {
       rows.push([
         student?.name ?? '—',
-        student?.xuYuanType === 'semi-group' ? 'Semi Group' : 'Private',
         format(parseISO(s.date), 'd MMM yyyy', { locale: localeId }),
-        s.startTime,
-        s.endTime,
         Math.round((minutes / 60) * 100) / 100,
-        lessonFee,
-        wsFee,
-        earning,
+        s.worksheetPages ?? 0,
       ]);
     }
-    // Subtotal per student
-    rows.push([
-      `  Total ${student?.name ?? ''}`,
-      '',
-      '',
-      '',
-      '',
-      Math.round((sessions.reduce((s, r) => s + r.minutes, 0) / 60) * 100) / 100,
-      '',
-      '',
-      sessions.reduce((s, r) => s + r.earning, 0),
-    ]);
     rows.push([]);
   }
-
-  // Grand total
-  rows.push([
-    'TOTAL',
-    '',
-    '',
-    '',
-    '',
-    Math.round((cycle.totalMinutes / 60) * 100) / 100,
-    '',
-    '',
-    cycle.totalEarning,
-  ]);
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
 
   // Column widths
-  ws['!cols'] = [
-    { wch: 20 }, { wch: 12 }, { wch: 16 }, { wch: 10 },
-    { wch: 10 }, { wch: 14 }, { wch: 14 }, { wch: 18 }, { wch: 14 },
-  ];
+  ws['!cols'] = [{ wch: 20 }, { wch: 16 }, { wch: 14 }, { wch: 26 }];
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Rekap');
