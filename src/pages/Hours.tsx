@@ -1,6 +1,7 @@
 import { format, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
-import { FileText } from 'lucide-react';
+import { FileText, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { useApp } from '../store/AppContext';
 import type { LessonSession, Student } from '../types';
 
@@ -46,6 +47,74 @@ function formatDuration(minutes: number): string {
 
 function formatRp(n: number): string {
   return 'Rp ' + n.toLocaleString('id-ID');
+}
+
+function exportCycleToExcel(cycle: CycleEntry) {
+  const rows: (string | number)[][] = [];
+
+  // Title
+  rows.push([`Rekap XuYuan – ${cycle.label}`]);
+  rows.push([]);
+
+  // Header
+  rows.push(['Murid', 'Tipe', 'Tanggal', 'Jam Mulai', 'Jam Selesai', 'Durasi (jam)', 'Biaya Les', 'Biaya Worksheet', 'Total']);
+
+  for (const { student, rows: sessions } of cycle.studentGroups) {
+    for (const { session: s, minutes, earning } of sessions) {
+      const rate = student?.xuYuanType === 'semi-group' ? RATE_SEMI_GROUP : RATE_PRIVATE;
+      const lessonFee = Math.round((minutes / 60) * rate);
+      const wsFee = (s.worksheetPages ?? 0) * WORKSHEET_PRICE;
+      rows.push([
+        student?.name ?? '—',
+        student?.xuYuanType === 'semi-group' ? 'Semi Group' : 'Private',
+        format(parseISO(s.date), 'd MMM yyyy', { locale: localeId }),
+        s.startTime,
+        s.endTime,
+        Math.round((minutes / 60) * 100) / 100,
+        lessonFee,
+        wsFee,
+        earning,
+      ]);
+    }
+    // Subtotal per student
+    rows.push([
+      `  Total ${student?.name ?? ''}`,
+      '',
+      '',
+      '',
+      '',
+      Math.round((sessions.reduce((s, r) => s + r.minutes, 0) / 60) * 100) / 100,
+      '',
+      '',
+      sessions.reduce((s, r) => s + r.earning, 0),
+    ]);
+    rows.push([]);
+  }
+
+  // Grand total
+  rows.push([
+    'TOTAL',
+    '',
+    '',
+    '',
+    '',
+    Math.round((cycle.totalMinutes / 60) * 100) / 100,
+    '',
+    '',
+    cycle.totalEarning,
+  ]);
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+
+  // Column widths
+  ws['!cols'] = [
+    { wch: 20 }, { wch: 12 }, { wch: 16 }, { wch: 10 },
+    { wch: 10 }, { wch: 14 }, { wch: 14 }, { wch: 18 }, { wch: 14 },
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Rekap');
+  XLSX.writeFile(wb, `XuYuan_${cycle.label.replace(/[^a-zA-Z0-9]/g, '_')}.xlsx`);
 }
 
 function sessionEarning(s: LessonSession, student: Student | undefined): number {
@@ -186,12 +255,26 @@ export default function Hours() {
                   {cycle.totalSessions} sesi · {formatDuration(cycle.totalMinutes)}
                 </div>
               </div>
-              <div className="text-right">
-                <div className={`text-2xl font-bold tabular-nums ${cycle.isCurrent ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
-                  {formatRp(cycle.totalEarning)}
-                </div>
-                <div className={`text-xs mt-0.5 ${cycle.isCurrent ? 'text-indigo-200' : 'text-gray-400 dark:text-gray-500'}`}>
-                  total
+              <div className="flex items-start gap-3">
+                {cycle.studentGroups.length > 0 && (
+                  <button
+                    onClick={() => exportCycleToExcel(cycle)}
+                    className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-colors mt-0.5 ${
+                      cycle.isCurrent
+                        ? 'border-white/30 text-white hover:bg-white/10'
+                        : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <Download size={13} /> Excel
+                  </button>
+                )}
+                <div className="text-right">
+                  <div className={`text-2xl font-bold tabular-nums ${cycle.isCurrent ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+                    {formatRp(cycle.totalEarning)}
+                  </div>
+                  <div className={`text-xs mt-0.5 ${cycle.isCurrent ? 'text-indigo-200' : 'text-gray-400 dark:text-gray-500'}`}>
+                    total
+                  </div>
                 </div>
               </div>
             </div>
