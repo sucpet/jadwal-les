@@ -64,7 +64,7 @@ function getPackageAttributedSessions(
   const slotStart = sorted.slice(0, idx).reduce((sum, p) => sum + p.totalSessions, 0);
   const slotEnd = slotStart + pkg.totalSessions;
   return allSessions
-    .filter(s => s.studentId === pkg.studentId && s.status !== 'cancelled')
+    .filter(s => s.studentId === pkg.studentId)
     .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime))
     .slice(slotStart, slotEnd);
 }
@@ -736,7 +736,7 @@ function StudentCard({ student }: { student: Student }) {
     s => s.studentId === student.id && s.status === 'completed'
   );
   const studentActiveSessions = data.sessions.filter(
-    s => s.studentId === student.id && s.status !== 'cancelled'
+    s => s.studentId === student.id
   );
 
   const currentPkg = studentPkgs[0];

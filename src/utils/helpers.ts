@@ -50,7 +50,7 @@ export function getPackageStatus(
 
   // Semua sesi aktif (non-cancelled) student, urut tanggal
   const activeSessions = sessions
-    .filter(s => s.studentId === pkg.studentId && s.status !== 'cancelled')
+    .filter(s => s.studentId === pkg.studentId)
     .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
 
   const attributed = activeSessions.slice(slotStart, slotEnd);
