@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Plus, X, Check, Trash2, Clock, AlertTriangle, RefreshCw, ListChecks, Ban, CalendarClock, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, X, Check, Trash2, Clock, AlertTriangle, RefreshCw, ListChecks, CalendarClock, Search } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { addWeeks, subWeeks, startOfWeek, addDays, isSameDay, parseISO, format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
