@@ -55,9 +55,18 @@ export interface LessonSession {
   createdAt: string;
 }
 
+export interface Worksheet {
+  id: string;
+  studentId: string;
+  date: string;
+  pages: number;
+  createdAt: string;
+}
+
 export interface AppData {
   teachers: Teacher[];
   students: Student[];
   packages: SessionPackage[];
   sessions: LessonSession[];
+  worksheets: Worksheet[];
 }

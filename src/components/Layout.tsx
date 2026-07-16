@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, BookOpen, GraduationCap, Settings, Timer, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, GraduationCap, Settings, Timer, LogOut, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { supabase } from '../lib/supabase';
@@ -8,10 +8,11 @@ import { useApp } from '../store/AppContext';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/teachers', icon: GraduationCap, label: 'Laoshi' },
+  { to: '/teachers', icon: GraduationCap, label: 'Laoshi', mobileHide: true },
   { to: '/students', icon: Users, label: 'Murid' },
   { to: '/schedule', icon: BookOpen, label: 'Jadwal' },
-  { to: '/hours', icon: Timer, label: 'Jam Mengajar' },
+  { to: '/worksheet', icon: FileText, label: 'Worksheet' },
+  { to: '/hours', icon: Timer, label: 'Jam Mengajar', mobileHide: true },
   { to: '/settings', icon: Settings, label: 'Pengaturan' },
 ];
 
@@ -96,7 +97,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Bottom nav mobile */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex">
-        {navItems.map(({ to, icon: Icon, label }) => {
+        {navItems.filter(i => !i.mobileHide).map(({ to, icon: Icon, label }) => {
           const active = to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
           return (
             <Link

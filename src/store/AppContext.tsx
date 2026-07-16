@@ -1,16 +1,17 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import type { AppData, Teacher, Student, SessionPackage, LessonSession, BillingType, StudentGroup, PackagePricingType } from '../types';
+import type { AppData, Teacher, Student, SessionPackage, LessonSession, Worksheet, BillingType, StudentGroup, PackagePricingType } from '../types';
 import { generateId } from '../utils/helpers';
 import { supabase } from '../lib/supabase';
 
-const defaultData: AppData = { teachers: [], students: [], packages: [], sessions: [] };
+const defaultData: AppData = { teachers: [], students: [], packages: [], sessions: [], worksheets: [] };
 
 // ─── DB row types (snake_case) ────────────────────────────────────────────────
 interface DbTeacher  { id: string; name: string; color: string; created_at: string; }
 interface DbStudent  { id: string; teacher_id: string; name: string; billing_type: string; rate_per_session: number; group: string; xu_yuan_type?: string; notes?: string; created_at: string; }
 interface DbPackage  { id: string; student_id: string; teacher_id: string; total_sessions: number; pricing_type: string; price_per_session: number; package_price?: number; start_date: string; notes?: string; created_at: string; }
-interface DbSession  { id: string; student_id: string; teacher_id: string; date: string; start_time: string; end_time: string; status: string; notes?: string; worksheet_pages?: number; created_at: string; }
+interface DbSession   { id: string; student_id: string; teacher_id: string; date: string; start_time: string; end_time: string; status: string; notes?: string; worksheet_pages?: number; created_at: string; }
+interface DbWorksheet { id: string; student_id: string; date: string; pages: number; created_at: string; }
 
 // ─── Mappers DB → App ─────────────────────────────────────────────────────────
 const mapTeacher  = (r: DbTeacher):  Teacher        => ({ id: r.id, name: r.name, color: r.color, createdAt: r.created_at });
@@ -23,6 +24,8 @@ const toDbTeacher = (t: Teacher)        => ({ id: t.id, name: t.name, color: t.c
 const toDbStudent = (s: Student)        => ({ id: s.id, teacher_id: s.teacherId, name: s.name, billing_type: s.billingType, rate_per_session: s.ratePerSession, group: s.group, xu_yuan_type: s.xuYuanType ?? 'private', notes: s.notes ?? null, created_at: s.createdAt });
 const toDbPackage = (p: SessionPackage) => ({ id: p.id, student_id: p.studentId, teacher_id: p.teacherId, total_sessions: p.totalSessions, pricing_type: p.pricingType, price_per_session: p.pricePerSession, package_price: p.packagePrice ?? null, start_date: p.startDate, notes: p.notes ?? null, created_at: p.createdAt });
 const toDbSession = (s: LessonSession)  => ({ id: s.id, student_id: s.studentId, teacher_id: s.teacherId, date: s.date, start_time: s.startTime, end_time: s.endTime, status: s.status, notes: s.notes ?? null, worksheet_pages: s.worksheetPages ?? 0, created_at: s.createdAt });
+const mapWorksheet  = (r: DbWorksheet): Worksheet => ({ id: r.id, studentId: r.student_id, date: r.date, pages: r.pages, createdAt: r.created_at });
+const toDbWorksheet = (w: Worksheet) => ({ id: w.id, student_id: w.studentId, date: w.date, pages: w.pages, created_at: w.createdAt });
 
 // ─── Context type ─────────────────────────────────────────────────────────────
 interface AppContextType {
@@ -40,6 +43,9 @@ interface AppContextType {
   addSession:    (session: Omit<LessonSession, 'id' | 'createdAt'>) => LessonSession;
   updateSession: (id: string, updates: Partial<LessonSession>) => void;
   deleteSession: (id: string) => void;
+  addWorksheet:    (w: Omit<Worksheet, 'id' | 'createdAt'>) => Worksheet;
+  updateWorksheet: (id: string, updates: Partial<Worksheet>) => void;
+  deleteWorksheet: (id: string) => void;
 }
 
 // Force lazy Supabase query to execute and log any error
@@ -59,11 +65,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     async function loadAll() {
-      const [t, s, p, se] = await Promise.all([
+      const [t, s, p, se, ws] = await Promise.all([
         supabase.from('teachers').select('*').order('created_at'),
         supabase.from('students').select('*').order('created_at'),
         supabase.from('packages').select('*').order('created_at'),
         supabase.from('sessions').select('*').order('created_at'),
+        supabase.from('worksheets').select('*').order('created_at'),
       ]);
       if (cancelled) return;
       setData({
@@ -71,6 +78,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         students: (s.data ?? []).map(mapStudent),
         packages: (p.data ?? []).map(mapPackage),
         sessions: (se.data ?? []).map(mapSession),
+        worksheets: (ws.data ?? []).map(mapWorksheet),
       });
       setLoading(false);
     }
@@ -106,6 +114,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ({ new: r }) => setData(d => ({ ...d, sessions: d.sessions.map(s => s.id === (r as DbSession).id ? mapSession(r as DbSession) : s) })))
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'sessions' },
         ({ old: r }) => setData(d => ({ ...d, sessions: d.sessions.filter(s => s.id !== (r as DbSession).id) })))
+      // worksheets
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'worksheets' },
+        ({ new: r }) => setData(d => ({ ...d, worksheets: [...d.worksheets.filter(w => w.id !== (r as DbWorksheet).id), mapWorksheet(r as DbWorksheet)] })))
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'worksheets' },
+        ({ new: r }) => setData(d => ({ ...d, worksheets: d.worksheets.map(w => w.id === (r as DbWorksheet).id ? mapWorksheet(r as DbWorksheet) : w) })))
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'worksheets' },
+        ({ old: r }) => setData(d => ({ ...d, worksheets: d.worksheets.filter(w => w.id !== (r as DbWorksheet).id) })))
       .subscribe();
 
     return () => {
@@ -264,6 +279,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
     db(supabase.from('sessions').delete().eq('id', id));
   };
 
+  // ─── Worksheets ───────────────────────────────────────────────────────────
+  const addWorksheet = (w: Omit<Worksheet, 'id' | 'createdAt'>): Worksheet => {
+    const now = new Date().toISOString();
+    const newW: Worksheet = { ...w, id: generateId(), createdAt: now };
+    setData(d => ({ ...d, worksheets: [...d.worksheets, newW] }));
+    db(supabase.from('worksheets').insert(toDbWorksheet(newW)));
+    return newW;
+  };
+  const updateWorksheet = (id: string, updates: Partial<Worksheet>) => {
+    setData(d => ({ ...d, worksheets: d.worksheets.map(w => w.id === id ? { ...w, ...updates } : w) }));
+    const updated = { ...data.worksheets.find(w => w.id === id)!, ...updates };
+    db(supabase.from('worksheets').update(toDbWorksheet(updated)).eq('id', id));
+  };
+  const deleteWorksheet = (id: string) => {
+    setData(d => ({ ...d, worksheets: d.worksheets.filter(w => w.id !== id) }));
+    db(supabase.from('worksheets').delete().eq('id', id));
+  };
+
   return (
     <AppContext.Provider value={{
       data, loading,
@@ -271,6 +304,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addStudent, updateStudent, deleteStudent,
       addPackage, updatePackage, deletePackage,
       addSession, updateSession, deleteSession,
+      addWorksheet, updateWorksheet, deleteWorksheet,
     }}>
       {children}
     </AppContext.Provider>

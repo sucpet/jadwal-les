@@ -763,26 +763,6 @@ export default function Schedule() {
                 </div>
               )}
 
-              {selectedStudent?.group === 'xuyuan' && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Halaman Worksheet</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={form.worksheetPages}
-                    onChange={e => setForm(f => ({ ...f, worksheetPages: Math.max(0, Number(e.target.value) || 0) }))}
-                    onKeyDown={e => (e.key === '-' || e.key === 'e') && e.preventDefault()}
-                    placeholder="0"
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                  {form.worksheetPages > 0 && (
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                      Biaya worksheet: Rp {(form.worksheetPages * 20_000).toLocaleString('id-ID')}
-                    </p>
-                  )}
-                </div>
-              )}
-
               <div>
                 <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Catatan (opsional)</label>
                 <input
