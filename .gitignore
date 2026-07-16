@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Internal docs (not for public repo)
+PRD.md
+TSD.md
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
