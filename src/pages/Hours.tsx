@@ -1,8 +1,13 @@
 import { format, parseISO, startOfWeek, addDays } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
-import { Timer } from 'lucide-react';
+import { Timer, FileText } from 'lucide-react';
 import { useApp } from '../store/AppContext';
-import type { LessonSession } from '../types';
+import type { LessonSession, Student } from '../types';
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+const RATE_PRIVATE    = 100_000; // IDR/hour
+const RATE_SEMI_GROUP = 135_000; // IDR/hour
+const WORKSHEET_PRICE =  20_000; // IDR/page
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -39,13 +44,33 @@ function formatDuration(minutes: number): string {
   return `${h} jam ${m} mnt`;
 }
 
+function formatRp(n: number): string {
+  return 'Rp ' + n.toLocaleString('id-ID');
+}
+
+function sessionEarning(s: LessonSession, student: Student | undefined): number {
+  const mins = durationMinutes(s);
+  const rate = student?.xuYuanType === 'semi-group' ? RATE_SEMI_GROUP : RATE_PRIVATE;
+  const lessonFee = (mins / 60) * rate;
+  const worksheetFee = (s.worksheetPages ?? 0) * WORKSHEET_PRICE;
+  return Math.round(lessonFee + worksheetFee);
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface WeekEntry {
-  key: string;    // Monday date "YYYY-MM-DD"
-  label: string;  // "30 Jun – 6 Jul"
-  sessions: LessonSession[];
+interface SessionRow {
+  session: LessonSession;
+  student: Student | undefined;
   minutes: number;
+  earning: number;
+}
+
+interface WeekEntry {
+  key: string;
+  label: string;
+  rows: SessionRow[];
+  minutes: number;
+  earning: number;
 }
 
 interface CycleEntry {
@@ -54,6 +79,8 @@ interface CycleEntry {
   isCurrent: boolean;
   totalSessions: number;
   totalMinutes: number;
+  totalEarning: number;
+  totalWorksheetPages: number;
   weeks: WeekEntry[];
 }
 
@@ -69,7 +96,6 @@ export default function Hours() {
     s => xuYuanIds.has(s.studentId) && s.status === 'completed'
   );
 
-  // Group sessions by cycle
   const cycleMap = new Map<string, LessonSession[]>();
   for (const s of completedSessions) {
     const key = cycleStart(s.date);
@@ -79,11 +105,9 @@ export default function Hours() {
 
   const thisCycle = currentCycleKey();
 
-  // Build sorted cycle entries (newest first)
   const cycles: CycleEntry[] = [...cycleMap.entries()]
     .sort((a, b) => b[0].localeCompare(a[0]))
     .map(([key, sessions]) => {
-      // Group by week (Monday as start)
       const weekMap = new Map<string, LessonSession[]>();
       for (const s of sessions) {
         const monday = startOfWeek(parseISO(s.date), { weekStartsOn: 1 });
@@ -92,17 +116,26 @@ export default function Hours() {
         weekMap.get(wKey)!.push(s);
       }
       const weeks: WeekEntry[] = [...weekMap.entries()]
-        .sort((a, b) => b[0].localeCompare(a[0])) // newest first
+        .sort((a, b) => b[0].localeCompare(a[0]))
         .map(([wKey, ss]) => {
           const monday = parseISO(wKey);
           const sunday = addDays(monday, 6);
+          const rows: SessionRow[] = ss
+            .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime))
+            .map(s => {
+              const student = data.students.find(st => st.id === s.studentId);
+              return { session: s, student, minutes: durationMinutes(s), earning: sessionEarning(s, student) };
+            });
           return {
             key: wKey,
             label: `${format(monday, 'd MMM', { locale: localeId })} – ${format(sunday, 'd MMM', { locale: localeId })}`,
-            sessions: ss.sort((a, b) => a.date.localeCompare(b.date)),
-            minutes: ss.reduce((sum, s) => sum + durationMinutes(s), 0),
+            rows,
+            minutes: rows.reduce((sum, r) => sum + r.minutes, 0),
+            earning: rows.reduce((sum, r) => sum + r.earning, 0),
           };
         });
+
+      const totalWorksheetPages = sessions.reduce((sum, s) => sum + (s.worksheetPages ?? 0), 0);
 
       return {
         key,
@@ -110,11 +143,12 @@ export default function Hours() {
         isCurrent: key === thisCycle,
         totalSessions: sessions.length,
         totalMinutes: sessions.reduce((sum, s) => sum + durationMinutes(s), 0),
+        totalEarning: weeks.reduce((sum, w) => sum + w.earning, 0),
+        totalWorksheetPages,
         weeks,
       };
     });
 
-  // If current cycle has no data yet, still show it as empty
   if (!cycleMap.has(thisCycle)) {
     cycles.unshift({
       key: thisCycle,
@@ -122,6 +156,8 @@ export default function Hours() {
       isCurrent: true,
       totalSessions: 0,
       totalMinutes: 0,
+      totalEarning: 0,
+      totalWorksheetPages: 0,
       weeks: [],
     });
   }
@@ -147,30 +183,31 @@ export default function Hours() {
           }`}
         >
           {/* Cycle header */}
-          <div className={`px-5 py-4 flex items-center justify-between ${
-            cycle.isCurrent ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-800'
-          }`}>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className={`font-semibold ${cycle.isCurrent ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
-                  {cycle.label}
-                </span>
-                {cycle.isCurrent && (
-                  <span className="text-xs bg-white/20 text-white px-2 py-0.5 rounded-full">
-                    Berjalan
+          <div className={`px-5 py-4 ${cycle.isCurrent ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-800'}`}>
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className={`font-semibold ${cycle.isCurrent ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+                    {cycle.label}
                   </span>
-                )}
+                  {cycle.isCurrent && (
+                    <span className="text-xs bg-white/20 text-white px-2 py-0.5 rounded-full">Berjalan</span>
+                  )}
+                </div>
+                <div className={`text-sm mt-0.5 ${cycle.isCurrent ? 'text-indigo-200' : 'text-gray-500 dark:text-gray-400'}`}>
+                  {cycle.totalSessions} sesi · {formatDuration(cycle.totalMinutes)}
+                  {cycle.totalWorksheetPages > 0 && (
+                    <span> · {cycle.totalWorksheetPages} hal worksheet</span>
+                  )}
+                </div>
               </div>
-              <div className={`text-sm mt-0.5 ${cycle.isCurrent ? 'text-indigo-200' : 'text-gray-500 dark:text-gray-400'}`}>
-                {cycle.totalSessions} sesi
-              </div>
-            </div>
-            <div className="text-right">
-              <div className={`text-2xl font-bold tabular-nums ${cycle.isCurrent ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
-                {formatDuration(cycle.totalMinutes)}
-              </div>
-              <div className={`text-xs mt-0.5 ${cycle.isCurrent ? 'text-indigo-200' : 'text-gray-400 dark:text-gray-500'} flex items-center gap-1 justify-end`}>
-                <Timer size={11} /> total durasi
+              <div className="text-right">
+                <div className={`text-2xl font-bold tabular-nums ${cycle.isCurrent ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+                  {formatRp(cycle.totalEarning)}
+                </div>
+                <div className={`text-xs mt-0.5 ${cycle.isCurrent ? 'text-indigo-200' : 'text-gray-400 dark:text-gray-500'}`}>
+                  total
+                </div>
               </div>
             </div>
           </div>
@@ -178,37 +215,43 @@ export default function Hours() {
           {/* Per-week breakdown */}
           {cycle.weeks.length > 0 && (
             <div className="divide-y divide-gray-100 dark:divide-gray-700">
-              {cycle.weeks.map(({ key, label, sessions, minutes }) => {
-                const pct = cycle.totalMinutes > 0 ? (minutes / cycle.totalMinutes) * 100 : 0;
-                return (
-                  <div key={key} className="px-5 py-3 bg-white dark:bg-gray-800">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span>
-                      <div className="text-right">
-                        <span className="text-sm font-semibold text-gray-900 dark:text-white tabular-nums">
-                          {formatDuration(minutes)}
-                        </span>
-                        <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">
-                          {sessions.length} sesi
-                        </span>
-                      </div>
-                    </div>
-                    <div className="h-1 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden mb-2">
-                      <div
-                        className="h-full rounded-full transition-all bg-indigo-400"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                      {sessions.map(s => (
-                        <span key={s.id} className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded tabular-nums">
-                          {format(parseISO(s.date), 'd MMM', { locale: localeId })}
-                        </span>
-                      ))}
+              {cycle.weeks.map(({ key, label, rows, minutes, earning }) => (
+                <div key={key} className="px-5 py-3 bg-white dark:bg-gray-800">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span>
+                    <div className="text-right">
+                      <span className="text-sm font-semibold text-gray-900 dark:text-white tabular-nums">
+                        {formatRp(earning)}
+                      </span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">
+                        {formatDuration(minutes)}
+                      </span>
                     </div>
                   </div>
-                );
-              })}
+                  <div className="space-y-1.5">
+                    {rows.map(({ session: s, student, minutes: mins, earning: earn }) => (
+                      <div key={s.id} className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                        <span className="w-16 flex-shrink-0 tabular-nums text-gray-400 dark:text-gray-500">
+                          {format(parseISO(s.date), 'd MMM', { locale: localeId })}
+                        </span>
+                        <span className="w-20 flex-shrink-0 tabular-nums">{s.startTime}–{s.endTime}</span>
+                        <span className="flex-1 font-medium text-gray-700 dark:text-gray-300 truncate">{student?.name ?? '—'}</span>
+                        {student?.xuYuanType === 'semi-group' && (
+                          <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded flex-shrink-0">semi</span>
+                        )}
+                        {(s.worksheetPages ?? 0) > 0 && (
+                          <span className="flex items-center gap-0.5 text-amber-600 dark:text-amber-400 flex-shrink-0">
+                            <FileText size={11} /> {s.worksheetPages}
+                          </span>
+                        )}
+                        <span className="tabular-nums font-medium text-gray-900 dark:text-white flex-shrink-0">
+                          {formatRp(earn)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 

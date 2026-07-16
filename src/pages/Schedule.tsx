@@ -95,6 +95,7 @@ export default function Schedule() {
     endTime: '10:00',
     status: 'scheduled' as LessonSession['status'],
     notes: '',
+    worksheetPages: 0,
   });
 
   const weekStart = startOfWeek(currentWeek, { weekStartsOn: 1 });
@@ -130,6 +131,7 @@ export default function Schedule() {
       endTime: time ? addOneHour(time) : '10:00',
       status: (d < todayStr || (d === todayStr && addOneHour(time ?? '09:00') <= nowTimeStr)) ? 'completed' : 'scheduled',
       notes: '',
+      worksheetPages: 0,
     });
     setShowForm(true);
   };
@@ -147,6 +149,7 @@ export default function Schedule() {
       endTime: session.endTime,
       status: session.status,
       notes: session.notes ?? '',
+      worksheetPages: session.worksheetPages ?? 0,
     });
     setShowForm(true);
   };
@@ -163,6 +166,7 @@ export default function Schedule() {
         endTime: form.endTime,
         status: resolveStatus(form.date, form.endTime, form.status),
         notes: form.notes,
+        worksheetPages: form.worksheetPages,
       });
     } else {
       const dates = recurring
@@ -177,6 +181,7 @@ export default function Schedule() {
           endTime: form.endTime,
           status: resolveStatus(date, form.endTime, form.status),
           notes: form.notes,
+          worksheetPages: form.worksheetPages,
         });
       }
     }
@@ -755,6 +760,26 @@ export default function Schedule() {
                       ? `${format(parseISO(weekendSessionDates[0]), 'EEE d MMM', { locale: localeId })} adalah hari weekend`
                       : `${weekendSessionDates.length} sesi jatuh di hari weekend`}
                   </span>
+                </div>
+              )}
+
+              {selectedStudent?.group === 'xuyuan' && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Halaman Worksheet</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.worksheetPages}
+                    onChange={e => setForm(f => ({ ...f, worksheetPages: Math.max(0, Number(e.target.value) || 0) }))}
+                    onKeyDown={e => (e.key === '-' || e.key === 'e') && e.preventDefault()}
+                    placeholder="0"
+                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  {form.worksheetPages > 0 && (
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                      Biaya worksheet: Rp {(form.worksheetPages * 20_000).toLocaleString('id-ID')}
+                    </p>
+                  )}
                 </div>
               )}
 

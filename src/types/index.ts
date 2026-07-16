@@ -22,6 +22,7 @@ export interface Student {
   billingType: BillingType;
   ratePerSession: number;
   group: StudentGroup;
+  xuYuanType?: 'private' | 'semi-group';
   notes?: string;
   createdAt: string;
 }
@@ -50,6 +51,7 @@ export interface LessonSession {
   endTime: string; // HH:MM
   status: 'scheduled' | 'completed' | 'cancelled';
   notes?: string;
+  worksheetPages?: number;
   createdAt: string;
 }
 

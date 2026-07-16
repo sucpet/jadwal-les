@@ -8,21 +8,21 @@ const defaultData: AppData = { teachers: [], students: [], packages: [], session
 
 // ─── DB row types (snake_case) ────────────────────────────────────────────────
 interface DbTeacher  { id: string; name: string; color: string; created_at: string; }
-interface DbStudent  { id: string; teacher_id: string; name: string; billing_type: string; rate_per_session: number; group: string; notes?: string; created_at: string; }
+interface DbStudent  { id: string; teacher_id: string; name: string; billing_type: string; rate_per_session: number; group: string; xu_yuan_type?: string; notes?: string; created_at: string; }
 interface DbPackage  { id: string; student_id: string; teacher_id: string; total_sessions: number; pricing_type: string; price_per_session: number; package_price?: number; start_date: string; notes?: string; created_at: string; }
-interface DbSession  { id: string; student_id: string; teacher_id: string; date: string; start_time: string; end_time: string; status: string; notes?: string; created_at: string; }
+interface DbSession  { id: string; student_id: string; teacher_id: string; date: string; start_time: string; end_time: string; status: string; notes?: string; worksheet_pages?: number; created_at: string; }
 
 // ─── Mappers DB → App ─────────────────────────────────────────────────────────
 const mapTeacher  = (r: DbTeacher):  Teacher        => ({ id: r.id, name: r.name, color: r.color, createdAt: r.created_at });
-const mapStudent  = (r: DbStudent):  Student        => ({ id: r.id, teacherId: r.teacher_id, name: r.name, billingType: r.billing_type as BillingType, ratePerSession: r.rate_per_session, group: r.group as StudentGroup, notes: r.notes, createdAt: r.created_at });
+const mapStudent  = (r: DbStudent):  Student        => ({ id: r.id, teacherId: r.teacher_id, name: r.name, billingType: r.billing_type as BillingType, ratePerSession: r.rate_per_session, group: r.group as StudentGroup, xuYuanType: (r.xu_yuan_type ?? 'private') as 'private' | 'semi-group', notes: r.notes, createdAt: r.created_at });
 const mapPackage  = (r: DbPackage):  SessionPackage => ({ id: r.id, studentId: r.student_id, teacherId: r.teacher_id, totalSessions: r.total_sessions, pricingType: r.pricing_type as PackagePricingType, pricePerSession: r.price_per_session, packagePrice: r.package_price, startDate: r.start_date, notes: r.notes, createdAt: r.created_at });
-const mapSession  = (r: DbSession):  LessonSession  => ({ id: r.id, studentId: r.student_id, teacherId: r.teacher_id, date: r.date, startTime: r.start_time, endTime: r.end_time, status: r.status as LessonSession['status'], notes: r.notes, createdAt: r.created_at });
+const mapSession  = (r: DbSession):  LessonSession  => ({ id: r.id, studentId: r.student_id, teacherId: r.teacher_id, date: r.date, startTime: r.start_time, endTime: r.end_time, status: r.status as LessonSession['status'], notes: r.notes, worksheetPages: r.worksheet_pages ?? 0, createdAt: r.created_at });
 
 // ─── Mappers App → DB ─────────────────────────────────────────────────────────
 const toDbTeacher = (t: Teacher)        => ({ id: t.id, name: t.name, color: t.color, created_at: t.createdAt });
-const toDbStudent = (s: Student)        => ({ id: s.id, teacher_id: s.teacherId, name: s.name, billing_type: s.billingType, rate_per_session: s.ratePerSession, group: s.group, notes: s.notes ?? null, created_at: s.createdAt });
+const toDbStudent = (s: Student)        => ({ id: s.id, teacher_id: s.teacherId, name: s.name, billing_type: s.billingType, rate_per_session: s.ratePerSession, group: s.group, xu_yuan_type: s.xuYuanType ?? 'private', notes: s.notes ?? null, created_at: s.createdAt });
 const toDbPackage = (p: SessionPackage) => ({ id: p.id, student_id: p.studentId, teacher_id: p.teacherId, total_sessions: p.totalSessions, pricing_type: p.pricingType, price_per_session: p.pricePerSession, package_price: p.packagePrice ?? null, start_date: p.startDate, notes: p.notes ?? null, created_at: p.createdAt });
-const toDbSession = (s: LessonSession)  => ({ id: s.id, student_id: s.studentId, teacher_id: s.teacherId, date: s.date, start_time: s.startTime, end_time: s.endTime, status: s.status, notes: s.notes ?? null, created_at: s.createdAt });
+const toDbSession = (s: LessonSession)  => ({ id: s.id, student_id: s.studentId, teacher_id: s.teacherId, date: s.date, start_time: s.startTime, end_time: s.endTime, status: s.status, notes: s.notes ?? null, worksheet_pages: s.worksheetPages ?? 0, created_at: s.createdAt });
 
 // ─── Context type ─────────────────────────────────────────────────────────────
 interface AppContextType {

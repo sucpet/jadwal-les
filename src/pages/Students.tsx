@@ -123,6 +123,10 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
     notes: initial?.notes ?? '',
   });
 
+  const [xuYuanType, setXuYuanType] = useState<'private' | 'semi-group'>(
+    initial?.xuYuanType ?? 'private'
+  );
+
   // Package fields — only relevant for new prepaid students
   const [showErrors, setShowErrors] = useState(false);
   const [pricingType, setPricingType] = useState<PackagePricingType>('per-session');
@@ -160,7 +164,7 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
     if (!valid) { setShowErrors(true); return; }
     const ratePerSession = isXuYuan ? 0 : isPrepaid && isNew ? effectivePerSession : Number(form.ratePerSession);
     const billingType: BillingType = isXuYuan ? 'per-session' : form.billingType;
-    const studentData = { ...form, billingType, ratePerSession, notes: form.notes };
+    const studentData = { ...form, billingType, ratePerSession, notes: form.notes, xuYuanType };
     const pkgData: InitialPackageData | undefined = (isNew && isPrepaid) ? {
       totalSessions: pkgSessions,
       pricingType,
@@ -217,6 +221,24 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
           ))}
         </div>
       </div>
+
+      {isXuYuan && (
+        <div>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Tipe Sesi</label>
+          <div className="flex gap-2">
+            {(['private', 'semi-group'] as const).map(t => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setXuYuanType(t)}
+                className={`flex-1 text-sm py-1.5 rounded-lg border transition-colors ${xuYuanType === t ? 'bg-indigo-600 text-white border-indigo-600' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400'}`}
+              >
+                {t === 'private' ? 'Private' : 'Semi Group'}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {!isXuYuan && (
         <div>
