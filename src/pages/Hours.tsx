@@ -72,7 +72,7 @@ function exportCycleToExcel(cycle: CycleEntry, worksheets: { studentId: string; 
   const sTitle: object = {
     font: { bold: true, sz: 13, color: { rgb: WHITE } },
     fill: { patternType: 'solid', fgColor: { rgb: INDIGO } },
-    alignment: { vertical: 'center' },
+    alignment: { horizontal: 'center', vertical: 'center' },
   };
   const sHeader: object = {
     font: { bold: true, color: { rgb: WHITE } },
@@ -214,6 +214,7 @@ function exportCycleToExcel(cycle: CycleEntry, worksheets: { studentId: string; 
 
   for (const { r, c, s } of pending) applyStyle(ws, r, c, s);
 
+  ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: COLS - 1 } }];
   ws['!cols'] = [{ wch: 24 }, { wch: 26 }, { wch: 16 }, { wch: 14 }, { wch: 22 }];
 
   const wb = XLSXStyle.utils.book_new();
