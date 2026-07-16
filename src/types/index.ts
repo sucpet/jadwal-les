@@ -49,7 +49,7 @@ export interface LessonSession {
   date: string; // YYYY-MM-DD
   startTime: string; // HH:MM
   endTime: string; // HH:MM
-  status: 'scheduled' | 'completed' | 'cancelled';
+  status: 'scheduled' | 'completed';
   notes?: string;
   worksheetPages?: number;
   createdAt: string;

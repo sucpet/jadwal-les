@@ -133,11 +133,9 @@ export default function Dashboard() {
                       <div className={`text-xs px-2 py-0.5 rounded-full ${
                         session.status === 'completed'
                           ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                          : session.status === 'cancelled'
-                          ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                           : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
                       }`}>
-                        {session.status === 'completed' ? 'Selesai' : session.status === 'cancelled' ? 'Batal' : 'Terjadwal'}
+                        {session.status === 'completed' ? 'Selesai' : 'Terjadwal'}
                       </div>
                     </div>
                   ))}

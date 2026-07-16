@@ -109,9 +109,8 @@ export default function Schedule() {
   const todayStr = format(today, 'yyyy-MM-dd');
   const nowTimeStr = format(today, 'HH:mm');
 
-  const resolveStatus = (date: string, endTime: string, status: LessonSession['status']): LessonSession['status'] => {
-    if (status === 'cancelled') return 'cancelled';
-    if (date > todayStr) return 'scheduled'; // tanggal masa depan tidak bisa selesai
+  const resolveStatus = (date: string, endTime: string): LessonSession['status'] => {
+    if (date > todayStr) return 'scheduled';
     if (date < todayStr) return 'completed';
     if (date === todayStr && endTime <= nowTimeStr) return 'completed';
     return 'scheduled';
@@ -164,7 +163,7 @@ export default function Schedule() {
         date: form.date,
         startTime: form.startTime,
         endTime: form.endTime,
-        status: resolveStatus(form.date, form.endTime, form.status),
+        status: resolveStatus(form.date, form.endTime),
         notes: form.notes,
         worksheetPages: form.worksheetPages,
       });
@@ -179,7 +178,7 @@ export default function Schedule() {
           date,
           startTime: form.startTime,
           endTime: form.endTime,
-          status: resolveStatus(date, form.endTime, form.status),
+          status: resolveStatus(date, form.endTime),
           notes: form.notes,
           worksheetPages: form.worksheetPages,
         });
@@ -229,7 +228,7 @@ export default function Schedule() {
       const s = data.sessions.find(s => s.id === id);
       if (!s) return;
       const newDate = shiftDateByWeeks(s.date, weeks);
-      updateSession(id, { ...s, date: newDate, status: resolveStatus(newDate, s.endTime, s.status) });
+      updateSession(id, { ...s, date: newDate, status: resolveStatus(newDate, s.endTime) });
     });
     exitBulkMode();
   };
@@ -383,10 +382,9 @@ export default function Schedule() {
                           {/* Status */}
                           <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
                             s.status === 'completed' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                            : s.status === 'cancelled' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                             : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
                           }`}>
-                            {s.status === 'completed' ? 'Selesai' : s.status === 'cancelled' ? 'Batal' : 'Terjadwal'}
+                            {s.status === 'completed' ? 'Selesai' : 'Terjadwal'}
                           </span>
                         </div>
                       );
@@ -648,7 +646,7 @@ export default function Schedule() {
                     setForm(f => ({
                       ...f,
                       date: d,
-                      status: f.status === 'cancelled' ? 'cancelled' : resolveStatus(d, f.endTime, 'scheduled'),
+                      status: resolveStatus(d, f.endTime),
                     }));
                   }}
                   className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -685,7 +683,6 @@ export default function Schedule() {
                 >
                   <option value="scheduled">Terjadwal</option>
                   <option value="completed" disabled={form.date > todayStr}>Selesai</option>
-                  <option value="cancelled">Batal</option>
                 </select>
               </div>
 
