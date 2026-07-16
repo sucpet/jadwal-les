@@ -57,7 +57,7 @@ function exportCycleToExcel(cycle: CycleEntry, worksheets: { studentId: string; 
   rows.push([]);
 
   // Header
-  rows.push(['Murid', 'Tanggal', 'Durasi (jam)', 'Jumlah Halaman Worksheet']);
+  rows.push(['Murid', 'Jumlah Halaman Worksheet', 'Tanggal', 'Durasi (jam)']);
 
   for (const { student, rows: sessions } of cycle.studentGroups) {
     for (const { session: s, minutes } of sessions) {
@@ -66,9 +66,9 @@ function exportCycleToExcel(cycle: CycleEntry, worksheets: { studentId: string; 
         .reduce((sum, w) => sum + w.pages, 0);
       rows.push([
         student?.name ?? '—',
+        wsPages,
         format(parseISO(s.date), 'd MMM yyyy', { locale: localeId }),
         Math.round((minutes / 60) * 100) / 100,
-        wsPages,
       ]);
     }
     rows.push([]);
@@ -77,7 +77,7 @@ function exportCycleToExcel(cycle: CycleEntry, worksheets: { studentId: string; 
   const ws = XLSX.utils.aoa_to_sheet(rows);
 
   // Column widths
-  ws['!cols'] = [{ wch: 20 }, { wch: 16 }, { wch: 14 }, { wch: 26 }];
+  ws['!cols'] = [{ wch: 20 }, { wch: 26 }, { wch: 16 }, { wch: 14 }];
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Rekap');
