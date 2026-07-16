@@ -1,6 +1,6 @@
 import { format, parseISO, startOfWeek, addDays } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
-import { Timer, FileText } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import type { LessonSession, Student } from '../types';
 
@@ -229,7 +229,7 @@ export default function Hours() {
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    {rows.map(({ session: s, student, minutes: mins, earning: earn }) => (
+                    {rows.map(({ session: s, student, earning: earn }) => (
                       <div key={s.id} className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
                         <span className="w-16 flex-shrink-0 tabular-nums text-gray-400 dark:text-gray-500">
                           {format(parseISO(s.date), 'd MMM', { locale: localeId })}
