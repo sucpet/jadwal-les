@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@variant dark (&:where(.dark, .dark *));
 
 * {
   box-sizing: border-box;
@@ -27,4 +28,20 @@ body {
 .input.input-error {
   border-color: #f87171;
   background-color: #fef2f2;
+}
+
+.dark body {
+  background-color: #111827;
+  color: #f9fafb;
+}
+
+.dark .input {
+  background: #1f2937;
+  border-color: #374151;
+  color: #f9fafb;
+}
+
+.dark .input.input-error {
+  border-color: #f87171;
+  background-color: rgba(239, 68, 68, 0.15);
 }

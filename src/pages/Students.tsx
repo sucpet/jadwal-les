@@ -173,19 +173,19 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
-      <h3 className="font-semibold text-gray-900">{initial ? 'Edit Murid' : 'Tambah Murid Baru'}</h3>
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 space-y-4">
+      <h3 className="font-semibold text-gray-900 dark:text-white">{initial ? 'Edit Murid' : 'Tambah Murid Baru'}</h3>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Guru</label>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Guru</label>
           <select value={form.teacherId} onChange={e => setForm(f => ({ ...f, teacherId: e.target.value }))}
-            className="input w-full">
+            className="input w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white">
             {teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Nama Murid</label>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nama Murid</label>
           <input autoFocus type="text" value={form.name}
             onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
             placeholder="Nama murid" className={`input w-full ${showErrors && !form.name.trim() ? 'input-error' : ''}`} />
@@ -196,7 +196,7 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-2">Kelompok</label>
+        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Kelompok</label>
         <div className="flex gap-2">
           {STUDENT_GROUPS.map(({ value, label }) => (
             <button key={value} type="button"
@@ -209,8 +209,8 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
               }))}
               className={`flex-1 py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
                 form.group === value
-                  ? 'bg-indigo-50 border-indigo-400 text-indigo-700'
-                  : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                  ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-400 text-indigo-700 dark:text-indigo-300'
+                  : 'border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}>
               {label}
             </button>
@@ -220,7 +220,7 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
 
       {!isXuYuan && (
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Sistem Pembayaran</label>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Sistem Pembayaran</label>
           <div className="grid grid-cols-2 gap-2">
             {([['per-session', 'Postpaid', 'Bayar tiap sesi selesai'], ['package', 'Prepaid', 'Beli sesi di awal (paket)']] as [BillingType, string, string][]).map(([val, label, desc]) => (
               <button key={val} type="button"
@@ -228,9 +228,9 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
                 className={`py-2.5 px-3 rounded-lg border text-left transition-colors ${
                   form.billingType === val
                     ? val === 'per-session'
-                      ? 'bg-blue-50 border-blue-400 text-blue-800'
-                      : 'bg-purple-50 border-purple-400 text-purple-800'
-                    : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                      ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-400 text-blue-800 dark:text-blue-300'
+                      : 'bg-purple-50 dark:bg-purple-900/30 border-purple-400 text-purple-800 dark:text-purple-300'
+                    : 'border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
                 }`}>
                 <div className="text-sm font-medium">{label}</div>
                 <div className="text-xs opacity-70 mt-0.5">{desc}</div>
@@ -378,7 +378,7 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
           <Check size={15} /> Simpan
         </button>
         <button onClick={onCancel}
-          className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50">
+          className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
           <X size={15} /> Batal
         </button>
       </div>
@@ -604,13 +604,13 @@ function PackageCard({
   return (
     <div className={`rounded-xl border p-4 space-y-3 ${
       isCurrent
-        ? isExpired ? 'border-green-200 bg-green-50' : isExpiringSoon ? 'border-amber-200 bg-amber-50' : 'border-purple-200 bg-white'
-        : 'border-gray-100 bg-gray-50'
+        ? isExpired ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20' : isExpiringSoon ? 'border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20' : 'border-purple-200 dark:border-purple-700 bg-white dark:bg-gray-800'
+        : 'border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50'
     }`}>
       <div className="flex items-start justify-between gap-2">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-gray-800">
+            <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
               Mulai {formatDate(pkg.startDate, 'd MMM yyyy')}
             </span>
             {isCurrent && !isExpired && (
@@ -620,7 +620,7 @@ function PackageCard({
               <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">Selesai</span>
             )}
           </div>
-          <div className="text-xs text-gray-500 mt-0.5">
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
             {pkg.totalSessions} pertemuan
             {pkg.pricingType === 'per-package'
               ? <> · <span className="font-medium">{formatCurrency(pkg.packagePrice ?? pkg.pricePerSession * pkg.totalSessions)}</span> / paket <span className="text-gray-400">({formatCurrency(pkg.pricePerSession)}/pertemuan)</span></>
@@ -652,7 +652,7 @@ function PackageCard({
             {isExpired ? 'Selesai' : remainingSessions === 0 ? 'Penuh' : `Sisa ${remainingSessions}`}
           </span>
         </div>
-        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden flex">
+        <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden flex">
           <div className="h-full transition-all" style={{
             width: `${(usedSessions / pkg.totalSessions) * 100}%`,
             background: isExpired ? '#10b981' : isExpiringSoon ? '#f59e0b' : teacherColor,
@@ -666,22 +666,22 @@ function PackageCard({
       </div>
 
       {estimatedEndDate && !isExpired && isCurrent && (
-        <div className="text-xs text-gray-400 flex items-center gap-1">
+        <div className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
           <Clock size={11} /> Estimasi habis: {formatDate(estimatedEndDate, 'd MMM yyyy')}
         </div>
       )}
 
       {pkg.notes && (
-        <div className="text-xs text-gray-400 italic">{pkg.notes}</div>
+        <div className="text-xs text-gray-400 dark:text-gray-500 italic">{pkg.notes}</div>
       )}
 
       {attributedSessions !== undefined && (
-        <div className="pt-1 border-t border-gray-100 space-y-1.5">
+        <div className="pt-1 border-t border-gray-100 dark:border-gray-700 space-y-1.5">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1 text-xs text-gray-400">
+            <div className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
               <CalendarDays size={11} /> Tanggal les ({attributedSessions.length})
             </div>
-            <div className="flex items-center gap-2 text-xs text-gray-400">
+            <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
               <span className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-sm bg-gray-200 inline-block" /> selesai
               </span>
@@ -754,7 +754,7 @@ function StudentCard({ student }: { student: Student }) {
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
       {/* Header row */}
       <div className="flex items-center gap-3 p-4">
         <div className="w-1.5 self-stretch rounded-full flex-shrink-0"
@@ -762,11 +762,11 @@ function StudentCard({ student }: { student: Student }) {
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-medium text-gray-900">{student.name}</span>
+            <span className="font-medium text-gray-900 dark:text-white">{student.name}</span>
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
               isPostpaid
-                ? 'bg-blue-50 text-blue-600'
-                : 'bg-purple-50 text-purple-600'
+                ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                : 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
             }`}>
               {isPostpaid ? 'Postpaid' : 'Prepaid'}
             </span>
@@ -782,7 +782,7 @@ function StudentCard({ student }: { student: Student }) {
               </span>
             )}
           </div>
-          <div className="text-xs text-gray-400 mt-0.5 flex items-center gap-2">
+          <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 flex items-center gap-2">
             <span style={{ color: teacher?.color }}>{teacher?.name}</span>
             {student.group !== 'xuyuan' && (
               <>
@@ -819,13 +819,13 @@ function StudentCard({ student }: { student: Student }) {
 
       {/* Expanded section — isi berbeda per group */}
       {expanded && (
-        <div className="border-t border-gray-100 p-4 space-y-3 bg-gray-50/50">
+        <div className="border-t border-gray-100 dark:border-gray-700 p-4 space-y-3 bg-gray-50/50 dark:bg-gray-700/20">
 
           {/* ── WenWen: paket + sesi per paket ── */}
           {student.group === 'wenwen_aizhongwen' && (
             <>
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Riwayat Paket</span>
+                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Riwayat Paket</span>
                 <button onClick={() => setAddingPackage(true)}
                   className="flex items-center gap-1 text-xs text-purple-600 hover:text-purple-700 font-medium">
                   <Plus size={13} /> Tambah Paket
@@ -842,7 +842,7 @@ function StudentCard({ student }: { student: Student }) {
                 />
               )}
               {studentPkgs.length === 0 && !addingPackage && (
-                <p className="text-sm text-gray-400 text-center py-4">Belum ada paket. Tambahkan paket pertama.</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">Belum ada paket. Tambahkan paket pertama.</p>
               )}
               {studentPkgs.map(pkg => (
                 <PackageCard
@@ -934,8 +934,8 @@ export default function Students() {
     <div className="max-w-3xl mx-auto space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Murid</h1>
-          <p className="text-sm text-gray-400 mt-0.5">{filteredStudents.length} murid</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Murid</h1>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">{filteredStudents.length} murid</p>
         </div>
         <button onClick={() => setShowForm(true)}
           className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700">
@@ -947,12 +947,12 @@ export default function Students() {
       {data.teachers.length > 1 && (
         <div className="flex gap-2 flex-wrap">
           <button onClick={() => setFilterTeacher('all')}
-            className={`text-sm px-3 py-1.5 rounded-lg border ${filterTeacher === 'all' ? 'bg-indigo-600 text-white border-indigo-600' : 'border-gray-300 text-gray-600'}`}>
+            className={`text-sm px-3 py-1.5 rounded-lg border ${filterTeacher === 'all' ? 'bg-indigo-600 text-white border-indigo-600' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400'}`}>
             Semua
           </button>
           {data.teachers.map(t => (
             <button key={t.id} onClick={() => setFilterTeacher(t.id)}
-              className={`text-sm px-3 py-1.5 rounded-lg border flex items-center gap-1.5 transition-colors ${filterTeacher === t.id ? 'text-white' : 'border-gray-300 text-gray-600'}`}
+              className={`text-sm px-3 py-1.5 rounded-lg border flex items-center gap-1.5 transition-colors ${filterTeacher === t.id ? 'text-white' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400'}`}
               style={filterTeacher === t.id ? { background: t.color, borderColor: t.color } : {}}>
               <div className="w-2 h-2 rounded-full" style={{ background: filterTeacher === t.id ? 'white' : t.color }} />
               {t.name}
@@ -972,7 +972,7 @@ export default function Students() {
 
       {/* List */}
       {filteredStudents.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-10 text-center text-gray-400">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-10 text-center text-gray-400 dark:text-gray-500">
           <p className="text-sm">
             {data.teachers.length === 0
               ? 'Tambahkan guru dulu sebelum menambahkan murid.'

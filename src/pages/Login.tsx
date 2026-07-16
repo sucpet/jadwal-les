@@ -18,39 +18,39 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 w-full max-w-sm space-y-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-8 w-full max-w-sm space-y-6">
         <div className="flex flex-col items-center gap-3">
           <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center">
             <BookOpen size={24} className="text-white" />
           </div>
           <div className="text-center">
-            <h1 className="text-xl font-bold text-gray-900">Jadwal Les</h1>
-            <p className="text-sm text-gray-500 mt-0.5">Masuk untuk melanjutkan</p>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Jadwal Les</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Masuk untuk melanjutkan</p>
           </div>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
             <input
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
               autoFocus
               required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               placeholder="email@example.com"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
             <input
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               placeholder="••••••••"
             />
           </div>

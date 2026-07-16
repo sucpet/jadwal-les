@@ -215,7 +215,7 @@ export default function Schedule() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Jadwal</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Jadwal</h1>
         <button
           onClick={() => openAdd()}
           className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700"
@@ -229,7 +229,7 @@ export default function Schedule() {
         <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => setFilterTeacher('all')}
-            className={`text-sm px-3 py-1.5 rounded-lg border ${filterTeacher === 'all' ? 'bg-indigo-600 text-white border-indigo-600' : 'border-gray-300 text-gray-600'}`}
+            className={`text-sm px-3 py-1.5 rounded-lg border ${filterTeacher === 'all' ? 'bg-indigo-600 text-white border-indigo-600' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400'}`}
           >Semua</button>
           {data.teachers.map(t => (
             <button key={t.id} onClick={() => setFilterTeacher(t.id)}
@@ -244,32 +244,32 @@ export default function Schedule() {
       )}
 
       {/* Week navigation */}
-      <div className="flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-2">
-        <button onClick={() => setCurrentWeek(w => subWeeks(w, 1))} className="p-1 hover:bg-gray-100 rounded">
+      <div className="flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2">
+        <button onClick={() => setCurrentWeek(w => subWeeks(w, 1))} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded dark:text-gray-300">
           <ChevronLeft size={18} />
         </button>
-        <span className="flex-1 text-center text-sm font-medium">
+        <span className="flex-1 text-center text-sm font-medium dark:text-gray-200">
           {format(weekStart, 'd MMMM', { locale: localeId })} – {format(addDays(weekStart, 6), 'd MMMM yyyy', { locale: localeId })}
         </span>
-        <button onClick={() => setCurrentWeek(new Date())} className="text-xs text-indigo-600 hover:underline px-2">
+        <button onClick={() => setCurrentWeek(new Date())} className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline px-2">
           Hari ini
         </button>
-        <button onClick={() => setCurrentWeek(w => addWeeks(w, 1))} className="p-1 hover:bg-gray-100 rounded">
+        <button onClick={() => setCurrentWeek(w => addWeeks(w, 1))} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded dark:text-gray-300">
           <ChevronRight size={18} />
         </button>
       </div>
 
       {/* Calendar grid */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
         {/* Header */}
-        <div className="grid border-b border-gray-200" style={{ gridTemplateColumns: '64px repeat(7, 1fr)' }}>
-          <div className="border-r border-gray-100 bg-gray-50" />
+        <div className="grid border-b border-gray-200 dark:border-gray-700" style={{ gridTemplateColumns: '64px repeat(7, 1fr)' }}>
+          <div className="border-r border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50" />
           {weekDays.map((day, i) => {
             const isToday = isSameDay(day, today);
             return (
-              <div key={i} className={`text-center py-2 border-r border-gray-100 last:border-r-0 ${isToday ? 'bg-indigo-50' : ''}`}>
-                <div className={`text-xs font-medium ${isToday ? 'text-indigo-600' : 'text-gray-500'}`}>{DAY_LABELS[i]}</div>
-                <div className={`text-sm font-semibold ${isToday ? 'text-indigo-700' : 'text-gray-800'}`}>
+              <div key={i} className={`text-center py-2 border-r border-gray-100 dark:border-gray-700 last:border-r-0 ${isToday ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}>
+                <div className={`text-xs font-medium ${isToday ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400'}`}>{DAY_LABELS[i]}</div>
+                <div className={`text-sm font-semibold ${isToday ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-800 dark:text-gray-200'}`}>
                   {format(day, 'd', { locale: localeId })}
                 </div>
               </div>
@@ -298,7 +298,7 @@ export default function Schedule() {
             <div
               key={time}
               style={{ gridRow: i + 1, gridColumn: 1 }}
-              className={`px-2 py-1 text-xs text-gray-400 bg-gray-50 flex items-start border-r border-gray-100${i < TIME_SLOTS.length - 1 ? ' border-b' : ''}`}
+              className={`px-2 py-1 text-xs text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-900/50 flex items-start border-r border-gray-100 dark:border-gray-700${i < TIME_SLOTS.length - 1 ? ' border-b' : ''}`}
             >
               {time}
             </div>
@@ -310,7 +310,7 @@ export default function Schedule() {
               <div
                 key={`${time}-${di}`}
                 style={{ gridRow: i + 1, gridColumn: di + 2 }}
-                className={`cursor-pointer hover:bg-gray-50 transition-colors border-gray-100${isSameDay(day, today) ? ' bg-indigo-50/30' : ''}${i < TIME_SLOTS.length - 1 ? ' border-b' : ''}${di < 6 ? ' border-r' : ''}`}
+                className={`cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors border-gray-100 dark:border-gray-700${isSameDay(day, today) ? ' bg-indigo-50/30 dark:bg-indigo-900/10' : ''}${i < TIME_SLOTS.length - 1 ? ' border-b' : ''}${di < 6 ? ' border-r' : ''}`}
                 onClick={() => openAdd(format(day, 'yyyy-MM-dd'), time)}
               />
             ))
@@ -373,10 +373,10 @@ export default function Schedule() {
       {/* Session Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md space-y-4" onClick={e => e.stopPropagation()}>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md space-y-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900">{editSession ? 'Edit Sesi' : 'Tambah Sesi'}</h3>
-              <button onClick={() => setShowForm(false)} className="p-1 hover:bg-gray-100 rounded">
+              <h3 className="font-semibold text-gray-900 dark:text-white">{editSession ? 'Edit Sesi' : 'Tambah Sesi'}</h3>
+              <button onClick={() => setShowForm(false)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-400 rounded">
                 <X size={18} />
               </button>
             </div>
@@ -384,21 +384,21 @@ export default function Schedule() {
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Guru</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Guru</label>
                   <select
                     value={form.teacherId}
                     onChange={e => setForm(f => ({ ...f, teacherId: e.target.value, studentId: '' }))}
-                    className="w-full border border-gray-300 rounded-lg pl-3 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg pl-3 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
                     {data.teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Murid</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Murid</label>
                   <select
                     value={form.studentId}
                     onChange={e => setForm(f => ({ ...f, studentId: e.target.value }))}
-                    className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${showErrors && !form.studentId ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                    className={`w-full border rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 ${showErrors && !form.studentId ? 'border-red-400 bg-red-50 dark:bg-red-900/20' : 'border-gray-300 dark:border-gray-600'}`}
                   >
                     <option value="">Pilih murid</option>
                     {availableStudents.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -410,7 +410,7 @@ export default function Schedule() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Tanggal</label>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Tanggal</label>
                 <input
                   type="date"
                   value={form.date}
@@ -422,37 +422,37 @@ export default function Schedule() {
                       status: f.status === 'cancelled' ? 'cancelled' : resolveStatus(d, f.endTime, 'scheduled'),
                     }));
                   }}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Mulai</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Mulai</label>
                   <input
                     type="time"
                     value={form.startTime}
                     onChange={e => setForm(f => ({ ...f, startTime: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Selesai</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Selesai</label>
                   <input
                     type="time"
                     value={form.endTime}
                     onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Status</label>
                 <select
                   value={form.status}
                   onChange={e => setForm(f => ({ ...f, status: e.target.value as LessonSession['status'] }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   <option value="scheduled">Terjadwal</option>
                   <option value="completed" disabled={form.date > todayStr}>Selesai</option>
@@ -461,9 +461,9 @@ export default function Schedule() {
               </div>
 
               {form.studentId && selectedStudent && (
-                <div className="bg-gray-50 rounded-lg p-3 text-sm flex items-center gap-2">
-                  <Clock size={14} className="text-gray-400" />
-                  <span className="text-gray-600">
+                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-sm flex items-center gap-2">
+                  <Clock size={14} className="text-gray-400 dark:text-gray-500" />
+                  <span className="text-gray-600 dark:text-gray-300">
                     Biaya: <strong>{formatCurrency(selectedStudent.ratePerSession)}</strong>
                     {selectedStudent.billingType === 'package' && ' (paket)'}
                   </span>
@@ -472,7 +472,7 @@ export default function Schedule() {
 
               {/* Recurring — hanya untuk sesi baru */}
               {!editSession && (
-                <div className="border-t border-gray-100 pt-3 space-y-3">
+                <div className="border-t border-gray-100 dark:border-gray-700 pt-3 space-y-3">
                   <label className="flex items-center gap-2 cursor-pointer select-none">
                     <input
                       type="checkbox"
@@ -480,23 +480,23 @@ export default function Schedule() {
                       onChange={e => setRecurring(e.target.checked)}
                       className="w-4 h-4 accent-indigo-600"
                     />
-                    <RefreshCw size={14} className="text-gray-400" />
-                    <span className="text-sm text-gray-700">Ulangi setiap minggu</span>
+                    <RefreshCw size={14} className="text-gray-400 dark:text-gray-500" />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Ulangi setiap minggu</span>
                   </label>
 
                   {recurring && (
                     <div className="space-y-2 pl-6">
                       <div className="flex items-center gap-3">
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Berapa kali?</label>
+                          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Berapa kali?</label>
                           <input
                             type="number" min="1" max="13" onKeyDown={e => (e.key === '-' || e.key === 'e') && e.preventDefault()}
                             value={recurringCount}
                             onChange={e => setRecurringCount(e.target.value)}
-                            className="w-20 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="w-20 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                           />
                         </div>
-                        <p className="text-xs text-gray-400 pt-4">maks. 13 (~3 bln)</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 pt-4">maks. 13 (~3 bln)</p>
                       </div>
 
                       {form.date && lastRecurringDate && (
@@ -515,7 +515,7 @@ export default function Schedule() {
                       )}
 
                       {isPrepaid && remainingPkgSessions !== null && !prepaidOverLimit && (
-                        <p className="text-xs text-gray-400">Sisa paket: {remainingPkgSessions} sesi</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">Sisa paket: {remainingPkgSessions} sesi</p>
                       )}
                     </div>
                   )}
@@ -535,13 +535,13 @@ export default function Schedule() {
               )}
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Catatan (opsional)</label>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Catatan (opsional)</label>
                 <input
                   type="text"
                   value={form.notes}
                   onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                   placeholder="Topik, materi, dll"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
             </div>

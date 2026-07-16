@@ -129,12 +129,12 @@ export default function Hours() {
   return (
     <div className="max-w-2xl mx-auto space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Rekap Jam Mengajar</h1>
-        <p className="text-sm text-gray-400 mt-0.5">XuYuan · siklus 26–25</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Rekap Jam Mengajar</h1>
+        <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">XuYuan · siklus 26–25</p>
       </div>
 
       {cycles.length === 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-10 text-center text-gray-400 text-sm">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-10 text-center text-gray-400 dark:text-gray-500 text-sm">
           Belum ada sesi XuYuan yang selesai.
         </div>
       )}
@@ -143,16 +143,16 @@ export default function Hours() {
         <div
           key={cycle.key}
           className={`rounded-xl border overflow-hidden ${
-            cycle.isCurrent ? 'border-indigo-300' : 'border-gray-200'
+            cycle.isCurrent ? 'border-indigo-300 dark:border-indigo-600' : 'border-gray-200 dark:border-gray-700'
           }`}
         >
           {/* Cycle header */}
           <div className={`px-5 py-4 flex items-center justify-between ${
-            cycle.isCurrent ? 'bg-indigo-600 text-white' : 'bg-white'
+            cycle.isCurrent ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-800'
           }`}>
             <div>
               <div className="flex items-center gap-2">
-                <span className={`font-semibold ${cycle.isCurrent ? 'text-white' : 'text-gray-900'}`}>
+                <span className={`font-semibold ${cycle.isCurrent ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
                   {cycle.label}
                 </span>
                 {cycle.isCurrent && (
@@ -161,15 +161,15 @@ export default function Hours() {
                   </span>
                 )}
               </div>
-              <div className={`text-sm mt-0.5 ${cycle.isCurrent ? 'text-indigo-200' : 'text-gray-500'}`}>
+              <div className={`text-sm mt-0.5 ${cycle.isCurrent ? 'text-indigo-200' : 'text-gray-500 dark:text-gray-400'}`}>
                 {cycle.totalSessions} sesi
               </div>
             </div>
             <div className="text-right">
-              <div className={`text-2xl font-bold tabular-nums ${cycle.isCurrent ? 'text-white' : 'text-gray-900'}`}>
+              <div className={`text-2xl font-bold tabular-nums ${cycle.isCurrent ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
                 {formatDuration(cycle.totalMinutes)}
               </div>
-              <div className={`text-xs mt-0.5 ${cycle.isCurrent ? 'text-indigo-200' : 'text-gray-400'} flex items-center gap-1 justify-end`}>
+              <div className={`text-xs mt-0.5 ${cycle.isCurrent ? 'text-indigo-200' : 'text-gray-400 dark:text-gray-500'} flex items-center gap-1 justify-end`}>
                 <Timer size={11} /> total durasi
               </div>
             </div>
@@ -177,23 +177,23 @@ export default function Hours() {
 
           {/* Per-week breakdown */}
           {cycle.weeks.length > 0 && (
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-gray-100 dark:divide-gray-700">
               {cycle.weeks.map(({ key, label, sessions, minutes }) => {
                 const pct = cycle.totalMinutes > 0 ? (minutes / cycle.totalMinutes) * 100 : 0;
                 return (
-                  <div key={key} className="px-5 py-3 bg-white">
+                  <div key={key} className="px-5 py-3 bg-white dark:bg-gray-800">
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-sm font-medium text-gray-700">{label}</span>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span>
                       <div className="text-right">
-                        <span className="text-sm font-semibold text-gray-900 tabular-nums">
+                        <span className="text-sm font-semibold text-gray-900 dark:text-white tabular-nums">
                           {formatDuration(minutes)}
                         </span>
-                        <span className="text-xs text-gray-400 ml-2">
+                        <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">
                           {sessions.length} sesi
                         </span>
                       </div>
                     </div>
-                    <div className="h-1 bg-gray-100 rounded-full overflow-hidden mb-2">
+                    <div className="h-1 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden mb-2">
                       <div
                         className="h-full rounded-full transition-all bg-indigo-400"
                         style={{ width: `${pct}%` }}
@@ -201,7 +201,7 @@ export default function Hours() {
                     </div>
                     <div className="flex flex-wrap gap-1">
                       {sessions.map(s => (
-                        <span key={s.id} className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded tabular-nums">
+                        <span key={s.id} className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded tabular-nums">
                           {format(parseISO(s.date), 'd MMM', { locale: localeId })}
                         </span>
                       ))}
@@ -213,7 +213,7 @@ export default function Hours() {
           )}
 
           {cycle.weeks.length === 0 && (
-            <div className="px-5 py-4 bg-white text-sm text-gray-400 text-center">
+            <div className="px-5 py-4 bg-white dark:bg-gray-800 text-sm text-gray-400 dark:text-gray-500 text-center">
               Belum ada sesi di periode ini.
             </div>
           )}

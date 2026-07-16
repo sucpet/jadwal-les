@@ -51,7 +51,7 @@ export default function Teachers() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Guru</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Guru</h1>
         <button
           onClick={openAdd}
           className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700"
@@ -62,10 +62,10 @@ export default function Teachers() {
 
       {/* Form */}
       {showForm && (
-        <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-4">
-          <h3 className="font-semibold text-gray-900">{editId ? 'Edit Guru' : 'Tambah Guru Baru'}</h3>
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 space-y-4">
+          <h3 className="font-semibold text-gray-900 dark:text-white">{editId ? 'Edit Guru' : 'Tambah Guru Baru'}</h3>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nama Guru</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nama Guru</label>
             <input
               autoFocus
               type="text"
@@ -73,14 +73,14 @@ export default function Teachers() {
               onChange={e => setName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && save()}
               placeholder="Contoh: WenWen"
-              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${showErrors && !name.trim() ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+              className={`w-full border rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 ${showErrors && !name.trim() ? 'border-red-400 bg-red-50 dark:bg-red-900/20' : 'border-gray-300 dark:border-gray-600'}`}
             />
             {showErrors && !name.trim() && (
               <p className="text-xs text-red-500 mt-1">Nama guru wajib diisi</p>
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Warna</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Warna</label>
             <div className="flex gap-2 flex-wrap">
               {TEACHER_COLORS.map(c => (
                 <button
@@ -104,7 +104,7 @@ export default function Teachers() {
             </button>
             <button
               onClick={() => setShowForm(false)}
-              className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50"
+              className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               <X size={16} /> Batal
             </button>
@@ -114,7 +114,7 @@ export default function Teachers() {
 
       {/* List */}
       {data.teachers.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-10 text-center text-gray-400">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-10 text-center text-gray-400 dark:text-gray-500">
           <p className="text-sm">Belum ada guru. Tambahkan guru pertama.</p>
         </div>
       ) : (
@@ -123,24 +123,24 @@ export default function Teachers() {
             const studentCount = data.students.filter(s => s.teacherId === teacher.id).length;
             const sessionCount = data.sessions.filter(s => s.teacherId === teacher.id).length;
             return (
-              <div key={teacher.id} className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-3">
+              <div key={teacher.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full flex-shrink-0" style={{ background: teacher.color }} />
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium text-gray-900">{teacher.name}</div>
-                  <div className="text-xs text-gray-500 mt-0.5">
+                  <div className="font-medium text-gray-900 dark:text-white">{teacher.name}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                     {studentCount} murid · {sessionCount} sesi tercatat
                   </div>
                 </div>
                 <div className="flex gap-1">
                   <button
                     onClick={() => openEdit(teacher.id)}
-                    className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                    className="p-2 text-gray-400 dark:text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors"
                   >
                     <Pencil size={15} />
                   </button>
                   <button
                     onClick={() => remove(teacher.id)}
-                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    className="p-2 text-gray-400 dark:text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                   >
                     <Trash2 size={15} />
                   </button>

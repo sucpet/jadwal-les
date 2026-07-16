@@ -40,8 +40,8 @@ export default function Dashboard() {
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500 mt-1">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+        <p className="text-gray-500 dark:text-gray-400 mt-1">
           {format(today, "EEEE, d MMMM yyyy", { locale: localeId })}
         </p>
       </div>
@@ -57,8 +57,8 @@ export default function Dashboard() {
                 key={pkg.id}
                 className={`flex items-start gap-3 p-3 rounded-lg border ${
                   isExpired
-                    ? 'bg-red-50 border-red-200 text-red-800'
-                    : 'bg-amber-50 border-amber-200 text-amber-800'
+                    ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-300'
+                    : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300'
                 }`}
               >
                 <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
@@ -82,11 +82,11 @@ export default function Dashboard() {
       {/* Today's schedule */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+          <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
             <Calendar size={18} />
             Jadwal Hari Ini
             {todaySessions.length > 0 && (
-              <span className="text-xs font-normal text-gray-400">({todaySessions.length} sesi)</span>
+              <span className="text-xs font-normal text-gray-400 dark:text-gray-500">({todaySessions.length} sesi)</span>
             )}
           </h2>
           <Link to="/schedule" className="text-sm text-indigo-600 hover:underline">
@@ -95,7 +95,7 @@ export default function Dashboard() {
         </div>
 
         {todaySessions.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-400">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center text-gray-400 dark:text-gray-500">
             <Calendar size={32} className="mx-auto mb-2 opacity-40" />
             <p className="text-sm">Tidak ada jadwal hari ini</p>
           </div>
@@ -114,28 +114,28 @@ export default function Dashboard() {
                   {sessions.map(({ session, student }) => (
                     <div
                       key={session.id}
-                      className="bg-white rounded-lg border border-gray-200 p-3 flex items-center gap-3"
+                      className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 flex items-center gap-3"
                     >
                       <div
                         className="w-1 self-stretch rounded-full"
                         style={{ background: teacher.color }}
                       />
-                      <div className="flex items-center gap-2 text-gray-500 text-sm">
+                      <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm">
                         <Clock size={14} />
                         <span>{session.startTime}–{session.endTime}</span>
                       </div>
                       <div className="flex-1">
-                        <span className="font-medium text-gray-900">{student?.name ?? '—'}</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{student?.name ?? '—'}</span>
                         {student?.billingType === 'package' && (
-                          <span className="ml-2 text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">paket</span>
+                          <span className="ml-2 text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded">paket</span>
                         )}
                       </div>
                       <div className={`text-xs px-2 py-0.5 rounded-full ${
                         session.status === 'completed'
-                          ? 'bg-green-100 text-green-700'
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
                           : session.status === 'cancelled'
-                          ? 'bg-red-100 text-red-700'
-                          : 'bg-blue-100 text-blue-700'
+                          ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                          : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
                       }`}>
                         {session.status === 'completed' ? 'Selesai' : session.status === 'cancelled' ? 'Batal' : 'Terjadwal'}
                       </div>
@@ -159,7 +159,7 @@ export default function Dashboard() {
       {/* Per-teacher summary */}
       {data.teachers.length > 0 && (
         <div>
-          <h2 className="font-semibold text-gray-900 mb-3">Ringkasan Per Guru</h2>
+          <h2 className="font-semibold text-gray-900 dark:text-white mb-3">Ringkasan Per Guru</h2>
           <div className="grid gap-3 md:grid-cols-2">
             {data.teachers.map(teacher => {
               const teacherStudents = data.students.filter(s => s.teacherId === teacher.id);
@@ -170,17 +170,17 @@ export default function Dashboard() {
                 <Link
                   key={teacher.id}
                   to={`/schedule?teacher=${teacher.id}`}
-                  className="bg-white rounded-xl border border-gray-200 p-4 hover:border-gray-300 transition-colors"
+                  className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
                 >
                   <div className="flex items-center gap-2 mb-3">
                     <div className="w-3 h-3 rounded-full" style={{ background: teacher.color }} />
-                    <span className="font-medium text-gray-900">{teacher.name}</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{teacher.name}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="text-gray-500">Murid</div>
-                    <div className="text-right font-medium">{teacherStudents.length}</div>
-                    <div className="text-gray-500">Sesi bulan ini</div>
-                    <div className="text-right font-medium">{thisMonthSessions}</div>
+                    <div className="text-gray-500 dark:text-gray-400">Murid</div>
+                    <div className="text-right font-medium dark:text-gray-200">{teacherStudents.length}</div>
+                    <div className="text-gray-500 dark:text-gray-400">Sesi bulan ini</div>
+                    <div className="text-right font-medium dark:text-gray-200">{thisMonthSessions}</div>
                   </div>
                 </Link>
               );
@@ -208,9 +208,9 @@ export default function Dashboard() {
 
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4">
-      <div className="text-2xl font-bold text-gray-900">{value}</div>
-      <div className="text-xs text-gray-500 mt-0.5">{label}</div>
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+      <div className="text-2xl font-bold text-gray-900 dark:text-white">{value}</div>
+      <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{label}</div>
     </div>
   );
 }
