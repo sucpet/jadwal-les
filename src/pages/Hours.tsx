@@ -184,9 +184,6 @@ export default function Hours() {
                 </div>
                 <div className={`text-sm mt-0.5 ${cycle.isCurrent ? 'text-indigo-200' : 'text-gray-500 dark:text-gray-400'}`}>
                   {cycle.totalSessions} sesi · {formatDuration(cycle.totalMinutes)}
-                  {cycle.totalWorksheetPages > 0 && (
-                    <span> · {cycle.totalWorksheetPages} hal worksheet</span>
-                  )}
                 </div>
               </div>
               <div className="text-right">
