@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, BookOpen, GraduationCap, Settings, Timer } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, GraduationCap, Settings, Timer, LogOut } from 'lucide-react';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
+import { supabase } from '../lib/supabase';
 import { useApp } from '../store/AppContext';
 
 const navItems = [
@@ -53,8 +54,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <BookOpen size={16} className="text-white" />
         </div>
         <span className="font-semibold text-gray-900">Jadwal Les</span>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-3">
           <LiveClock />
+          <button
+            onClick={() => supabase.auth.signOut()}
+            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+            title="Keluar"
+          >
+            <LogOut size={16} />
+          </button>
         </div>
       </header>
 
