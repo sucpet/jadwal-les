@@ -490,9 +490,7 @@ export default function Schedule() {
                         <div>
                           <label className="block text-xs font-medium text-gray-600 mb-1">Berapa kali?</label>
                           <input
-                            type="number" min="0" onKeyDown={e => (e.key === '-' || e.key === 'e') && e.preventDefault()}
-                            min="1"
-                            max="13"
+                            type="number" min="1" max="13" onKeyDown={e => (e.key === '-' || e.key === 'e') && e.preventDefault()}
                             value={recurringCount}
                             onChange={e => setRecurringCount(e.target.value)}
                             className="w-20 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"

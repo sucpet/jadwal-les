@@ -49,7 +49,7 @@ export default function Dashboard() {
       {/* Alerts */}
       {packageAlerts.length > 0 && (
         <div className="space-y-2">
-          {packageAlerts.map(({ pkg, remainingSessions, isExpired }) => {
+          {packageAlerts.map(({ pkg, isExpired }) => {
             const student = data.students.find(s => s.id === pkg.studentId);
             const teacher = data.teachers.find(t => t.id === pkg.teacherId);
             return (
