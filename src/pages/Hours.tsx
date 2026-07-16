@@ -57,7 +57,7 @@ function exportCycleToExcel(cycle: CycleEntry, worksheets: { studentId: string; 
   rows.push([]);
 
   // Header
-  rows.push(['Murid', 'Jumlah Halaman Worksheet', 'Tanggal', 'Durasi (jam)']);
+  rows.push(['Murid', 'Jumlah Halaman Worksheet', 'Tanggal', 'Durasi (jam)', 'Pendapatan (Rp)']);
 
   // Cycle date range
   const cycleEnd = (() => {
@@ -65,7 +65,13 @@ function exportCycleToExcel(cycle: CycleEntry, worksheets: { studentId: string; 
     return format(new Date(start.getFullYear(), start.getMonth() + 1, 25), 'yyyy-MM-dd');
   })();
 
+  let grandTotalWsPages = 0;
+  let grandTotalMinutes = 0;
+  let grandTotalEarning = 0;
+
   for (const { student, rows: sessions } of cycle.studentGroups) {
+    const rate = student?.xuYuanType === 'semi-group' ? RATE_SEMI_GROUP : RATE_PRIVATE;
+
     // Dates that have a session
     const sessionDates = new Set(sessions.map(r => r.session.date));
 
@@ -74,7 +80,8 @@ function exportCycleToExcel(cycle: CycleEntry, worksheets: { studentId: string; 
       const wsPages = worksheets
         .filter(w => w.studentId === s.studentId && w.date === s.date)
         .reduce((sum, w) => sum + w.pages, 0);
-      return { date: s.date, minutes, wsPages };
+      const earning = Math.round((minutes / 60) * rate) + wsPages * WORKSHEET_PRICE;
+      return { date: s.date, minutes, wsPages, earning };
     });
 
     // Worksheet-only rows (no session on that date)
@@ -86,26 +93,53 @@ function exportCycleToExcel(cycle: CycleEntry, worksheets: { studentId: string; 
         else acc.push({ date: w.date, pages: w.pages });
         return acc;
       }, [])
-      .map(({ date, pages }) => ({ date, minutes: 0, wsPages: pages }));
+      .map(({ date, pages }) => ({ date, minutes: 0, wsPages: pages, earning: pages * WORKSHEET_PRICE }));
 
     const allEntries = [...sessionEntries, ...wsOnlyEntries]
       .sort((a, b) => a.date.localeCompare(b.date));
 
-    for (const { date, minutes, wsPages } of allEntries) {
+    const stuWsPages = allEntries.reduce((sum, e) => sum + e.wsPages, 0);
+    const stuMinutes = allEntries.reduce((sum, e) => sum + e.minutes, 0);
+    const stuEarning = allEntries.reduce((sum, e) => sum + e.earning, 0);
+
+    for (const { date, minutes, wsPages, earning } of allEntries) {
       rows.push([
         student?.name ?? '—',
         wsPages || '',
         format(parseISO(date), 'd MMM yyyy', { locale: localeId }),
         minutes > 0 ? Math.round((minutes / 60) * 100) / 100 : '',
+        earning > 0 ? earning : '',
       ]);
     }
+
+    // Subtotal per student
+    rows.push([
+      `Total ${student?.name ?? '—'}`,
+      stuWsPages || '',
+      '',
+      stuMinutes > 0 ? Math.round((stuMinutes / 60) * 100) / 100 : '',
+      stuEarning,
+    ]);
     rows.push([]);
+
+    grandTotalWsPages += stuWsPages;
+    grandTotalMinutes += stuMinutes;
+    grandTotalEarning += stuEarning;
   }
+
+  // Grand total
+  rows.push([
+    'TOTAL KESELURUHAN',
+    grandTotalWsPages || '',
+    '',
+    grandTotalMinutes > 0 ? Math.round((grandTotalMinutes / 60) * 100) / 100 : '',
+    grandTotalEarning,
+  ]);
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
 
   // Column widths
-  ws['!cols'] = [{ wch: 20 }, { wch: 26 }, { wch: 16 }, { wch: 14 }];
+  ws['!cols'] = [{ wch: 24 }, { wch: 26 }, { wch: 16 }, { wch: 14 }, { wch: 20 }];
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Rekap');
