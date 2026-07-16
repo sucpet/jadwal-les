@@ -952,7 +952,8 @@ export default function Students() {
           </button>
           {data.teachers.map(t => (
             <button key={t.id} onClick={() => setFilterTeacher(t.id)}
-              className={`text-sm px-3 py-1.5 rounded-lg border ${filterTeacher === t.id ? 'bg-indigo-600 text-white border-indigo-600' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400'}`}>
+              className={`text-sm px-3 py-1.5 rounded-lg border flex items-center gap-1.5 ${filterTeacher === t.id ? 'bg-indigo-600 text-white border-indigo-600' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400'}`}>
+              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: t.color }} />
               {t.name}
             </button>
           ))}
