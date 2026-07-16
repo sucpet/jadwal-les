@@ -952,9 +952,9 @@ export default function Students() {
           </button>
           {data.teachers.map(t => (
             <button key={t.id} onClick={() => setFilterTeacher(t.id)}
-              className="text-sm px-3 py-1.5 rounded-lg border flex items-center gap-1.5 transition-colors text-white"
-              style={filterTeacher === t.id ? { background: t.color, borderColor: t.color } : { background: t.color + 'bb', borderColor: t.color }}>
-              <div className="w-2 h-2 rounded-full bg-white opacity-80" />
+              className={`text-sm px-3 py-1.5 rounded-lg border flex items-center gap-1.5 transition-colors ${filterTeacher === t.id ? 'text-white' : 'border-gray-300 dark:border-gray-600'}`}
+              style={filterTeacher === t.id ? { background: t.color, borderColor: t.color } : { color: t.color }}>
+              <div className="w-2 h-2 rounded-full" style={{ background: t.color }} />
               {t.name}
             </button>
           ))}
