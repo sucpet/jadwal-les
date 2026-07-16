@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Plus, X, Check, Trash2, Clock, AlertTriangle, RefreshCw } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, X, Check, Trash2, Clock, AlertTriangle, RefreshCw, ListChecks, Ban, CalendarClock } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { addWeeks, subWeeks, startOfWeek, addDays, isSameDay, parseISO, format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
@@ -82,6 +82,10 @@ export default function Schedule() {
   const [recurring, setRecurring] = useState(false);
   const [recurringCount, setRecurringCount] = useState('1');
   const [editSession, setEditSession] = useState<LessonSession | null>(null);
+  const [bulkMode, setBulkMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [rescheduleWeeks, setRescheduleWeeks] = useState('1');
+  const [bulkConfirm, setBulkConfirm] = useState<'cancel' | 'reschedule' | null>(null);
   const [form, setForm] = useState({
     teacherId: data.teachers[0]?.id ?? '',
     studentId: '',
@@ -182,6 +186,54 @@ export default function Schedule() {
     if (confirm('Hapus sesi ini?')) deleteSession(id);
   };
 
+  const exitBulkMode = () => {
+    setBulkMode(false);
+    setSelectedIds(new Set());
+    setBulkConfirm(null);
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const bulkSessions = [...filteredSessions].sort((a, b) =>
+    a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime)
+  );
+
+  const selectAll = () => setSelectedIds(new Set(bulkSessions.map(s => s.id)));
+  const deselectAll = () => setSelectedIds(new Set());
+
+  const bulkCancel = () => {
+    selectedIds.forEach(id => {
+      const s = data.sessions.find(s => s.id === id);
+      if (s) updateSession(id, { ...s, status: 'cancelled' });
+    });
+    exitBulkMode();
+  };
+
+  const bulkReschedule = () => {
+    const weeks = Math.max(1, Math.min(52, Number(rescheduleWeeks) || 1));
+    selectedIds.forEach(id => {
+      const s = data.sessions.find(s => s.id === id);
+      if (!s) return;
+      const newDate = shiftDateByWeeks(s.date, weeks);
+      updateSession(id, { ...s, date: newDate, status: resolveStatus(newDate, s.endTime, s.status) });
+    });
+    exitBulkMode();
+  };
+
+  // Group bulk sessions by date
+  const bulkByDate = bulkSessions.reduce<{ date: string; sessions: LessonSession[] }[]>((acc, s) => {
+    const last = acc[acc.length - 1];
+    if (last && last.date === s.date) { last.sessions.push(s); }
+    else acc.push({ date: s.date, sessions: [s] });
+    return acc;
+  }, []);
+
   const availableStudents = form.teacherId
     ? data.students.filter(s => s.teacherId === form.teacherId)
     : [];
@@ -213,15 +265,25 @@ export default function Schedule() {
   const hasWeekendWarning = weekendSessionDates.length > 0;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-32">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Jadwal</h1>
-        <button
-          onClick={() => openAdd()}
-          className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700"
-        >
-          <Plus size={16} /> Tambah Sesi
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => { setBulkMode(b => !b); setSelectedIds(new Set()); setBulkConfirm(null); }}
+            className={`flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg border transition-colors ${bulkMode ? 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+          >
+            <ListChecks size={16} /> Pilih Sesi
+          </button>
+          {!bulkMode && (
+            <button
+              onClick={() => openAdd()}
+              className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700"
+            >
+              <Plus size={16} /> Tambah Sesi
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Teacher filter */}
@@ -242,8 +304,78 @@ export default function Schedule() {
         </div>
       )}
 
-      {/* Week navigation */}
-      <div className="flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2">
+      {/* Bulk list view */}
+      {bulkMode && (
+        <div className="space-y-3">
+          {/* Select all bar */}
+          <div className="flex items-center justify-between bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5">
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              {selectedIds.size > 0 ? `${selectedIds.size} sesi dipilih` : 'Pilih sesi yang ingin diubah'}
+            </span>
+            <div className="flex gap-2">
+              <button onClick={selectAll} className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">Pilih Semua</button>
+              <span className="text-gray-300 dark:text-gray-600">·</span>
+              <button onClick={deselectAll} className="text-xs text-gray-500 dark:text-gray-400 hover:underline">Hapus Pilihan</button>
+            </div>
+          </div>
+
+          {bulkSessions.length === 0 ? (
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center text-gray-400 dark:text-gray-500 text-sm">
+              Tidak ada sesi
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {bulkByDate.map(({ date, sessions: daySessions }) => (
+                <div key={date}>
+                  <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 px-1">
+                    {format(parseISO(date), 'EEEE, d MMMM yyyy', { locale: localeId })}
+                  </div>
+                  <div className="space-y-1">
+                    {daySessions.map(s => {
+                      const student = data.students.find(st => st.id === s.studentId);
+                      const teacher = data.teachers.find(t => t.id === s.teacherId);
+                      const checked = selectedIds.has(s.id);
+                      return (
+                        <div
+                          key={s.id}
+                          onClick={() => toggleSelect(s.id)}
+                          className={`flex items-center gap-3 bg-white dark:bg-gray-800 border rounded-lg px-3 py-2.5 cursor-pointer transition-colors ${checked ? 'border-indigo-400 dark:border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'}`}
+                        >
+                          {/* Checkbox */}
+                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${checked ? 'bg-indigo-600 border-indigo-600' : 'border-gray-300 dark:border-gray-600'}`}>
+                            {checked && <Check size={12} className="text-white" />}
+                          </div>
+                          {/* Color dot */}
+                          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: teacher?.color ?? '#6366f1' }} />
+                          {/* Time */}
+                          <span className="text-sm text-gray-500 dark:text-gray-400 w-24 flex-shrink-0">{s.startTime}–{s.endTime}</span>
+                          {/* Student */}
+                          <span className="flex-1 text-sm font-medium text-gray-900 dark:text-white truncate">{student?.name ?? '—'}</span>
+                          {/* Teacher */}
+                          {filterTeacher === 'all' && (
+                            <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">{teacher?.name}</span>
+                          )}
+                          {/* Status */}
+                          <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
+                            s.status === 'completed' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                            : s.status === 'cancelled' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                            : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                          }`}>
+                            {s.status === 'completed' ? 'Selesai' : s.status === 'cancelled' ? 'Batal' : 'Terjadwal'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Week navigation — hidden in bulk mode */}
+      <div className={`flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2 ${bulkMode ? 'hidden' : ''}`}>
         <button onClick={() => setCurrentWeek(w => subWeeks(w, 1))} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded dark:text-gray-300">
           <ChevronLeft size={18} />
         </button>
@@ -258,8 +390,8 @@ export default function Schedule() {
         </button>
       </div>
 
-      {/* Calendar grid */}
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+      {/* Calendar grid — hidden in bulk mode */}
+      <div className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden ${bulkMode ? 'hidden' : ''}`}>
         {/* Header */}
         <div className="grid border-b border-gray-200 dark:border-gray-700" style={{ gridTemplateColumns: '64px repeat(7, 1fr)' }}>
           <div className="border-r border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50" />
@@ -368,6 +500,79 @@ export default function Schedule() {
           })}
         </div>
       </div>
+
+      {/* Bulk action bar */}
+      {bulkMode && selectedIds.size > 0 && (
+        <div className="fixed bottom-20 md:bottom-6 left-0 right-0 z-40 flex justify-center px-4 pointer-events-none">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-4 w-full max-w-lg pointer-events-auto space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-gray-900 dark:text-white">{selectedIds.size} sesi dipilih</span>
+              <button onClick={() => setBulkConfirm(null)} className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <X size={16} />
+              </button>
+            </div>
+
+            {bulkConfirm === null && (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setBulkConfirm('cancel')}
+                  className="flex-1 flex items-center justify-center gap-1.5 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+                >
+                  <Ban size={15} /> Batalkan Sesi
+                </button>
+                <button
+                  onClick={() => setBulkConfirm('reschedule')}
+                  className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700"
+                >
+                  <CalendarClock size={15} /> Jadwal Ulang
+                </button>
+              </div>
+            )}
+
+            {bulkConfirm === 'cancel' && (
+              <div className="space-y-2">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Batalkan <strong>{selectedIds.size}</strong> sesi? Status akan berubah menjadi <span className="text-red-600 dark:text-red-400 font-medium">Batal</span>.
+                </p>
+                <div className="flex gap-2">
+                  <button onClick={() => setBulkConfirm(null)} className="flex-1 text-sm px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    Kembali
+                  </button>
+                  <button onClick={bulkCancel} className="flex-1 flex items-center justify-center gap-1.5 bg-red-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-red-700">
+                    <Ban size={15} /> Ya, Batalkan
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {bulkConfirm === 'reschedule' && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Geser</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="52"
+                    value={rescheduleWeeks}
+                    onChange={e => setRescheduleWeeks(e.target.value)}
+                    onKeyDown={e => (e.key === '-' || e.key === 'e') && e.preventDefault()}
+                    className="w-16 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <span className="text-sm text-gray-600 dark:text-gray-400">minggu ke depan</span>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => setBulkConfirm(null)} className="flex-1 text-sm px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    Kembali
+                  </button>
+                  <button onClick={bulkReschedule} className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700">
+                    <CalendarClock size={15} /> Jadwal Ulang
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Session Form Modal */}
       {showForm && (
