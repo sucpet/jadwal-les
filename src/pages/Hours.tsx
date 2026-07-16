@@ -60,7 +60,13 @@ function sessionEarning(s: LessonSession, student: Student | undefined): number 
 
 interface SessionRow {
   session: LessonSession;
+  minutes: number;
+  earning: number;
+}
+
+interface StudentWeekGroup {
   student: Student | undefined;
+  rows: SessionRow[];
   minutes: number;
   earning: number;
 }
@@ -68,7 +74,7 @@ interface SessionRow {
 interface WeekEntry {
   key: string;
   label: string;
-  rows: SessionRow[];
+  studentGroups: StudentWeekGroup[];
   minutes: number;
   earning: number;
 }
@@ -120,18 +126,35 @@ export default function Hours() {
         .map(([wKey, ss]) => {
           const monday = parseISO(wKey);
           const sunday = addDays(monday, 6);
-          const rows: SessionRow[] = ss
-            .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime))
-            .map(s => {
-              const student = data.students.find(st => st.id === s.studentId);
-              return { session: s, student, minutes: durationMinutes(s), earning: sessionEarning(s, student) };
-            });
+
+          // Group by student
+          const studentMap = new Map<string, LessonSession[]>();
+          for (const s of ss) {
+            if (!studentMap.has(s.studentId)) studentMap.set(s.studentId, []);
+            studentMap.get(s.studentId)!.push(s);
+          }
+
+          const studentGroups: StudentWeekGroup[] = [...studentMap.entries()]
+            .map(([studentId, sessions]) => {
+              const student = data.students.find(st => st.id === studentId);
+              const rows: SessionRow[] = sessions
+                .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime))
+                .map(s => ({ session: s, minutes: durationMinutes(s), earning: sessionEarning(s, student) }));
+              return {
+                student,
+                rows,
+                minutes: rows.reduce((sum, r) => sum + r.minutes, 0),
+                earning: rows.reduce((sum, r) => sum + r.earning, 0),
+              };
+            })
+            .sort((a, b) => (a.student?.name ?? '').localeCompare(b.student?.name ?? ''));
+
           return {
             key: wKey,
             label: `${format(monday, 'd MMM', { locale: localeId })} – ${format(sunday, 'd MMM', { locale: localeId })}`,
-            rows,
-            minutes: rows.reduce((sum, r) => sum + r.minutes, 0),
-            earning: rows.reduce((sum, r) => sum + r.earning, 0),
+            studentGroups,
+            minutes: studentGroups.reduce((sum, g) => sum + g.minutes, 0),
+            earning: studentGroups.reduce((sum, g) => sum + g.earning, 0),
           };
         });
 
@@ -215,38 +238,46 @@ export default function Hours() {
           {/* Per-week breakdown */}
           {cycle.weeks.length > 0 && (
             <div className="divide-y divide-gray-100 dark:divide-gray-700">
-              {cycle.weeks.map(({ key, label, rows, minutes, earning }) => (
-                <div key={key} className="px-5 py-3 bg-white dark:bg-gray-800">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span>
-                    <div className="text-right">
-                      <span className="text-sm font-semibold text-gray-900 dark:text-white tabular-nums">
-                        {formatRp(earning)}
-                      </span>
-                      <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">
-                        {formatDuration(minutes)}
-                      </span>
+              {cycle.weeks.map(({ key, label, studentGroups, minutes, earning }) => (
+                <div key={key} className="bg-white dark:bg-gray-800">
+                  {/* Week header */}
+                  <div className="px-5 py-2.5 flex items-center justify-between bg-gray-50 dark:bg-gray-900/40 border-b border-gray-100 dark:border-gray-700">
+                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{label}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">{formatDuration(minutes)}</span>
+                      <span className="text-sm font-semibold text-gray-900 dark:text-white tabular-nums">{formatRp(earning)}</span>
                     </div>
                   </div>
-                  <div className="space-y-1.5">
-                    {rows.map(({ session: s, student, earning: earn }) => (
-                      <div key={s.id} className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
-                        <span className="w-16 flex-shrink-0 tabular-nums text-gray-400 dark:text-gray-500">
-                          {format(parseISO(s.date), 'd MMM', { locale: localeId })}
-                        </span>
-                        <span className="w-20 flex-shrink-0 tabular-nums">{s.startTime}–{s.endTime}</span>
-                        <span className="flex-1 font-medium text-gray-700 dark:text-gray-300 truncate">{student?.name ?? '—'}</span>
-                        {student?.xuYuanType === 'semi-group' && (
-                          <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded flex-shrink-0">semi</span>
-                        )}
-                        {(s.worksheetPages ?? 0) > 0 && (
-                          <span className="flex items-center gap-0.5 text-amber-600 dark:text-amber-400 flex-shrink-0">
-                            <FileText size={11} /> {s.worksheetPages}
-                          </span>
-                        )}
-                        <span className="tabular-nums font-medium text-gray-900 dark:text-white flex-shrink-0">
-                          {formatRp(earn)}
-                        </span>
+
+                  {/* Per-student groups */}
+                  <div className="divide-y divide-gray-50 dark:divide-gray-700/50">
+                    {studentGroups.map(({ student, rows, minutes: stuMins, earning: stuEarn }) => (
+                      <div key={student?.id ?? 'unknown'} className="px-5 py-3">
+                        {/* Student summary row */}
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="flex-1 text-sm font-medium text-gray-800 dark:text-gray-200">{student?.name ?? '—'}</span>
+                          {student?.xuYuanType === 'semi-group' && (
+                            <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded">semi</span>
+                          )}
+                          <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">{rows.length} sesi · {formatDuration(stuMins)}</span>
+                          <span className="text-sm font-semibold text-gray-900 dark:text-white tabular-nums">{formatRp(stuEarn)}</span>
+                        </div>
+                        {/* Individual sessions */}
+                        <div className="space-y-1 pl-2 border-l-2 border-gray-100 dark:border-gray-700">
+                          {rows.map(({ session: s, minutes: sMins, earning: sEarn }) => (
+                            <div key={s.id} className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                              <span className="w-16 flex-shrink-0 tabular-nums">{format(parseISO(s.date), 'd MMM', { locale: localeId })}</span>
+                              <span className="w-24 flex-shrink-0 tabular-nums">{s.startTime}–{s.endTime}</span>
+                              <span className="flex-1 tabular-nums text-gray-400 dark:text-gray-500">{formatDuration(sMins)}</span>
+                              {(s.worksheetPages ?? 0) > 0 && (
+                                <span className="flex items-center gap-0.5 text-amber-600 dark:text-amber-400">
+                                  <FileText size={11} /> {s.worksheetPages} hal
+                                </span>
+                              )}
+                              <span className="tabular-nums text-gray-600 dark:text-gray-300">{formatRp(sEarn)}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     ))}
                   </div>
