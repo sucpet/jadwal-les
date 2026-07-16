@@ -8,7 +8,7 @@ import { useApp } from '../store/AppContext';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/teachers', icon: GraduationCap, label: 'Guru' },
+  { to: '/teachers', icon: GraduationCap, label: 'Laoshi' },
   { to: '/students', icon: Users, label: 'Murid' },
   { to: '/schedule', icon: BookOpen, label: 'Jadwal' },
   { to: '/hours', icon: Timer, label: 'Jam Mengajar' },

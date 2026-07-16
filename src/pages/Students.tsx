@@ -178,7 +178,7 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Guru</label>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Laoshi</label>
           <select value={form.teacherId} onChange={e => setForm(f => ({ ...f, teacherId: e.target.value }))}
             className="input w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white">
             {teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -943,7 +943,7 @@ export default function Students() {
         </button>
       </div>
 
-      {/* Filter guru */}
+      {/* Filter laoshi */}
       {data.teachers.length > 1 && (
         <div className="flex gap-2 flex-wrap">
           <button onClick={() => setFilterTeacher('all')}
@@ -952,9 +952,9 @@ export default function Students() {
           </button>
           {data.teachers.map(t => (
             <button key={t.id} onClick={() => setFilterTeacher(t.id)}
-              className={`text-sm px-3 py-1.5 rounded-lg border flex items-center gap-1.5 transition-colors ${filterTeacher === t.id ? 'text-white' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400'}`}
-              style={filterTeacher === t.id ? { background: t.color, borderColor: t.color } : {}}>
-              <div className="w-2 h-2 rounded-full" style={{ background: filterTeacher === t.id ? 'white' : t.color }} />
+              className="text-sm px-3 py-1.5 rounded-lg border flex items-center gap-1.5 transition-colors text-white"
+              style={filterTeacher === t.id ? { background: t.color, borderColor: t.color } : { background: t.color + 'bb', borderColor: t.color }}>
+              <div className="w-2 h-2 rounded-full bg-white opacity-80" />
               {t.name}
             </button>
           ))}
@@ -975,7 +975,7 @@ export default function Students() {
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-10 text-center text-gray-400 dark:text-gray-500">
           <p className="text-sm">
             {data.teachers.length === 0
-              ? 'Tambahkan guru dulu sebelum menambahkan murid.'
+              ? 'Tambahkan laoshi dulu sebelum menambahkan murid.'
               : 'Belum ada murid.'}
           </p>
         </div>

@@ -233,10 +233,10 @@ export default function Schedule() {
           >Semua</button>
           {data.teachers.map(t => (
             <button key={t.id} onClick={() => setFilterTeacher(t.id)}
-              className={`text-sm px-3 py-1.5 rounded-lg border flex items-center gap-1.5 ${filterTeacher === t.id ? 'text-white' : 'border-gray-300 text-gray-600'}`}
-              style={filterTeacher === t.id ? { background: t.color, borderColor: t.color } : {}}
+              className={`text-sm px-3 py-1.5 rounded-lg border flex items-center gap-1.5 text-white`}
+              style={filterTeacher === t.id ? { background: t.color, borderColor: t.color } : { background: t.color + 'bb', borderColor: t.color }}
             >
-              <div className="w-2 h-2 rounded-full" style={{ background: filterTeacher === t.id ? 'white' : t.color }} />
+              <div className="w-2 h-2 rounded-full bg-white opacity-80" />
               {t.name}
             </button>
           ))}
@@ -384,7 +384,7 @@ export default function Schedule() {
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Guru</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Laoshi</label>
                   <select
                     value={form.teacherId}
                     onChange={e => setForm(f => ({ ...f, teacherId: e.target.value, studentId: '' }))}

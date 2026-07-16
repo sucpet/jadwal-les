@@ -21,7 +21,7 @@ export default function Settings() {
           throw new Error('Format file tidak valid (teachers/students/sessions/packages harus ada)');
         }
         localStorage.setItem('jadwal-les-data', JSON.stringify(json));
-        setStatus({ type: 'success', msg: `Berhasil import: ${json.teachers.length} guru, ${json.students.length} murid, ${json.packages.length} paket, ${json.sessions.length} sesi. Halaman akan reload...` });
+        setStatus({ type: 'success', msg: `Berhasil import: ${json.teachers.length} laoshi, ${json.students.length} murid, ${json.packages.length} paket, ${json.sessions.length} sesi. Halaman akan reload...` });
         setTimeout(() => window.location.reload(), 1500);
       } catch (err) {
         setStatus({ type: 'error', msg: `Gagal import: ${(err as Error).message}` });
@@ -72,7 +72,7 @@ export default function Settings() {
         if (error) throw error;
       }
 
-      setStatus({ type: 'success', msg: `Migrasi berhasil! ${teachers.length} guru, ${students.length} murid, ${packages.length} paket, ${sessions.length} sesi. Halaman akan reload...` });
+      setStatus({ type: 'success', msg: `Migrasi berhasil! ${teachers.length} laoshi, ${students.length} murid, ${packages.length} paket, ${sessions.length} sesi. Halaman akan reload...` });
       setTimeout(() => window.location.reload(), 2000);
     } catch (err: any) {
       setStatus({ type: 'error', msg: `Gagal migrasi: ${err.message ?? JSON.stringify(err)}` });
@@ -81,7 +81,7 @@ export default function Settings() {
 
   const handleClearData = () => {
     if (!confirm('Yakin hapus SEMUA data? Ini tidak bisa dibatalkan.')) return;
-    if (!confirm('Benar-benar yakin? Semua guru, murid, dan jadwal akan dihapus.')) return;
+    if (!confirm('Benar-benar yakin? Semua laoshi, murid, dan jadwal akan dihapus.')) return;
     localStorage.removeItem('jadwal-les-data');
     window.location.reload();
   };
@@ -105,7 +105,7 @@ export default function Settings() {
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
         <h2 className="font-semibold text-gray-900 dark:text-white mb-3">Ringkasan Data</h2>
         <div className="grid grid-cols-2 gap-3 text-sm">
-          <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Guru</span><span className="font-medium dark:text-gray-200">{data.teachers.length}</span></div>
+          <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Laoshi</span><span className="font-medium dark:text-gray-200">{data.teachers.length}</span></div>
           <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Murid</span><span className="font-medium dark:text-gray-200">{data.students.length}</span></div>
           <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Paket aktif</span><span className="font-medium dark:text-gray-200">{data.packages.length}</span></div>
           <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Total sesi</span><span className="font-medium dark:text-gray-200">{data.sessions.length}</span></div>

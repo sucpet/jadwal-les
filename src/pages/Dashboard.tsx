@@ -150,7 +150,7 @@ export default function Dashboard() {
 
       {/* Quick stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard label="Total Guru" value={data.teachers.length} />
+        <StatCard label="Total Laoshi" value={data.teachers.length} />
         <StatCard label="Total Murid" value={data.students.length} />
         <StatCard label="Sesi Bulan Ini" value={getThisMonthSessions(data.sessions)} />
         <StatCard label="Murid Paket" value={data.students.filter(s => s.billingType === 'package').length} />
@@ -159,7 +159,7 @@ export default function Dashboard() {
       {/* Per-teacher summary */}
       {data.teachers.length > 0 && (
         <div>
-          <h2 className="font-semibold text-gray-900 dark:text-white mb-3">Ringkasan Per Guru</h2>
+          <h2 className="font-semibold text-gray-900 dark:text-white mb-3">Ringkasan Per Laoshi</h2>
           <div className="grid gap-3 md:grid-cols-2">
             {data.teachers.map(teacher => {
               const teacherStudents = data.students.filter(s => s.teacherId === teacher.id);
@@ -192,13 +192,13 @@ export default function Dashboard() {
       {data.teachers.length === 0 && (
         <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-6 text-center">
           <GraduationCapIcon />
-          <p className="text-indigo-800 font-medium mb-1">Belum ada guru</p>
-          <p className="text-indigo-600 text-sm mb-3">Mulai dengan menambahkan guru terlebih dahulu</p>
+          <p className="text-indigo-800 font-medium mb-1">Belum ada laoshi</p>
+          <p className="text-indigo-600 text-sm mb-3">Mulai dengan menambahkan laoshi terlebih dahulu</p>
           <Link
             to="/teachers"
             className="inline-block bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-indigo-700"
           >
-            Tambah Guru
+            Tambah Laoshi
           </Link>
         </div>
       )}
