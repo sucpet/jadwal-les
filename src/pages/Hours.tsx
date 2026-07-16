@@ -1,7 +1,7 @@
 import { format, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { FileText, Download } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import XLSXStyle from 'xlsx-js-style';
 import { useApp } from '../store/AppContext';
 import type { LessonSession, Student } from '../types';
 
@@ -49,17 +49,88 @@ function formatRp(n: number): string {
   return 'Rp ' + n.toLocaleString('id-ID');
 }
 
+function encodeCell(r: number, c: number) {
+  return XLSXStyle.utils.encode_cell({ r, c });
+}
+
+function applyStyle(ws: XLSXStyle.WorkSheet, r: number, c: number, s: object) {
+  const addr = encodeCell(r, c);
+  if (!ws[addr]) ws[addr] = { v: '', t: 's' };
+  (ws[addr] as { s?: object }).s = s;
+}
+
 function exportCycleToExcel(cycle: CycleEntry, worksheets: { studentId: string; date: string; pages: number }[]) {
+  const COLS = 5;
+
+  // ── Styles ──────────────────────────────────────────────────────────────────
+  const INDIGO   = '4F46E5';
+  const DARK_IND = '3730A3';
+  const LIGHT_IND = 'EEF2FF';
+  const WHITE    = 'FFFFFF';
+  const GRAY_TXT = '374151';
+
+  const sTitle: object = {
+    font: { bold: true, sz: 13, color: { rgb: WHITE } },
+    fill: { patternType: 'solid', fgColor: { rgb: INDIGO } },
+    alignment: { vertical: 'center' },
+  };
+  const sHeader: object = {
+    font: { bold: true, color: { rgb: WHITE } },
+    fill: { patternType: 'solid', fgColor: { rgb: INDIGO } },
+    alignment: { horizontal: 'center', wrapText: true },
+    border: { bottom: { style: 'medium', color: { rgb: DARK_IND } } },
+  };
+  const sDataLeft: object = {
+    font: { color: { rgb: GRAY_TXT } },
+    alignment: { horizontal: 'left' },
+  };
+  const sDataRight: object = {
+    font: { color: { rgb: GRAY_TXT } },
+    alignment: { horizontal: 'right' },
+  };
+  const sSubLeft: object = {
+    font: { bold: true, color: { rgb: DARK_IND } },
+    fill: { patternType: 'solid', fgColor: { rgb: LIGHT_IND } },
+    alignment: { horizontal: 'left' },
+  };
+  const sSubRight: object = {
+    font: { bold: true, color: { rgb: DARK_IND } },
+    fill: { patternType: 'solid', fgColor: { rgb: LIGHT_IND } },
+    alignment: { horizontal: 'right' },
+  };
+  const sGrandLeft: object = {
+    font: { bold: true, sz: 11, color: { rgb: WHITE } },
+    fill: { patternType: 'solid', fgColor: { rgb: DARK_IND } },
+    alignment: { horizontal: 'left' },
+  };
+  const sGrandRight: object = {
+    font: { bold: true, sz: 11, color: { rgb: WHITE } },
+    fill: { patternType: 'solid', fgColor: { rgb: DARK_IND } },
+    alignment: { horizontal: 'right' },
+  };
+
   const rows: (string | number)[][] = [];
+  let ri = 0;
 
-  // Title
+  // Pending style ops (applied after sheet is built)
+  const pending: Array<{ r: number; c: number; s: object }> = [];
+  const styleRow = (r: number, styles: object[]) => {
+    for (let c = 0; c < COLS; c++) pending.push({ r, c, s: styles[c] ?? styles[styles.length - 1] });
+  };
+
+  // ── Title ───────────────────────────────────────────────────────────────────
   rows.push([`Rekap XuYuan – ${cycle.label}`]);
-  rows.push([]);
+  styleRow(ri, Array(COLS).fill(sTitle));
+  ri++;
 
-  // Header
+  rows.push([]); ri++;
+
+  // ── Header ──────────────────────────────────────────────────────────────────
   rows.push(['Murid', 'Jumlah Halaman Worksheet', 'Tanggal', 'Durasi (jam)', 'Pendapatan (Rp)']);
+  styleRow(ri, Array(COLS).fill(sHeader));
+  ri++;
 
-  // Cycle date range
+  // ── Cycle range ─────────────────────────────────────────────────────────────
   const cycleEnd = (() => {
     const start = parseISO(cycle.key);
     return format(new Date(start.getFullYear(), start.getMonth() + 1, 25), 'yyyy-MM-dd');
@@ -71,11 +142,8 @@ function exportCycleToExcel(cycle: CycleEntry, worksheets: { studentId: string; 
 
   for (const { student, rows: sessions } of cycle.studentGroups) {
     const rate = student?.xuYuanType === 'semi-group' ? RATE_SEMI_GROUP : RATE_PRIVATE;
-
-    // Dates that have a session
     const sessionDates = new Set(sessions.map(r => r.session.date));
 
-    // Session rows
     const sessionEntries = sessions.map(({ session: s, minutes }) => {
       const wsPages = worksheets
         .filter(w => w.studentId === s.studentId && w.date === s.date)
@@ -84,7 +152,6 @@ function exportCycleToExcel(cycle: CycleEntry, worksheets: { studentId: string; 
       return { date: s.date, minutes, wsPages, earning };
     });
 
-    // Worksheet-only rows (no session on that date)
     const wsOnlyEntries = worksheets
       .filter(w => w.studentId === student?.id && w.date >= cycle.key && w.date <= cycleEnd && !sessionDates.has(w.date))
       .reduce<{ date: string; pages: number }[]>((acc, w) => {
@@ -98,9 +165,9 @@ function exportCycleToExcel(cycle: CycleEntry, worksheets: { studentId: string; 
     const allEntries = [...sessionEntries, ...wsOnlyEntries]
       .sort((a, b) => a.date.localeCompare(b.date));
 
-    const stuWsPages = allEntries.reduce((sum, e) => sum + e.wsPages, 0);
-    const stuMinutes = allEntries.reduce((sum, e) => sum + e.minutes, 0);
-    const stuEarning = allEntries.reduce((sum, e) => sum + e.earning, 0);
+    const stuWsPages  = allEntries.reduce((sum, e) => sum + e.wsPages, 0);
+    const stuMinutes  = allEntries.reduce((sum, e) => sum + e.minutes, 0);
+    const stuEarning  = allEntries.reduce((sum, e) => sum + e.earning, 0);
 
     for (const { date, minutes, wsPages, earning } of allEntries) {
       rows.push([
@@ -110,9 +177,11 @@ function exportCycleToExcel(cycle: CycleEntry, worksheets: { studentId: string; 
         minutes > 0 ? Math.round((minutes / 60) * 100) / 100 : '',
         earning > 0 ? earning : '',
       ]);
+      styleRow(ri, [sDataLeft, sDataRight, sDataLeft, sDataRight, sDataRight]);
+      ri++;
     }
 
-    // Subtotal per student
+    // Subtotal per murid
     rows.push([
       `Total ${student?.name ?? '—'}`,
       stuWsPages || '',
@@ -120,14 +189,17 @@ function exportCycleToExcel(cycle: CycleEntry, worksheets: { studentId: string; 
       stuMinutes > 0 ? Math.round((stuMinutes / 60) * 100) / 100 : '',
       stuEarning,
     ]);
-    rows.push([]);
+    styleRow(ri, [sSubLeft, sSubRight, sSubLeft, sSubRight, sSubRight]);
+    ri++;
+
+    rows.push([]); ri++;
 
     grandTotalWsPages += stuWsPages;
     grandTotalMinutes += stuMinutes;
     grandTotalEarning += stuEarning;
   }
 
-  // Grand total
+  // ── Grand total ─────────────────────────────────────────────────────────────
   rows.push([
     'TOTAL KESELURUHAN',
     grandTotalWsPages || '',
@@ -135,15 +207,18 @@ function exportCycleToExcel(cycle: CycleEntry, worksheets: { studentId: string; 
     grandTotalMinutes > 0 ? Math.round((grandTotalMinutes / 60) * 100) / 100 : '',
     grandTotalEarning,
   ]);
+  styleRow(ri, [sGrandLeft, sGrandRight, sGrandLeft, sGrandRight, sGrandRight]);
 
-  const ws = XLSX.utils.aoa_to_sheet(rows);
+  // ── Build sheet ─────────────────────────────────────────────────────────────
+  const ws = XLSXStyle.utils.aoa_to_sheet(rows);
 
-  // Column widths
-  ws['!cols'] = [{ wch: 24 }, { wch: 26 }, { wch: 16 }, { wch: 14 }, { wch: 20 }];
+  for (const { r, c, s } of pending) applyStyle(ws, r, c, s);
 
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Rekap');
-  XLSX.writeFile(wb, `XuYuan_${cycle.label.replace(/[^a-zA-Z0-9]/g, '_')}.xlsx`);
+  ws['!cols'] = [{ wch: 24 }, { wch: 26 }, { wch: 16 }, { wch: 14 }, { wch: 22 }];
+
+  const wb = XLSXStyle.utils.book_new();
+  XLSXStyle.utils.book_append_sheet(wb, ws, 'Rekap');
+  XLSXStyle.writeFile(wb, `XuYuan_${cycle.label.replace(/[^a-zA-Z0-9]/g, '_')}.xlsx`);
 }
 
 function sessionEarning(s: LessonSession, student: Student | undefined): number {
