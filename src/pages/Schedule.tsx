@@ -504,8 +504,8 @@ export default function Schedule() {
                         width: `calc(${widthPct}% - 4px)`,
                         pointerEvents: 'auto',
                         background: `${color}80`,
-                        color,
-                        borderLeft: `2px solid ${color}`,
+                        color: '#fff',
+                        borderLeft: `3px solid ${color}`,
                       }}
                       className="rounded text-xs px-1 py-0.5 cursor-pointer hover:opacity-80 overflow-hidden"
                       onClick={e => { e.stopPropagation(); openEdit(s); }}
