@@ -16,10 +16,10 @@ const TIME_SLOTS = Array.from({ length: 28 }, (_, i) => {
 const DAY_LABELS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
 const ROW_H = 36; // px per 30-min slot
 
-// Convert HH:MM to 1-indexed CSS grid row (grid starts at 08:00)
-function timeToRow(time: string): number {
+// Convert HH:MM to exact pixel offset from grid top (08:00), no slot snapping
+function timeToPixels(time: string): number {
   const [h, m] = time.split(':').map(Number);
-  return (h - 8) * 2 + Math.floor(m / 30) + 1;
+  return ((h - 8) * 60 + m) / 30 * ROW_H;
 }
 
 // Greedy column assignment for overlapping sessions within one day column.
@@ -486,10 +486,8 @@ export default function Schedule() {
                 }}
               >
                 {layout.map(({ session: s, colIndex, totalCols }) => {
-                  const startRow = timeToRow(s.startTime) - 1; // 0-indexed → pixel
-                  const endRow = timeToRow(s.endTime) - 1;
-                  const topPx = Math.max(0, startRow * ROW_H);
-                  const heightPx = Math.max(ROW_H - 2, (endRow - startRow) * ROW_H - 2);
+                  const topPx = Math.max(0, timeToPixels(s.startTime));
+                  const heightPx = Math.max(ROW_H / 2, timeToPixels(s.endTime) - timeToPixels(s.startTime) - 2);
                   const widthPct = 100 / totalCols;
                   const leftPct = (colIndex / totalCols) * 100;
                   const student = data.students.find(st => st.id === s.studentId);
