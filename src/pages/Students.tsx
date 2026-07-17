@@ -839,25 +839,21 @@ function StudentCard({ student, dimmed }: { student: Student; dimmed?: boolean }
               className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
               <Pencil size={14} />
             </button>
-          ) : null}
-          <button
-            onClick={handleToggleActive}
-            title={student.isActive ? 'Non-aktifkan murid' : 'Aktifkan kembali'}
-            className={`p-1.5 rounded-lg transition-colors ${
-              student.isActive
-                ? 'text-gray-400 hover:text-amber-500 hover:bg-amber-50'
-                : 'text-green-500 hover:text-green-600 hover:bg-green-50'
-            }`}
-          >
-            {student.isActive ? <PowerOff size={14} /> : <RotateCcw size={14} />}
-          </button>
+          ) : (
+            <button
+              onClick={handleToggleActive}
+              className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition-colors font-medium"
+            >
+              <RotateCcw size={12} /> Aktifkan
+            </button>
+          )}
           <button onClick={handleDelete}
             className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
             <Trash2 size={14} />
           </button>
           {student.isActive && (
             <button onClick={() => setExpanded(e => !e)}
-              className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg transition-colors ml-1">
+              className="p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors ml-1">
               {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </button>
           )}
@@ -949,6 +945,18 @@ function StudentCard({ student, dimmed }: { student: Student; dimmed?: boolean }
                 ))
               )}
             </>
+          )}
+
+          {/* Tombol non-aktifkan — hanya untuk murid aktif */}
+          {student.isActive && (
+            <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
+              <button
+                onClick={handleToggleActive}
+                className="flex items-center gap-1.5 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20 px-2 py-1.5 rounded-lg transition-colors"
+              >
+                <PowerOff size={13} /> Non-aktifkan murid ini
+              </button>
+            </div>
           )}
 
         </div>
