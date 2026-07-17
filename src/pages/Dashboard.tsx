@@ -10,13 +10,16 @@ export default function Dashboard() {
   const today = new Date();
   const todaySessions = getTodaySessions(data.sessions);
 
-  // Package alerts — hanya paket aktif (terbaru per murid) yang hampir/sudah habis
+  // Package alerts — hanya paket aktif (terbaru per murid) yang hampir/sudah habis, dan murid masih aktif
   const packageAlerts = data.packages
     .map(pkg => {
       const studentPkgs = data.packages.filter(p => p.studentId === pkg.studentId);
       return getPackageStatus(pkg, studentPkgs, data.sessions);
     })
-    .filter(s => s.isCurrent && (s.isExpiringSoon || s.isExpired));
+    .filter(s => {
+      const student = data.students.find(st => st.id === s.pkg.studentId);
+      return student?.isActive && s.isCurrent && (s.isExpiringSoon || s.isExpired);
+    });
 
   // Group by teacher, each teacher gets max 1 completed (most recent) + 3 next scheduled
   const sessionsByTeacher = data.teachers.map(teacher => {

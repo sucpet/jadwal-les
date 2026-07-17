@@ -24,6 +24,7 @@ export interface Student {
   group: StudentGroup;
   xuYuanType?: 'private' | 'semi-group';
   notes?: string;
+  isActive: boolean;
   createdAt: string;
 }
 

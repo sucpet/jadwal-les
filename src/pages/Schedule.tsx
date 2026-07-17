@@ -242,7 +242,7 @@ export default function Schedule() {
   }, []);
 
   const availableStudents = form.teacherId
-    ? data.students.filter(s => s.teacherId === form.teacherId)
+    ? data.students.filter(s => s.teacherId === form.teacherId && s.isActive)
     : [];
 
   // ─── Recurring derived values ────────────────────────────────────────────────

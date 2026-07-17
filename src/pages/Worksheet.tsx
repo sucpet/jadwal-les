@@ -28,7 +28,7 @@ function formatRp(n: number): string {
 export default function WorksheetPage() {
   const { data, addWorksheet, deleteWorksheet } = useApp();
 
-  const xuYuanStudents = data.students.filter(s => s.group === 'xuyuan');
+  const xuYuanStudents = data.students.filter(s => s.group === 'xuyuan' && s.isActive);
   const today = new Date().toISOString().slice(0, 10);
 
   const [showForm, setShowForm] = useState(false);

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Pencil, Trash2, X, Check, ChevronDown, ChevronUp, Package, AlertTriangle, Clock, CalendarDays } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Check, ChevronDown, ChevronUp, Package, AlertTriangle, Clock, CalendarDays, PowerOff, RotateCcw } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { useApp } from '../store/AppContext';
@@ -721,7 +721,7 @@ function PackageCard({
 
 // ─── Student Card ─────────────────────────────────────────────────────────────
 
-function StudentCard({ student }: { student: Student }) {
+function StudentCard({ student, dimmed }: { student: Student; dimmed?: boolean }) {
   const { data, updateStudent, deleteStudent, addPackage, updatePackage, deletePackage } = useApp();
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -756,6 +756,10 @@ function StudentCard({ student }: { student: Student }) {
     if (confirm(msg)) deleteStudent(student.id);
   };
 
+  const handleToggleActive = () => {
+    updateStudent(student.id, { isActive: !student.isActive });
+  };
+
   const handleEditPkg = (pkgId: string, updates: Omit<SessionPackage, 'id' | 'createdAt'>) => {
     updatePackage(pkgId, updates);
   };
@@ -776,7 +780,7 @@ function StudentCard({ student }: { student: Student }) {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+    <div className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden ${dimmed ? 'opacity-50' : ''}`}>
       {/* Header row */}
       <div className="flex items-center gap-3 p-4">
         <div className="w-1.5 self-stretch rounded-full flex-shrink-0"
@@ -785,20 +789,26 @@ function StudentCard({ student }: { student: Student }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-medium text-gray-900 dark:text-white">{student.name}</span>
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-              isPostpaid
-                ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                : 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
-            }`}>
-              {isPostpaid ? 'Postpaid' : 'Prepaid'}
-            </span>
-            {/* Alert untuk paket aktif */}
-            {currentStatus?.isCurrent && currentStatus?.isExpiringSoon && (
+            {!student.isActive ? (
+              <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+                Non-aktif
+              </span>
+            ) : (
+              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                isPostpaid
+                  ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                  : 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
+              }`}>
+                {isPostpaid ? 'Postpaid' : 'Prepaid'}
+              </span>
+            )}
+            {/* Alert untuk paket aktif — hanya saat masih aktif */}
+            {student.isActive && currentStatus?.isCurrent && currentStatus?.isExpiringSoon && (
               <span className="flex items-center gap-0.5 text-xs text-amber-600 font-medium">
                 <AlertTriangle size={11} /> Paket hampir habis
               </span>
             )}
-            {currentStatus?.isCurrent && currentStatus?.isExpired && (
+            {student.isActive && currentStatus?.isCurrent && currentStatus?.isExpired && (
               <span className="flex items-center gap-0.5 text-xs text-green-600">
                 Paket selesai
               </span>
@@ -824,18 +834,33 @@ function StudentCard({ student }: { student: Student }) {
         </div>
 
         <div className="flex items-center gap-1">
-          <button onClick={() => setEditing(true)}
-            className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
-            <Pencil size={14} />
+          {student.isActive ? (
+            <button onClick={() => setEditing(true)}
+              className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
+              <Pencil size={14} />
+            </button>
+          ) : null}
+          <button
+            onClick={handleToggleActive}
+            title={student.isActive ? 'Non-aktifkan murid' : 'Aktifkan kembali'}
+            className={`p-1.5 rounded-lg transition-colors ${
+              student.isActive
+                ? 'text-gray-400 hover:text-amber-500 hover:bg-amber-50'
+                : 'text-green-500 hover:text-green-600 hover:bg-green-50'
+            }`}
+          >
+            {student.isActive ? <PowerOff size={14} /> : <RotateCcw size={14} />}
           </button>
           <button onClick={handleDelete}
             className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
             <Trash2 size={14} />
           </button>
-          <button onClick={() => setExpanded(e => !e)}
-            className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg transition-colors ml-1">
-            {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          </button>
+          {student.isActive && (
+            <button onClick={() => setExpanded(e => !e)}
+              className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg transition-colors ml-1">
+              {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
+          )}
         </div>
       </div>
 
@@ -938,8 +963,9 @@ export default function Students() {
   const { data, addStudent, addPackage } = useApp();
   const [showForm, setShowForm] = useState(false);
   const [filterTeacher, setFilterTeacher] = useState('all');
+  const [showInactive, setShowInactive] = useState(false);
 
-  const handleAdd = (studentData: Omit<Student, 'id' | 'createdAt'>, initialPackage?: Omit<SessionPackage, 'id' | 'createdAt' | 'studentId' | 'teacherId'>) => {
+  const handleAdd = (studentData: Omit<Student, 'id' | 'createdAt' | 'isActive'>, initialPackage?: Omit<SessionPackage, 'id' | 'createdAt' | 'studentId' | 'teacherId'>) => {
     const student = addStudent(studentData);
     if (initialPackage) {
       addPackage({ ...initialPackage, studentId: student.id, teacherId: student.teacherId });
@@ -947,17 +973,26 @@ export default function Students() {
     setShowForm(false);
   };
 
-  const filteredStudents = (filterTeacher === 'all'
+  const byTeacher = filterTeacher === 'all'
     ? data.students
-    : data.students.filter(s => s.teacherId === filterTeacher)
-  ).slice().sort((a, b) => a.name.localeCompare(b.name, 'id'));
+    : data.students.filter(s => s.teacherId === filterTeacher);
+
+  const filteredStudents = byTeacher
+    .filter(s => s.isActive)
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name, 'id'));
+
+  const inactiveStudents = byTeacher
+    .filter(s => !s.isActive)
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name, 'id'));
 
   return (
     <div className="max-w-3xl mx-auto space-y-5">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Murid</h1>
-          <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">{filteredStudents.length} murid</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">{filteredStudents.length} murid aktif</p>
         </div>
         <button onClick={() => setShowForm(true)}
           className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700">
@@ -997,7 +1032,7 @@ export default function Students() {
           <p className="text-sm">
             {data.teachers.length === 0
               ? 'Tambahkan laoshi dulu sebelum menambahkan murid.'
-              : 'Belum ada murid.'}
+              : 'Belum ada murid aktif.'}
           </p>
         </div>
       ) : (
@@ -1033,6 +1068,26 @@ export default function Students() {
             );
           })}
         </>
+      )}
+
+      {/* Murid non-aktif */}
+      {inactiveStudents.length > 0 && (
+        <div className="pt-2">
+          <button
+            onClick={() => setShowInactive(v => !v)}
+            className="flex items-center gap-2 text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          >
+            <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+            <span>{showInactive ? 'Sembunyikan' : `Tampilkan ${inactiveStudents.length} murid non-aktif`}</span>
+            {showInactive ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+          </button>
+          {showInactive && (
+            <div className="mt-3 space-y-2">
+              {inactiveStudents.map(s => <StudentCard key={s.id} student={s} dimmed />)}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
