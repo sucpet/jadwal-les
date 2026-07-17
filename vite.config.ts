@@ -10,6 +10,10 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'favicon.ico', 'apple-touch-icon-180x180.png'],
+      workbox: {
+        navigateFallback: '/index.html',
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+      },
       manifest: {
         name: 'Jadwal Les',
         short_name: 'Jadwal Les',
