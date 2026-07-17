@@ -32,6 +32,5 @@
 - **Perbandingan bulan** — bandingkan jumlah sesi dan pendapatan antar bulan
 
 ## 🛠 Lain-lain
-- **PWA** — install sebagai app di HP (service worker, offline support)
 - **Export PDF** — laporan keuangan dan jadwal dalam format PDF
 - **Multi-bahasa** — dukungan Bahasa Indonesia, English, dan Mandarin
