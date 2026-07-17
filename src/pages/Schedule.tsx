@@ -528,7 +528,7 @@ export default function Schedule() {
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-4 w-full max-w-lg pointer-events-auto space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold text-gray-900 dark:text-white">{selectedIds.size} sesi dipilih</span>
-              <button onClick={exitBulkMode} className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+              <button onClick={() => { deselectAll(); setBulkConfirm(null); }} className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                 <X size={16} />
               </button>
             </div>
