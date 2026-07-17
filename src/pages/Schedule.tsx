@@ -413,8 +413,73 @@ export default function Schedule() {
         </button>
       </div>
 
-      {/* Calendar grid — hidden in bulk mode */}
-      <div className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden ${bulkMode ? 'hidden' : ''}`}>
+      {/* Mobile week list — visible only on small screens, hidden in bulk mode */}
+      <div className={`md:hidden space-y-2 ${bulkMode ? 'hidden' : ''}`}>
+        {weekDays.map((day, di) => {
+          const dayStr = format(day, 'yyyy-MM-dd');
+          const daySessions = filteredSessions
+            .filter(s => s.date === dayStr)
+            .sort((a, b) => a.startTime.localeCompare(b.startTime));
+          const isToday = isSameDay(day, today);
+          return (
+            <div key={di} className={`rounded-xl border overflow-hidden ${isToday ? 'border-indigo-300 dark:border-indigo-600' : 'border-gray-200 dark:border-gray-700'}`}>
+              <div className={`px-4 py-2.5 flex items-center gap-2 ${isToday ? 'bg-indigo-600' : 'bg-gray-50 dark:bg-gray-800/60'}`}>
+                <span className={`flex-1 text-sm font-medium ${isToday ? 'text-white' : 'text-gray-700 dark:text-gray-200'}`}>
+                  {DAY_LABELS[di]}, {format(day, 'd MMM', { locale: localeId })}
+                </span>
+                {daySessions.length > 0 && (
+                  <span className={`text-xs ${isToday ? 'text-indigo-200' : 'text-gray-400 dark:text-gray-500'}`}>
+                    {daySessions.length} sesi
+                  </span>
+                )}
+                <button
+                  onClick={() => openAdd(dayStr)}
+                  className={`p-1 rounded-lg ${isToday ? 'text-indigo-200 hover:bg-white/10' : 'text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                >
+                  <Plus size={15} />
+                </button>
+              </div>
+              {daySessions.length > 0 ? (
+                <div className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
+                  {daySessions.map(s => {
+                    const student = data.students.find(st => st.id === s.studentId);
+                    const teacher = data.teachers.find(t => t.id === s.teacherId);
+                    return (
+                      <div
+                        key={s.id}
+                        onClick={() => openEdit(s)}
+                        className="flex items-center gap-3 px-4 py-3 cursor-pointer active:bg-gray-50 dark:active:bg-gray-700/50"
+                      >
+                        <div className="w-1 self-stretch rounded-full flex-shrink-0" style={{ background: teacher?.color ?? '#6366f1' }} />
+                        <span className="text-xs text-gray-500 dark:text-gray-400 w-[4.5rem] flex-shrink-0 tabular-nums">
+                          {s.startTime}–{s.endTime}
+                        </span>
+                        <span className="flex-1 text-sm font-medium text-gray-900 dark:text-white truncate min-w-0">
+                          {student?.name ?? '—'}
+                        </span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
+                          s.status === 'completed'
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                            : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                        }`}>
+                          {s.status === 'completed' ? 'Selesai' : 'Terjadwal'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="px-4 py-2.5 bg-white dark:bg-gray-800 text-xs text-gray-400 dark:text-gray-500 text-center italic">
+                  Tidak ada sesi
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Calendar grid — desktop only, hidden in bulk mode */}
+      <div className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden ${bulkMode ? 'hidden' : 'hidden md:block'}`}>
         {/* Header */}
         <div className="grid border-b border-gray-200 dark:border-gray-700" style={{ gridTemplateColumns: '64px repeat(7, 1fr)' }}>
           <div className="border-r border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50" />

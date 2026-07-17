@@ -59,7 +59,7 @@ export default function Finance() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Keuangan</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Keuangan</h1>
       </div>
 
       {/* Teacher filter */}
@@ -82,12 +82,12 @@ export default function Finance() {
       )}
 
       {/* Month selector */}
-      <div className="flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-2">
-        <button onClick={prevMonth} className="p-1 hover:bg-gray-100 rounded"><ChevronLeft size={18} /></button>
-        <span className="flex-1 text-center text-sm font-medium capitalize">
+      <div className="flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2">
+        <button onClick={prevMonth} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded dark:text-gray-300"><ChevronLeft size={18} /></button>
+        <span className="flex-1 text-center text-sm font-medium capitalize dark:text-gray-200">
           {format(new Date(year, month, 1), 'MMMM yyyy', { locale: localeId })}
         </span>
-        <button onClick={nextMonth} className="p-1 hover:bg-gray-100 rounded"><ChevronRight size={18} /></button>
+        <button onClick={nextMonth} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded dark:text-gray-300"><ChevronRight size={18} /></button>
       </div>
 
       {/* Summary card */}
@@ -113,13 +113,13 @@ export default function Finance() {
               .filter(r => r.teacher?.id === teacher.id)
               .reduce((s, r) => s + r.sessions.length, 0);
             return (
-              <div key={teacher.id} className="bg-white border border-gray-200 rounded-xl p-4">
+              <div key={teacher.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-3 h-3 rounded-full" style={{ background: teacher.color }} />
-                  <span className="font-medium text-gray-900">{teacher.name}</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{teacher.name}</span>
                 </div>
-                <div className="text-2xl font-bold text-gray-900">{formatCurrency(teacherTotal)}</div>
-                <div className="text-xs text-gray-500 mt-0.5">{teacherSessions} sesi selesai</div>
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(teacherTotal)}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{teacherSessions} sesi selesai</div>
               </div>
             );
           })}
@@ -128,33 +128,33 @@ export default function Finance() {
 
       {/* Per-student breakdown */}
       <div>
-        <h2 className="font-semibold text-gray-900 mb-3">Detail Per Murid</h2>
+        <h2 className="font-semibold text-gray-900 dark:text-white mb-3">Detail Per Murid</h2>
         {studentBreakdown.length === 0 ? (
-          <div className="bg-white border border-gray-200 rounded-xl p-8 text-center text-gray-400 text-sm">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 text-center text-gray-400 dark:text-gray-500 text-sm">
             Belum ada sesi selesai bulan ini
           </div>
         ) : (
           <div className="space-y-2">
             {studentBreakdown.filter(r => r.sessions.length > 0).map(({ student, teacher, sessions, rate, total }) => (
-              <div key={student.id} className="bg-white border border-gray-200 rounded-xl p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full" style={{ background: teacher?.color }} />
-                      <span className="font-medium text-gray-900">{student.name}</span>
+              <div key={student.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: teacher?.color }} />
+                      <span className="font-medium text-gray-900 dark:text-white">{student.name}</span>
                       {student.billingType === 'package' && (
-                        <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">paket</span>
+                        <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded">paket</span>
                       )}
                     </div>
-                    <div className="text-xs text-gray-500 mt-0.5">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                       {teacher?.name} · {sessions.length} sesi × {formatCurrency(rate)}
                     </div>
-                    <div className="text-xs text-gray-400 mt-1">
+                    <div className="text-xs text-gray-400 dark:text-gray-500 mt-1 break-words">
                       {sessions.map(s => format(parseISO(s.date), 'd MMM', { locale: localeId })).join(', ')}
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-semibold text-gray-900">{formatCurrency(total)}</div>
+                  <div className="text-right flex-shrink-0">
+                    <div className="font-semibold text-gray-900 dark:text-white">{formatCurrency(total)}</div>
                   </div>
                 </div>
               </div>
@@ -166,35 +166,35 @@ export default function Finance() {
       {/* Package status */}
       {allPackageStatuses.length > 0 && (
         <div>
-          <h2 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <h2 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
             <Package size={16} /> Status Paket
           </h2>
           <div className="space-y-2">
             {allPackageStatuses.map(({ pkg, student, teacher, usedSessions, remainingSessions, estimatedEndDate, isExpired, isExpiringSoon }) => (
               <div
                 key={pkg.id}
-                className={`bg-white border rounded-xl p-4 ${
-                  isExpired ? 'border-red-200' : isExpiringSoon ? 'border-amber-200' : 'border-gray-200'
+                className={`bg-white dark:bg-gray-800 border rounded-xl p-4 ${
+                  isExpired ? 'border-red-200 dark:border-red-800' : isExpiringSoon ? 'border-amber-200 dark:border-amber-700' : 'border-gray-200 dark:border-gray-700'
                 }`}
               >
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full" style={{ background: teacher?.color }} />
-                      <span className="font-medium text-gray-900">{student?.name}</span>
-                      {isExpired && <span className="text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded">HABIS</span>}
-                      {isExpiringSoon && !isExpired && <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">Hampir habis</span>}
+                      <span className="font-medium text-gray-900 dark:text-white">{student?.name}</span>
+                      {isExpired && <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 px-1.5 py-0.5 rounded">HABIS</span>}
+                      {isExpiringSoon && !isExpired && <span className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded">Hampir habis</span>}
                     </div>
-                    <div className="text-xs text-gray-500 mt-0.5">{teacher?.name}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{teacher?.name}</div>
                   </div>
                   <div className="text-right">
-                    <div className="font-semibold text-gray-900">{usedSessions}/{pkg.totalSessions} sesi</div>
-                    <div className="text-xs text-gray-500">sisa {remainingSessions}</div>
+                    <div className="font-semibold text-gray-900 dark:text-white">{usedSessions}/{pkg.totalSessions} sesi</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">sisa {remainingSessions}</div>
                   </div>
                 </div>
 
                 {/* Progress bar */}
-                <div className="mt-3 bg-gray-100 rounded-full h-1.5">
+                <div className="mt-3 bg-gray-100 dark:bg-gray-700 rounded-full h-1.5">
                   <div
                     className="h-full rounded-full transition-all"
                     style={{
@@ -205,7 +205,7 @@ export default function Finance() {
                 </div>
 
                 {estimatedEndDate && !isExpired && (
-                  <div className="mt-2 text-xs text-gray-500 flex items-center gap-1">
+                  <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
                     <Clock size={11} />
                     Estimasi habis: {format(estimatedEndDate, 'd MMMM yyyy', { locale: localeId })}
                   </div>

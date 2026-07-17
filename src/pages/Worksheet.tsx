@@ -180,23 +180,25 @@ export default function WorksheetPage() {
               {entries.map(w => {
                 const student = data.students.find(s => s.id === w.studentId);
                 return (
-                  <div key={w.id} className="px-5 py-3 bg-white dark:bg-gray-800 flex items-center gap-3">
-                    <span className="text-sm text-gray-500 dark:text-gray-400 w-24 flex-shrink-0 tabular-nums">
-                      {format(parseISO(w.date), 'd MMM yyyy', { locale: localeId })}
+                  <div key={w.id} className="px-4 py-3 bg-white dark:bg-gray-800 flex items-center gap-2">
+                    <span className="text-xs text-gray-400 dark:text-gray-500 w-[4.5rem] flex-shrink-0 tabular-nums">
+                      {format(parseISO(w.date), 'd MMM yy', { locale: localeId })}
                     </span>
-                    <span className="flex-1 text-sm font-medium text-gray-900 dark:text-white">{student?.name ?? '—'}</span>
-                    <div className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400">
-                      <FileText size={14} className="text-gray-400" />
-                      <span className="tabular-nums">{w.pages} hal</span>
-                    </div>
-                    <span className="text-sm font-semibold text-gray-900 dark:text-white tabular-nums w-28 text-right">
+                    <span className="flex-1 text-sm font-medium text-gray-900 dark:text-white truncate min-w-0">
+                      {student?.name ?? '—'}
+                    </span>
+                    <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
+                      <FileText size={12} className="text-gray-400" />
+                      {w.pages} hal
+                    </span>
+                    <span className="text-sm font-semibold text-gray-900 dark:text-white tabular-nums flex-shrink-0">
                       {formatRp(w.pages * WORKSHEET_PRICE)}
                     </span>
                     <button
                       onClick={() => remove(w.id)}
-                      className="text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 ml-1"
+                      className="text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 flex-shrink-0"
                     >
-                      <Trash2 size={15} />
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 );
