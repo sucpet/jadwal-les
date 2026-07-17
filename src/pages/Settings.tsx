@@ -58,14 +58,43 @@ export default function Settings() {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = ev => {
+    reader.onload = async ev => {
       try {
-        const json = JSON.parse(ev.target?.result as string);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const json = JSON.parse(ev.target?.result as string) as any;
         if (!Array.isArray(json.teachers) || !Array.isArray(json.students) || !Array.isArray(json.sessions) || !Array.isArray(json.packages)) {
           throw new Error('Format file tidak valid (teachers/students/sessions/packages harus ada)');
         }
-        localStorage.setItem('jadwal-les-data', JSON.stringify(json));
-        setStatus({ type: 'success', msg: `Berhasil import: ${json.teachers.length} laoshi, ${json.students.length} murid, ${json.packages.length} paket, ${json.sessions.length} sesi. Halaman akan reload...` });
+
+        setStatus({ type: 'success', msg: 'Mengupload data ke Supabase...' });
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const teachers  = json.teachers.map((t: any)  => ({ id: t.id, name: t.name, color: t.color, created_at: t.createdAt }));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const students  = json.students.map((s: any)  => ({ id: s.id, teacher_id: s.teacherId, name: s.name, billing_type: s.billingType, rate_per_session: s.ratePerSession, group: s.group ?? 'xuyuan', xu_yuan_type: s.xuYuanType ?? 'private', notes: s.notes ?? null, created_at: s.createdAt }));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const packages  = json.packages.map((p: any)  => ({ id: p.id, student_id: p.studentId, teacher_id: p.teacherId, total_sessions: p.totalSessions, pricing_type: p.pricingType ?? 'per-session', price_per_session: p.pricePerSession, package_price: p.packagePrice ?? null, start_date: p.startDate, notes: p.notes ?? null, created_at: p.createdAt }));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const sessions  = json.sessions.map((s: any)  => ({ id: s.id, student_id: s.studentId, teacher_id: s.teacherId, date: s.date, start_time: s.startTime, end_time: s.endTime, status: s.status, notes: s.notes ?? null, worksheet_pages: s.worksheetPages ?? 0, created_at: s.createdAt }));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const worksheets = (json.worksheets ?? []).map((w: any) => ({ id: w.id, student_id: w.studentId, date: w.date, pages: w.pages, created_at: w.createdAt }));
+
+        const { error: e1 } = await supabase.from('teachers').upsert(teachers);
+        if (e1) throw e1;
+        const { error: e2 } = await supabase.from('students').upsert(students);
+        if (e2) throw e2;
+        const { error: e3 } = await supabase.from('packages').upsert(packages);
+        if (e3) throw e3;
+        for (let i = 0; i < sessions.length; i += 100) {
+          const { error } = await supabase.from('sessions').upsert(sessions.slice(i, i + 100));
+          if (error) throw error;
+        }
+        if (worksheets.length > 0) {
+          const { error: e5 } = await supabase.from('worksheets').upsert(worksheets);
+          if (e5) throw e5;
+        }
+
+        setStatus({ type: 'success', msg: `Berhasil import: ${teachers.length} laoshi, ${students.length} murid, ${packages.length} paket, ${sessions.length} sesi. Halaman akan reload...` });
         setTimeout(() => window.location.reload(), 1500);
       } catch (err) {
         setStatus({ type: 'error', msg: `Gagal import: ${(err as Error).message}` });
@@ -123,10 +152,17 @@ export default function Settings() {
     }
   };
 
-  const handleClearData = () => {
+  const handleClearData = async () => {
     if (!confirm('Yakin hapus SEMUA data? Ini tidak bisa dibatalkan.')) return;
     if (!confirm('Benar-benar yakin? Semua laoshi, murid, dan jadwal akan dihapus.')) return;
+    // Delete in reverse FK order
+    await supabase.from('worksheets').delete().not('id', 'is', null);
+    await supabase.from('sessions').delete().not('id', 'is', null);
+    await supabase.from('packages').delete().not('id', 'is', null);
+    await supabase.from('students').delete().not('id', 'is', null);
+    await supabase.from('teachers').delete().not('id', 'is', null);
     localStorage.removeItem('jadwal-les-data');
+    localStorage.removeItem('jadwal-les-last-backup');
     window.location.reload();
   };
 

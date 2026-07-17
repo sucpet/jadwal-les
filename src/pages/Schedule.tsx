@@ -271,6 +271,19 @@ export default function Schedule() {
     : [];
   const hasWeekendWarning = weekendSessionDates.length > 0;
 
+  // Konflik jadwal: sesi lain dari laoshi yang sama yang waktunya overlap
+  const teacherConflicts = (form.teacherId && form.date && form.startTime && form.endTime)
+    ? recurringDates.flatMap(date =>
+        data.sessions.filter(s =>
+          s.teacherId === form.teacherId &&
+          s.date === date &&
+          s.id !== editSession?.id &&
+          s.startTime < form.endTime &&
+          form.startTime < s.endTime
+        ).map(s => ({ ...s, date }))
+      )
+    : [];
+
   return (
     <div className="space-y-4 pb-32">
       <div className="flex items-center justify-between">
@@ -819,6 +832,26 @@ export default function Schedule() {
                     {weekendSessionDates.length === 1
                       ? `${format(parseISO(weekendSessionDates[0]), 'EEE d MMM', { locale: localeId })} adalah hari weekend`
                       : `${weekendSessionDates.length} sesi jatuh di hari weekend`}
+                  </span>
+                </div>
+              )}
+
+              {/* Konflik jadwal */}
+              {teacherConflicts.length > 0 && (
+                <div className="flex items-start gap-1.5 text-xs text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg px-3 py-2">
+                  <AlertTriangle size={12} className="mt-0.5 flex-shrink-0" />
+                  <span>
+                    Laoshi sudah ada sesi yang bentrok:{' '}
+                    {teacherConflicts.map((s, i) => {
+                      const st = data.students.find(x => x.id === s.studentId);
+                      return (
+                        <span key={s.id}>
+                          {i > 0 && ', '}
+                          <strong>{st?.name ?? '—'}</strong> ({s.startTime}–{s.endTime}
+                          {recurringDates.length > 1 ? ` · ${format(parseISO(s.date), 'd MMM', { locale: localeId })}` : ''})
+                        </span>
+                      );
+                    })}
                   </span>
                 </div>
               )}
