@@ -54,6 +54,20 @@ function db(query: PromiseLike<{ error: any }>) {
   query.then(({ error }) => { if (error) console.error('Supabase error:', error); });
 }
 
+const BACKUP_KEY = 'jadwal-les-last-backup';
+
+async function autoBackup(data: AppData): Promise<void> {
+  const today = new Date().toISOString().slice(0, 10);
+  if (localStorage.getItem(BACKUP_KEY) === today) return;
+  try {
+    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+    const { error } = await supabase.storage
+      .from('backups')
+      .upload(`backup_${today}.json`, blob, { upsert: true });
+    if (!error) localStorage.setItem(BACKUP_KEY, today);
+  } catch { /* best-effort, silently ignore */ }
+}
+
 const AppContext = createContext<AppContextType | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -73,14 +87,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
         supabase.from('worksheets').select('*').order('created_at'),
       ]);
       if (cancelled) return;
-      setData({
+      const loaded: AppData = {
         teachers: (t.data ?? []).map(mapTeacher),
         students: (s.data ?? []).map(mapStudent),
         packages: (p.data ?? []).map(mapPackage),
         sessions: (se.data ?? []).map(mapSession),
         worksheets: (ws.data ?? []).map(mapWorksheet),
-      });
+      };
+      setData(loaded);
       setLoading(false);
+      autoBackup(loaded);
     }
 
     loadAll();

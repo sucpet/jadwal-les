@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react';
-import { Upload, Download, Trash2, AlertTriangle, CheckCircle2, Database, Moon, Sun } from 'lucide-react';
+import { useRef, useState, useEffect, useCallback } from 'react';
+import { Upload, Download, Trash2, AlertTriangle, CheckCircle2, Database, Moon, Sun, Cloud, RefreshCw } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { useTheme } from '../store/ThemeContext';
 import { supabase } from '../lib/supabase';
@@ -9,6 +9,48 @@ export default function Settings() {
   const { isDark, toggle } = useTheme();
   const fileRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+
+  const [backupFiles, setBackupFiles] = useState<Array<{ name: string }>>([]);
+  const [backupLoading, setBackupLoading] = useState(false);
+  const [backupSetupNeeded, setBackupSetupNeeded] = useState(false);
+  const [manualBacking, setManualBacking] = useState(false);
+  const lastBackupDate = localStorage.getItem('jadwal-les-last-backup');
+
+  const loadBackupFiles = useCallback(async () => {
+    setBackupLoading(true);
+    const { data: files, error } = await supabase.storage
+      .from('backups')
+      .list('', { sortBy: { column: 'name', order: 'desc' } });
+    setBackupLoading(false);
+    if (error) { setBackupSetupNeeded(true); return; }
+    setBackupSetupNeeded(false);
+    setBackupFiles((files ?? []).filter(f => f.name.endsWith('.json')));
+  }, []);
+
+  useEffect(() => { loadBackupFiles(); }, [loadBackupFiles]);
+
+  const handleManualBackup = async () => {
+    setManualBacking(true);
+    const today = new Date().toISOString().slice(0, 10);
+    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+    const { error } = await supabase.storage
+      .from('backups')
+      .upload(`backup_${today}.json`, blob, { upsert: true });
+    setManualBacking(false);
+    if (error) { setStatus({ type: 'error', msg: `Gagal backup: ${error.message}` }); return; }
+    localStorage.setItem('jadwal-les-last-backup', today);
+    setStatus({ type: 'success', msg: 'Backup berhasil disimpan ke cloud.' });
+    loadBackupFiles();
+  };
+
+  const handleDownloadBackup = async (filename: string) => {
+    const { data: blob, error } = await supabase.storage.from('backups').download(filename);
+    if (error || !blob) { setStatus({ type: 'error', msg: 'Gagal download backup.' }); return; }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -127,6 +169,55 @@ export default function Settings() {
             <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${isDark ? 'translate-x-5' : 'translate-x-0'}`} />
           </button>
         </div>
+      </div>
+
+      {/* Backup cloud */}
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 space-y-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <Cloud size={16} /> Backup Otomatis
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+              {lastBackupDate ? `Terakhir: ${lastBackupDate}` : 'Belum pernah backup hari ini'}
+            </p>
+          </div>
+          <button
+            onClick={handleManualBackup}
+            disabled={manualBacking}
+            className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex-shrink-0"
+          >
+            <Cloud size={15} /> {manualBacking ? 'Menyimpan...' : 'Backup Sekarang'}
+          </button>
+        </div>
+
+        {backupSetupNeeded ? (
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 text-sm text-amber-800 dark:text-amber-300 space-y-1">
+            <p className="font-medium">Bucket belum dibuat.</p>
+            <p>Buka Supabase Dashboard → Storage → New bucket → nama: <code className="bg-amber-100 dark:bg-amber-800/40 px-1 rounded">backups</code> → Save. Lalu tambahkan policy INSERT &amp; SELECT untuk user.</p>
+            <button onClick={loadBackupFiles} className="flex items-center gap-1 text-xs mt-2 text-amber-700 dark:text-amber-400 hover:underline">
+              <RefreshCw size={12} /> Coba lagi
+            </button>
+          </div>
+        ) : backupLoading ? (
+          <p className="text-sm text-gray-400 dark:text-gray-500">Memuat daftar backup...</p>
+        ) : backupFiles.length === 0 ? (
+          <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-1">Belum ada backup tersimpan.</p>
+        ) : (
+          <div className="divide-y divide-gray-100 dark:divide-gray-700">
+            {backupFiles.map(f => (
+              <div key={f.name} className="flex items-center justify-between py-2.5">
+                <span className="text-sm text-gray-700 dark:text-gray-300">{f.name.replace('backup_', '').replace('.json', '')}</span>
+                <button
+                  onClick={() => handleDownloadBackup(f.name)}
+                  className="flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+                >
+                  <Download size={13} /> Download
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Migrasi localStorage → Supabase */}
