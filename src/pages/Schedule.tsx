@@ -503,7 +503,7 @@ export default function Schedule() {
                         left: `calc(${leftPct}% + 2px)`,
                         width: `calc(${widthPct}% - 4px)`,
                         pointerEvents: 'auto',
-                        background: `${color}20`,
+                        background: `${color}80`,
                         color,
                         borderLeft: `2px solid ${color}`,
                       }}
