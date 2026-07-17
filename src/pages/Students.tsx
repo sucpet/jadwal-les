@@ -980,26 +980,28 @@ export default function Students() {
     setShowForm(false);
   };
 
+  const [showInactive, setShowInactive] = useState(false);
+
   const byTeacher = filterTeacher === 'all'
     ? data.students
     : data.students.filter(s => s.teacherId === filterTeacher);
 
   const filteredStudents = byTeacher
+    .filter(s => s.isActive)
     .slice()
-    .sort((a, b) => {
-      // aktif dulu, lalu non-aktif
-      if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
-      return a.name.localeCompare(b.name, 'id');
-    });
+    .sort((a, b) => a.name.localeCompare(b.name, 'id'));
 
-  const activeCount = filteredStudents.filter(s => s.isActive).length;
+  const inactiveStudents = byTeacher
+    .filter(s => !s.isActive)
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name, 'id'));
 
   return (
     <div className="max-w-3xl mx-auto space-y-5">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Murid</h1>
-          <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">{activeCount} murid aktif</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">{filteredStudents.length} murid aktif</p>
         </div>
         <button onClick={() => setShowForm(true)}
           className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700">
@@ -1039,7 +1041,7 @@ export default function Students() {
           <p className="text-sm">
             {data.teachers.length === 0
               ? 'Tambahkan laoshi dulu sebelum menambahkan murid.'
-              : 'Belum ada murid.'}
+              : 'Belum ada murid aktif.'}
           </p>
         </div>
       ) : (
@@ -1047,7 +1049,7 @@ export default function Students() {
           {STUDENT_GROUPS.map(({ value, label }) => {
             const group = filteredStudents.filter(s => s.group === value);
             if (group.length === 0) return null;
-            const hasPrepaid = group.some(s => s.isActive && s.billingType === 'package');
+            const hasPrepaid = group.some(s => s.billingType === 'package');
             const colors: Record<string, string> = {
               pribadi:           'text-blue-500 bg-blue-100',
               wenwen_aizhongwen: 'text-purple-500 bg-purple-100',
@@ -1070,11 +1072,29 @@ export default function Students() {
                 {hasPrepaid && (
                   <p className="text-xs text-gray-400 pl-1">Klik ▼ untuk kelola paket.</p>
                 )}
-                {group.map(s => <StudentCard key={s.id} student={s} dimmed={!s.isActive} />)}
+                {group.map(s => <StudentCard key={s.id} student={s} />)}
               </section>
             );
           })}
         </>
+      )}
+
+      {/* Murid non-aktif */}
+      {inactiveStudents.length > 0 && (
+        <div className="pt-2 space-y-2">
+          <button
+            onClick={() => setShowInactive(v => !v)}
+            className="w-full flex items-center gap-2 text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors py-1"
+          >
+            <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+            <span className="whitespace-nowrap">
+              {showInactive ? 'Sembunyikan non-aktif' : `${inactiveStudents.length} murid non-aktif`}
+            </span>
+            {showInactive ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+          </button>
+          {showInactive && inactiveStudents.map(s => <StudentCard key={s.id} student={s} dimmed />)}
+        </div>
       )}
     </div>
   );
