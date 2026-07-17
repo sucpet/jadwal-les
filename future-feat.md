@@ -9,8 +9,6 @@
 ## 📅 Jadwal
 - **Manajemen libur** — tandai hari libur nasional/sekolah agar sesi tidak terjadwal di hari itu
 - **Reschedule mudah** — tombol reschedule langsung dari kartu sesi, otomatis cari slot kosong
-- **Bulk cancel/reschedule** — batalkan atau geser banyak sesi sekaligus (misal libur panjang)
-- **Konflik jadwal** — peringatan kalau ada guru yang dijadwalkan di waktu yang sama
 - **Export ke Google Calendar** — sync jadwal ke Google Calendar guru atau murid
 
 ## 👨‍🎓 Murid & Guru
@@ -32,11 +30,8 @@
 ## 📊 Analitik
 - **Dashboard statistik** — total sesi per bulan, tren kehadiran, murid paling aktif
 - **Perbandingan bulan** — bandingkan jumlah sesi dan pendapatan antar bulan
-- **Prediksi paket habis** — estimasi kapan paket murid akan habis berdasarkan frekuensi les
 
 ## 🛠 Lain-lain
-- **PWA / mobile-friendly** — install sebagai app di HP, notifikasi push
-- **Dark mode** — tampilan gelap
-- **Export Excel/PDF** — export data jadwal atau laporan keuangan
-- **Backup otomatis** — download backup JSON terjadwal (misal tiap minggu)
+- **PWA** — install sebagai app di HP (service worker, offline support)
+- **Export PDF** — laporan keuangan dan jadwal dalam format PDF
 - **Multi-bahasa** — dukungan Bahasa Indonesia, English, dan Mandarin
