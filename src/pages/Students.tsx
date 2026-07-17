@@ -107,7 +107,7 @@ type InitialPackageData = Omit<SessionPackage, 'id' | 'createdAt' | 'studentId' 
 interface StudentFormProps {
   initial?: Student;
   teachers: ReturnType<typeof useApp>['data']['teachers'];
-  onSave: (data: Omit<Student, 'id' | 'createdAt'>, initialPackage?: InitialPackageData) => void;
+  onSave: (data: Omit<Student, 'id' | 'createdAt' | 'isActive'>, initialPackage?: InitialPackageData) => void;
   onCancel: () => void;
 }
 
@@ -746,7 +746,7 @@ function StudentCard({ student, dimmed }: { student: Student; dimmed?: boolean }
 
   const isPostpaid = student.billingType === 'per-session';
 
-  const handleSave = (updates: Omit<Student, 'id' | 'createdAt'>) => {
+  const handleSave = (updates: Omit<Student, 'id' | 'createdAt' | 'isActive'>) => {
     updateStudent(student.id, updates);
     setEditing(false);
   };
