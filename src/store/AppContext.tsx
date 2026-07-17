@@ -63,7 +63,7 @@ async function autoBackup(data: AppData): Promise<void> {
     const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
     const { error } = await supabase.storage
       .from('backups')
-      .upload(`backup_${today}.json`, blob, { upsert: true });
+      .upload(`backup_${today}.json`, blob);
     if (!error) localStorage.setItem(BACKUP_KEY, today);
   } catch { /* best-effort, silently ignore */ }
 }

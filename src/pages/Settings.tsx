@@ -31,14 +31,16 @@ export default function Settings() {
 
   const handleManualBackup = async () => {
     setManualBacking(true);
-    const today = new Date().toISOString().slice(0, 10);
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10);
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
     const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
     const { error } = await supabase.storage
       .from('backups')
-      .upload(`backup_${today}.json`, blob, { upsert: true });
+      .upload(`backup_${dateStr}_${timeStr}.json`, blob);
     setManualBacking(false);
     if (error) { setStatus({ type: 'error', msg: `Gagal backup: ${error.message}` }); return; }
-    localStorage.setItem('jadwal-les-last-backup', today);
+    localStorage.setItem('jadwal-les-last-backup', dateStr);
     setStatus({ type: 'success', msg: 'Backup berhasil disimpan ke cloud.' });
     loadBackupFiles();
   };
