@@ -185,7 +185,7 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
           <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Laoshi</label>
           <select value={form.teacherId} onChange={e => setForm(f => ({ ...f, teacherId: e.target.value }))}
             className="input w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-            {teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+            {[...teachers].sort((a, b) => a.name.localeCompare(b.name, 'id')).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
           </select>
         </div>
         <div>

@@ -98,7 +98,7 @@ export default function WorksheetPage() {
               className={`w-full border rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 ${showErrors && !form.studentId ? 'border-red-400' : 'border-gray-300 dark:border-gray-600'}`}
             >
               <option value="">Pilih murid</option>
-              {xuYuanStudents.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              {[...xuYuanStudents].sort((a, b) => a.name.localeCompare(b.name, 'id')).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
             {showErrors && !form.studentId && <p className="text-xs text-red-500 mt-1">Murid wajib dipilih</p>}
           </div>

@@ -617,7 +617,7 @@ export default function Schedule() {
                     onChange={e => setForm(f => ({ ...f, teacherId: e.target.value, studentId: '' }))}
                     className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg pl-3 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
-                    {data.teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    {[...data.teachers].sort((a, b) => a.name.localeCompare(b.name, 'id')).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
                 </div>
                 <div>
@@ -628,7 +628,7 @@ export default function Schedule() {
                     className={`w-full border rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 ${showErrors && !form.studentId ? 'border-red-400 bg-red-50 dark:bg-red-900/20' : 'border-gray-300 dark:border-gray-600'}`}
                   >
                     <option value="">Pilih murid</option>
-                    {availableStudents.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    {[...availableStudents].sort((a, b) => a.name.localeCompare(b.name, 'id')).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
                   {showErrors && !form.studentId && (
                     <p className="text-xs text-red-500 mt-1">Murid wajib dipilih</p>
