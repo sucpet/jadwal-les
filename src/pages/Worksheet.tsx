@@ -1,29 +1,9 @@
 import { useState } from 'react';
-import { format, parseISO } from 'date-fns';
-import { id as localeId } from 'date-fns/locale';
 import { Plus, Trash2, FileText, X, Check } from 'lucide-react';
 import { useApp } from '../store/AppContext';
+import { xuYuanCycleStart as cycleStart, xuYuanCycleLabel as cycleLabel, formatRp } from '../utils/xuyuan';
 
 const WORKSHEET_PRICE = 20_000;
-
-function cycleStart(dateStr: string): string {
-  const d = parseISO(dateStr);
-  const day = d.getDate();
-  const start = day >= 26
-    ? new Date(d.getFullYear(), d.getMonth(), 26)
-    : new Date(d.getFullYear(), d.getMonth() - 1, 26);
-  return format(start, 'yyyy-MM-dd');
-}
-
-function cycleLabel(startKey: string): string {
-  const start = parseISO(startKey);
-  const end = new Date(start.getFullYear(), start.getMonth() + 1, 25);
-  return `${format(start, 'd MMM', { locale: localeId })} – ${format(end, 'd MMM yyyy', { locale: localeId })}`;
-}
-
-function formatRp(n: number): string {
-  return 'Rp ' + n.toLocaleString('id-ID');
-}
 
 export default function WorksheetPage() {
   const { data, addWorksheet, deleteWorksheet } = useApp();

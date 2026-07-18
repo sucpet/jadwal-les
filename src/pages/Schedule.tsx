@@ -6,6 +6,7 @@ import { id as localeId } from 'date-fns/locale';
 import { useApp } from '../store/AppContext';
 import type { LessonSession } from '../types';
 import { formatCurrency, getPackageStatus } from '../utils/helpers';
+import { ROW_H, timeToPixels, computeDayLayout, addOneHour, shiftDateByWeeks, dayOfWeek } from '../utils/calendar';
 
 const TIME_SLOTS = Array.from({ length: 28 }, (_, i) => {
   const hour = Math.floor(i / 2) + 8;
@@ -14,63 +15,6 @@ const TIME_SLOTS = Array.from({ length: 28 }, (_, i) => {
 });
 
 const DAY_LABELS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
-const ROW_H = 36; // px per 30-min slot
-
-// Convert HH:MM to exact pixel offset from grid top (08:00), no slot snapping
-function timeToPixels(time: string): number {
-  const [h, m] = time.split(':').map(Number);
-  return ((h - 8) * 60 + m) / 30 * ROW_H;
-}
-
-// Greedy column assignment for overlapping sessions within one day column.
-// Returns colIndex (0-based lane) and totalCols (width denominator) per session.
-function computeDayLayout(sessions: LessonSession[]): Array<{
-  session: LessonSession;
-  colIndex: number;
-  totalCols: number;
-}> {
-  if (sessions.length === 0) return [];
-  const sorted = [...sessions].sort((a, b) => a.startTime.localeCompare(b.startTime));
-  const laneEnds: string[] = []; // laneEnds[i] = endTime of last session assigned to lane i
-  const laneOf: number[] = [];
-
-  for (const s of sorted) {
-    const free = laneEnds.findIndex(et => et <= s.startTime);
-    const lane = free === -1 ? laneEnds.length : free;
-    laneEnds[lane] = s.endTime;
-    laneOf.push(lane);
-  }
-
-  return sorted.map((session, i) => {
-    // totalCols = widest lane index among all sessions overlapping this one, + 1
-    let maxLane = laneOf[i];
-    for (let j = 0; j < sorted.length; j++) {
-      if (j !== i &&
-          sorted[j].startTime < session.endTime &&
-          session.startTime < sorted[j].endTime) {
-        maxLane = Math.max(maxLane, laneOf[j]);
-      }
-    }
-    return { session, colIndex: laneOf[i], totalCols: maxLane + 1 };
-  });
-}
-
-function addOneHour(time: string): string {
-  const [h, m] = time.split(':').map(Number);
-  const total = h * 60 + m + 60;
-  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
-}
-
-function shiftDateByWeeks(dateStr: string, weeks: number): string {
-  const [y, mo, d] = dateStr.split('-').map(Number);
-  const date = new Date(y, mo - 1, d + weeks * 7);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
-
-function dayOfWeek(dateStr: string): number {
-  const [y, mo, d] = dateStr.split('-').map(Number);
-  return new Date(y, mo - 1, d).getDay(); // 0=Sun, 6=Sat
-}
 
 export default function Schedule() {
   const { data, addSession, updateSession, deleteSession } = useApp();

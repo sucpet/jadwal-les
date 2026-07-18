@@ -1,9 +1,9 @@
-import { format, parseISO } from 'date-fns';
-import { id as localeId } from 'date-fns/locale';
+import { format } from 'date-fns';
 import { FileText, Download } from 'lucide-react';
 import XLSXStyle from 'xlsx-js-style';
 import { useApp } from '../store/AppContext';
 import type { LessonSession, Student } from '../types';
+import { xuYuanCycleStart as cycleStart, xuYuanCycleLabel as cycleLabel, durationMinutes, formatDuration, formatRp } from '../utils/xuyuan';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const RATE_PRIVATE    = 100_000; // IDR/hour
@@ -12,41 +12,8 @@ const WORKSHEET_PRICE =  20_000; // IDR/page
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function cycleStart(dateStr: string): string {
-  const d = parseISO(dateStr);
-  const day = d.getDate();
-  const start = day >= 26
-    ? new Date(d.getFullYear(), d.getMonth(), 26)
-    : new Date(d.getFullYear(), d.getMonth() - 1, 26);
-  return format(start, 'yyyy-MM-dd');
-}
-
-function cycleLabel(startKey: string): string {
-  const start = parseISO(startKey);
-  const end = new Date(start.getFullYear(), start.getMonth() + 1, 25);
-  return `${format(start, 'd MMM', { locale: localeId })} – ${format(end, 'd MMM yyyy', { locale: localeId })}`;
-}
-
 function currentCycleKey(): string {
   return cycleStart(format(new Date(), 'yyyy-MM-dd'));
-}
-
-function durationMinutes(s: LessonSession): number {
-  const [sh, sm] = s.startTime.split(':').map(Number);
-  const [eh, em] = s.endTime.split(':').map(Number);
-  return (eh * 60 + em) - (sh * 60 + sm);
-}
-
-function formatDuration(minutes: number): string {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  if (h === 0) return `${m} mnt`;
-  if (m === 0) return `${h} jam`;
-  return `${h} jam ${m} mnt`;
-}
-
-function formatRp(n: number): string {
-  return 'Rp ' + n.toLocaleString('id-ID');
 }
 
 function encodeCell(r: number, c: number) {
