@@ -581,7 +581,7 @@ function PackageForm({ studentId, teacherId, defaultRate, existingPackages, init
           <Check size={14} /> Simpan Paket
         </button>
         <button onClick={onCancel}
-          className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50">
+          className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600">
           <X size={14} /> Batal
         </button>
       </div>
