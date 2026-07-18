@@ -492,40 +492,45 @@ export default function Schedule() {
       </div>
 
       {/* Calendar grid — desktop only, hidden in bulk mode */}
-      <div className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden ${bulkMode ? 'hidden' : 'hidden md:block'}`}>
-        {/* Header */}
-        <div className="grid border-b border-gray-200 dark:border-gray-700" style={{ gridTemplateColumns: '64px repeat(7, 1fr)', scrollbarGutter: 'stable' }}>
-          <div className="border-r border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50" />
-          {weekDays.map((day, i) => {
-            const isToday = isSameDay(day, today);
-            return (
-              <div key={i} className={`text-center py-2 border-r border-gray-100 dark:border-gray-700 last:border-r-0 ${isToday ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}>
-                <div className={`text-xs font-medium ${isToday ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400'}`}>{DAY_LABELS[i]}</div>
-                <div className={`text-sm font-semibold ${isToday ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-800 dark:text-gray-200'}`}>
-                  {format(day, 'd', { locale: localeId })}
+      {/* overflow-clip: clips border-radius without creating a scroll container (so sticky header works) */}
+      <div className={`border border-gray-200 dark:border-gray-700 rounded-xl overflow-clip ${bulkMode ? 'hidden' : 'hidden md:block'}`}>
+        {/* Single scroll container — header + body share the same width so columns always align */}
+        <div className="overflow-y-auto max-h-[748px]">
+          {/* Sticky header */}
+          <div
+            className="sticky top-0 z-10 grid border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+            style={{ gridTemplateColumns: '64px repeat(7, 1fr)' }}
+          >
+            <div className="border-r border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50" />
+            {weekDays.map((day, i) => {
+              const isToday = isSameDay(day, today);
+              return (
+                <div key={i} className={`text-center py-2 border-r border-gray-100 dark:border-gray-700 last:border-r-0 ${isToday ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}>
+                  <div className={`text-xs font-medium ${isToday ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400'}`}>{DAY_LABELS[i]}</div>
+                  <div className={`text-sm font-semibold ${isToday ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-800 dark:text-gray-200'}`}>
+                    {format(day, 'd', { locale: localeId })}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
 
-        {/* Time grid
-            Layout: one CSS grid with 28 fixed-height rows.
-            - Time labels: column 1, one per row.
-            - Background cells: columns 2-8, one per row — click targets + grid lines.
-            - Day wrappers: columns 2-8, spanning ALL rows — position:relative so sessions
-              can be absolutely positioned, pointer-events:none so clicks fall through
-              to background cells when no session is hit.
-        */}
-        <div
-          className="overflow-y-auto max-h-[700px]"
-          style={{
-            display: 'grid',
-            gridTemplateRows: `repeat(${TIME_SLOTS.length}, ${ROW_H}px)`,
-            gridTemplateColumns: '64px repeat(7, 1fr)',
-            scrollbarGutter: 'stable',
-          }}
-        >
+          {/* Time grid
+              Layout: one CSS grid with 28 fixed-height rows.
+              - Time labels: column 1, one per row.
+              - Background cells: columns 2-8, one per row — click targets + grid lines.
+              - Day wrappers: columns 2-8, spanning ALL rows — position:relative so sessions
+                can be absolutely positioned, pointer-events:none so clicks fall through
+                to background cells when no session is hit.
+          */}
+          <div
+            className="bg-white dark:bg-gray-800"
+            style={{
+              display: 'grid',
+              gridTemplateRows: `repeat(${TIME_SLOTS.length}, ${ROW_H}px)`,
+              gridTemplateColumns: '64px repeat(7, 1fr)',
+            }}
+          >
           {/* Time labels */}
           {TIME_SLOTS.map((time, i) => (
             <div
@@ -598,6 +603,7 @@ export default function Schedule() {
               </div>
             );
           })}
+          </div>
         </div>
       </div>
 
