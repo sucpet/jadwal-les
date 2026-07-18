@@ -494,7 +494,7 @@ export default function Schedule() {
       {/* Calendar grid — desktop only, hidden in bulk mode */}
       <div className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden ${bulkMode ? 'hidden' : 'hidden md:block'}`}>
         {/* Header */}
-        <div className="grid border-b border-gray-200 dark:border-gray-700" style={{ gridTemplateColumns: '64px repeat(7, 1fr)' }}>
+        <div className="grid border-b border-gray-200 dark:border-gray-700" style={{ gridTemplateColumns: '64px repeat(7, 1fr)', scrollbarGutter: 'stable' }}>
           <div className="border-r border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50" />
           {weekDays.map((day, i) => {
             const isToday = isSameDay(day, today);
@@ -523,6 +523,7 @@ export default function Schedule() {
             display: 'grid',
             gridTemplateRows: `repeat(${TIME_SLOTS.length}, ${ROW_H}px)`,
             gridTemplateColumns: '64px repeat(7, 1fr)',
+            scrollbarGutter: 'stable',
           }}
         >
           {/* Time labels */}
