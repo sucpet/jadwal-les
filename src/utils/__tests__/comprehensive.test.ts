@@ -42,7 +42,7 @@ function makeStudent(overrides: Partial<Student> = {}): Student {
     name: 'Test Student',
     billingType: 'package',
     ratePerSession: 150_000,
-    group: 'regular',
+    group: 'pribadi',
     isActive: true,
     createdAt: '2026-01-01T00:00:00Z',
     ...overrides,
