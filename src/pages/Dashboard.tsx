@@ -204,8 +204,13 @@ export default function Dashboard() {
                     <span className="text-xs text-gray-400 dark:text-gray-500 w-20 flex-shrink-0 tabular-nums">
                       {format(parseISO(s.date), 'EEE d MMM', { locale: localeId })}
                     </span>
-                    <div className="w-1 h-4 rounded-full flex-shrink-0" style={{ background: teacher?.color ?? '#6366f1' }} />
                     <span className="flex-1 text-sm font-medium text-gray-900 dark:text-white truncate">{student?.name ?? '—'}</span>
+                    {teacher && (
+                      <span className="flex items-center gap-1 text-xs flex-shrink-0" style={{ color: teacher.color }}>
+                        <div className="w-1.5 h-1.5 rounded-full" style={{ background: teacher.color }} />
+                        {teacher.name}
+                      </span>
+                    )}
                     <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0 tabular-nums">{s.startTime}–{s.endTime}</span>
                   </div>
                 );
