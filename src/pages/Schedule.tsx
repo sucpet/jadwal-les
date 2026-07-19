@@ -7,6 +7,7 @@ import { useApp } from '../store/AppContext';
 import type { LessonSession } from '../types';
 import { formatCurrency, getPackageStatus } from '../utils/helpers';
 import { ROW_H, timeToPixels, computeDayLayout, addOneHour, shiftDateByWeeks, dayOfWeek } from '../utils/calendar';
+import { getHoliday } from '../utils/holidays';
 
 const TIME_SLOTS = Array.from({ length: 28 }, (_, i) => {
   const hour = Math.floor(i / 2) + 8;
@@ -216,6 +217,11 @@ export default function Schedule() {
     ? recurringDates.filter(d => { const day = dayOfWeek(d); return day === 0 || day === 6; })
     : [];
   const hasWeekendWarning = weekendSessionDates.length > 0;
+
+  // Libur nasional
+  const holidayHits = recurringDates
+    .map(d => ({ date: d, holiday: getHoliday(d) }))
+    .filter(x => x.holiday !== undefined) as { date: string; holiday: NonNullable<ReturnType<typeof getHoliday>> }[];
 
   // Konflik jadwal: sesi lain dari laoshi yang sama yang waktunya overlap
   const teacherConflicts = (form.teacherId && form.date && form.startTime && form.endTime)
@@ -788,6 +794,24 @@ export default function Schedule() {
                     {weekendSessionDates.length === 1
                       ? `${format(parseISO(weekendSessionDates[0]), 'EEE d MMM', { locale: localeId })} adalah hari weekend`
                       : `${weekendSessionDates.length} sesi jatuh di hari weekend`}
+                  </span>
+                </div>
+              )}
+
+              {/* Libur nasional */}
+              {holidayHits.length > 0 && (
+                <div className="flex items-start gap-1.5 text-xs text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg px-3 py-2">
+                  <AlertTriangle size={12} className="mt-0.5 flex-shrink-0" />
+                  <span>
+                    {holidayHits.map((h, i) => (
+                      <span key={h.date}>
+                        {i > 0 && ', '}
+                        <strong>{h.holiday.name}</strong>
+                        {h.holiday.tentative && ' *'}
+                        {recurringDates.length > 1 && ` (${format(parseISO(h.date), 'd MMM', { locale: localeId })})`}
+                      </span>
+                    ))}
+                    {holidayHits.some(h => h.holiday.tentative) && <span className="opacity-60"> — * tanggal tentatif</span>}
                   </span>
                 </div>
               )}

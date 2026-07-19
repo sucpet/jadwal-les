@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Pencil, Trash2, X, Check, ChevronDown, ChevronUp, Package, AlertTriangle, Clock, CalendarDays, PowerOff, RotateCcw } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Check, ChevronDown, ChevronUp, Package, AlertTriangle, Clock, CalendarDays, PowerOff, RotateCcw, Search } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { useApp } from '../store/AppContext';
@@ -907,18 +907,22 @@ export default function Students() {
   };
 
   const [showInactive, setShowInactive] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const byTeacher = filterTeacher === 'all'
     ? data.students
     : data.students.filter(s => s.teacherId === filterTeacher);
 
+  const matchesSearch = (name: string) =>
+    !searchQuery.trim() || name.toLowerCase().includes(searchQuery.toLowerCase());
+
   const filteredStudents = byTeacher
-    .filter(s => s.isActive)
+    .filter(s => s.isActive && matchesSearch(s.name))
     .slice()
     .sort((a, b) => a.name.localeCompare(b.name, 'id'));
 
   const inactiveStudents = byTeacher
-    .filter(s => !s.isActive)
+    .filter(s => !s.isActive && matchesSearch(s.name))
     .slice()
     .sort((a, b) => a.name.localeCompare(b.name, 'id'));
 
@@ -933,6 +937,18 @@ export default function Students() {
           className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700">
           <Plus size={16} /> Tambah Murid
         </button>
+      </div>
+
+      {/* Search */}
+      <div className="relative">
+        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          placeholder="Cari murid..."
+          className="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
       </div>
 
       {/* Filter laoshi */}
