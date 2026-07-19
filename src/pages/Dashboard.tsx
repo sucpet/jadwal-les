@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { format, parseISO, differenceInDays, addDays } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
-import { Clock, AlertTriangle, CheckCircle2, Calendar, UserX, CalendarClock, ChevronDown, ChevronUp } from 'lucide-react';
+import { Clock, AlertTriangle, CheckCircle2, Calendar, UserX, CalendarClock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { getTodaySessions, getPackageStatus } from '../utils/helpers';
 import { Link } from 'react-router-dom';
@@ -11,7 +11,8 @@ export default function Dashboard() {
   const today = new Date();
   const todaySessions = getTodaySessions(data.sessions);
 
-  const [showAllUpcoming, setShowAllUpcoming] = useState(false);
+  const [upcomingPage, setUpcomingPage] = useState(0);
+  const UPCOMING_PAGE_SIZE = 10;
 
   // Sesi 7 hari ke depan (kecuali hari ini)
   const tomorrowStr = format(addDays(today, 1), 'yyyy-MM-dd');
@@ -184,41 +185,56 @@ export default function Dashboard() {
       </div>
 
       {/* Upcoming 7 days */}
-      {upcomingSessions.length > 0 && (
-        <div>
-          <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-3">
-            <CalendarClock size={18} />
-            7 Hari ke Depan
-            <span className="text-xs font-normal text-gray-400 dark:text-gray-500">({upcomingSessions.length} sesi)</span>
-          </h2>
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700">
-            {(showAllUpcoming ? upcomingSessions : upcomingSessions.slice(0, 5)).map(s => {
-              const student = data.students.find(st => st.id === s.studentId);
-              const teacher = data.teachers.find(t => t.id === s.teacherId);
-              return (
-                <div key={s.id} className="flex items-center gap-3 px-4 py-2.5">
-                  <span className="text-xs text-gray-400 dark:text-gray-500 w-20 flex-shrink-0 tabular-nums">
-                    {format(parseISO(s.date), 'EEE d MMM', { locale: localeId })}
+      {upcomingSessions.length > 0 && (() => {
+        const pageCount = Math.ceil(upcomingSessions.length / UPCOMING_PAGE_SIZE);
+        const pageItems = upcomingSessions.slice(upcomingPage * UPCOMING_PAGE_SIZE, (upcomingPage + 1) * UPCOMING_PAGE_SIZE);
+        return (
+          <div>
+            <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-3">
+              <CalendarClock size={18} />
+              7 Hari ke Depan
+              <span className="text-xs font-normal text-gray-400 dark:text-gray-500">({upcomingSessions.length} sesi)</span>
+            </h2>
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700">
+              {pageItems.map(s => {
+                const student = data.students.find(st => st.id === s.studentId);
+                const teacher = data.teachers.find(t => t.id === s.teacherId);
+                return (
+                  <div key={s.id} className="flex items-center gap-3 px-4 py-2.5">
+                    <span className="text-xs text-gray-400 dark:text-gray-500 w-20 flex-shrink-0 tabular-nums">
+                      {format(parseISO(s.date), 'EEE d MMM', { locale: localeId })}
+                    </span>
+                    <div className="w-1 h-4 rounded-full flex-shrink-0" style={{ background: teacher?.color ?? '#6366f1' }} />
+                    <span className="flex-1 text-sm font-medium text-gray-900 dark:text-white truncate">{student?.name ?? '—'}</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0 tabular-nums">{s.startTime}–{s.endTime}</span>
+                  </div>
+                );
+              })}
+              {pageCount > 1 && (
+                <div className="flex items-center justify-between px-4 py-2.5">
+                  <button
+                    onClick={() => setUpcomingPage(p => p - 1)}
+                    disabled={upcomingPage === 0}
+                    className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft size={13} /> Sebelumnya
+                  </button>
+                  <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">
+                    {upcomingPage + 1} / {pageCount}
                   </span>
-                  <div className="w-1 h-4 rounded-full flex-shrink-0" style={{ background: teacher?.color ?? '#6366f1' }} />
-                  <span className="flex-1 text-sm font-medium text-gray-900 dark:text-white truncate">{student?.name ?? '—'}</span>
-                  <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0 tabular-nums">{s.startTime}–{s.endTime}</span>
+                  <button
+                    onClick={() => setUpcomingPage(p => p + 1)}
+                    disabled={upcomingPage === pageCount - 1}
+                    className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    Berikutnya <ChevronRight size={13} />
+                  </button>
                 </div>
-              );
-            })}
-            {upcomingSessions.length > 5 && (
-              <button
-                onClick={() => setShowAllUpcoming(v => !v)}
-                className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs text-indigo-600 dark:text-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-              >
-                {showAllUpcoming
-                  ? <><ChevronUp size={13} /> Tampilkan lebih sedikit</>
-                  : <><ChevronDown size={13} /> Tampilkan {upcomingSessions.length - 5} lainnya</>}
-              </button>
-            )}
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Quick stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
