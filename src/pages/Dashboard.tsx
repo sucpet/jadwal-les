@@ -188,6 +188,12 @@ export default function Dashboard() {
       {upcomingSessions.length > 0 && (() => {
         const pageCount = Math.ceil(upcomingSessions.length / UPCOMING_PAGE_SIZE);
         const pageItems = upcomingSessions.slice(upcomingPage * UPCOMING_PAGE_SIZE, (upcomingPage + 1) * UPCOMING_PAGE_SIZE);
+        const groupedByDate = pageItems.reduce<{ date: string; sessions: typeof pageItems }[]>((acc, s) => {
+          const last = acc[acc.length - 1];
+          if (last?.date === s.date) last.sessions.push(s);
+          else acc.push({ date: s.date, sessions: [s] });
+          return acc;
+        }, []);
         return (
           <div>
             <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-3">
@@ -195,28 +201,32 @@ export default function Dashboard() {
               7 Hari ke Depan
               <span className="text-xs font-normal text-gray-400 dark:text-gray-500">({upcomingSessions.length} sesi)</span>
             </h2>
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700">
-              {pageItems.map(s => {
-                const student = data.students.find(st => st.id === s.studentId);
-                const teacher = data.teachers.find(t => t.id === s.teacherId);
-                return (
-                  <div key={s.id} className="flex items-center gap-3 px-4 py-2.5">
-                    <span className="text-xs text-gray-400 dark:text-gray-500 w-20 flex-shrink-0 tabular-nums">
-                      {format(parseISO(s.date), 'EEE d MMM', { locale: localeId })}
-                    </span>
-                    <span className="flex-1 text-sm font-medium text-gray-900 dark:text-white truncate">{student?.name ?? '—'}</span>
-                    {teacher && (
-                      <span className="flex items-center gap-1 text-xs flex-shrink-0" style={{ color: teacher.color }}>
-                        <div className="w-1.5 h-1.5 rounded-full" style={{ background: teacher.color }} />
-                        {teacher.name}
-                      </span>
-                    )}
-                    <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0 tabular-nums">{s.startTime}–{s.endTime}</span>
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+              {groupedByDate.map(({ date, sessions }, groupIdx) => (
+                <div key={date} className={groupIdx > 0 ? 'border-t border-gray-200 dark:border-gray-700' : ''}>
+                  <div className="px-4 py-1.5 bg-gray-50 dark:bg-gray-700/50 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                    {format(parseISO(date), 'EEEE, d MMMM', { locale: localeId })}
                   </div>
-                );
-              })}
+                  {sessions.map(s => {
+                    const student = data.students.find(st => st.id === s.studentId);
+                    const teacher = data.teachers.find(t => t.id === s.teacherId);
+                    return (
+                      <div key={s.id} className="flex items-center gap-3 px-4 py-2.5 border-t border-gray-100 dark:border-gray-700/60">
+                        <span className="flex-1 text-sm font-medium text-gray-900 dark:text-white truncate">{student?.name ?? '—'}</span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0 tabular-nums">{s.startTime}–{s.endTime}</span>
+                        {teacher && (
+                          <span className="flex items-center gap-1 text-xs flex-shrink-0 w-24 justify-end" style={{ color: teacher.color }}>
+                            <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: teacher.color }} />
+                            {teacher.name}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
               {pageCount > 1 && (
-                <div className="flex items-center justify-between px-4 py-2.5">
+                <div className="flex items-center justify-between px-4 py-2.5 border-t border-gray-200 dark:border-gray-700">
                   <button
                     onClick={() => setUpcomingPage(p => p - 1)}
                     disabled={upcomingPage === 0}
