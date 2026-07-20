@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Users, BookOpen, GraduationCap, Settings, Timer, LogOut, FileText, Wallet } from 'lucide-react';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
@@ -35,9 +35,27 @@ function LiveClock() {
   );
 }
 
+const IDLE_MS = 5 * 60 * 1000;
+const IDLE_EVENTS = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'] as const;
+
 export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const { loading } = useApp();
+  const idleTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    const reset = () => {
+      clearTimeout(idleTimer.current);
+      idleTimer.current = setTimeout(() => navigate('/'), IDLE_MS);
+    };
+    IDLE_EVENTS.forEach(e => window.addEventListener(e, reset, { passive: true }));
+    reset();
+    return () => {
+      clearTimeout(idleTimer.current);
+      IDLE_EVENTS.forEach(e => window.removeEventListener(e, reset));
+    };
+  }, [navigate]);
 
   if (loading) {
     return (
