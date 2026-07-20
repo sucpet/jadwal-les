@@ -292,7 +292,7 @@ export default function FinanceDetail() {
         </button>
       </div>
 
-      <Section title="Honor per Murid" total={totalHonor} totalLabel="Total Honor">
+      <Section title="Honor per Murid" total={totalHonor}>
         {studentRows.length === 0 ? (
           <p className="text-sm text-gray-400 dark:text-gray-500 py-2">Tidak ada sesi bulan ini.</p>
         ) : (
@@ -331,11 +331,10 @@ function formatMins(mins: number): string {
 }
 
 function Section({
-  title, total, totalLabel = 'Subtotal', children,
+  title, total, children,
 }: {
   title: string;
   total: number;
-  totalLabel?: string;
   children: React.ReactNode;
 }) {
   return (
