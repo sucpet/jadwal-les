@@ -35,7 +35,7 @@ function LiveClock() {
   );
 }
 
-const IDLE_MS = 5 * 1000; // TODO: ubah ke 5 * 60 * 1000 setelah testing
+const IDLE_MS = 5 * 60 * 1000;
 const IDLE_EVENTS = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'] as const;
 
 export default function Layout({ children }: { children: React.ReactNode }) {
