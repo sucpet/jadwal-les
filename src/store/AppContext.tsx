@@ -147,6 +147,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // ─── Auto-complete past sessions ─────────────────────────────────────────
   useEffect(() => {
+    if (loading) return; // wait until data is loaded before checking
+
     const markCompleted = () => {
       const now = new Date();
       const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -159,16 +161,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
         );
         if (!toComplete.length) return d;
 
-        // Push updates to Supabase in background
-        Promise.all(toComplete.map(s =>
-          supabase.from('sessions').update({ status: 'completed' }).eq('id', s.id)
-        ));
+        // Push updates to Supabase (with rateSnapshot for per-session students)
+        toComplete.forEach(s => {
+          const student = d.students.find(st => st.id === s.studentId);
+          const snap = (student?.billingType === 'per-session' && s.rateSnapshot == null)
+            ? student.ratePerSession
+            : undefined;
+          supabase.from('sessions')
+            .update({ status: 'completed', ...(snap != null ? { rate_snapshot: snap } : {}) })
+            .eq('id', s.id)
+            .then(({ error }) => { if (error) console.error('Auto-complete error:', error); });
+        });
 
         return {
           ...d,
-          sessions: d.sessions.map(s =>
-            toComplete.find(c => c.id === s.id) ? { ...s, status: 'completed' as const } : s
-          ),
+          sessions: d.sessions.map(s => {
+            const match = toComplete.find(c => c.id === s.id);
+            if (!match) return s;
+            const student = d.students.find(st => st.id === s.studentId);
+            const snap = (student?.billingType === 'per-session' && s.rateSnapshot == null)
+              ? student.ratePerSession
+              : s.rateSnapshot;
+            return { ...s, status: 'completed' as const, rateSnapshot: snap };
+          }),
         };
       });
     };
@@ -193,7 +208,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       clearTimeout(timeoutId);
       if (intervalId !== undefined) clearInterval(intervalId);
     };
-  }, []);
+  }, [loading]);
 
   // ─── Teachers ─────────────────────────────────────────────────────────────
   const addTeacher = (name: string, color: string): Teacher => {
