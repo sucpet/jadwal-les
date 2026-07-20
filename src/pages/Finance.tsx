@@ -52,7 +52,7 @@ export default function Finance() {
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Keuangan</h1>
-        <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">Pendapatan pemilik & honor laoshi</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">Pendapatan owner & honor laoshi</p>
       </div>
 
       {/* Month selector */}
@@ -154,7 +154,7 @@ export default function Finance() {
               <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: teacher.color }} />
               <span className="font-semibold text-gray-900 dark:text-white">{teacher.name}</span>
               <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded-full ml-1">
-                <Crown size={11} /> Pemilik
+                <Crown size={11} /> OWNER
               </span>
               <Link
                 to={`/finance/${teacher.id}`}
