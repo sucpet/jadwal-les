@@ -11,6 +11,9 @@ const RATE_PRIVATE    = 100_000;
 const RATE_SEMI_GROUP = 135_000;
 const WORKSHEET_PRICE =  20_000;
 
+// Penyesuaian manual: 6,5 jam private + 0,5 jam semi-group di Mei yang tidak tercatat (siklus Jun 2026)
+const XUYUAN_ADJ_2026_06 = Math.round(6.5 * RATE_PRIVATE + 0.5 * RATE_SEMI_GROUP); // 717_500
+
 export default function FinanceDetail() {
   const { teacherId } = useParams<{ teacherId: string }>();
   const { data } = useApp();
@@ -112,7 +115,8 @@ export default function FinanceDetail() {
       })
       .filter(r => r.sessions.length > 0);
 
-    const totalXuYuan   = xuyuanRows.reduce((s, r) => s + r.income, 0);
+    const xuyuanAdj     = monthStr === '2026-06' ? XUYUAN_ADJ_2026_06 : 0;
+    const totalXuYuan   = xuyuanRows.reduce((s, r) => s + r.income, 0) + xuyuanAdj;
     const totalWorksheet = worksheetRows.reduce((s, r) => s + r.income, 0);
     const totalPrepaid  = prepaidRows.reduce((s, r) => s + r.packagePrice, 0);
     const totalPostpaid = postpaidRows.reduce((s, r) => s + r.income, 0);
@@ -164,6 +168,14 @@ export default function FinanceDetail() {
                     <td className="py-2 text-right tabular-nums font-medium text-gray-900 dark:text-white">{formatCurrency(income)}</td>
                   </tr>
                 ))}
+                {xuyuanAdj > 0 && (
+                  <tr>
+                    <td className="py-2 text-gray-400 dark:text-gray-500 italic">Penyesuaian Mei (6,5j private + 0,5j semi)</td>
+                    <td className="py-2 text-right text-gray-400 dark:text-gray-500">—</td>
+                    <td className="py-2 text-right text-gray-400 dark:text-gray-500">7 jam</td>
+                    <td className="py-2 text-right tabular-nums font-medium text-gray-900 dark:text-white">{formatCurrency(xuyuanAdj)}</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </Section>

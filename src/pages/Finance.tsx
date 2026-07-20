@@ -11,6 +11,9 @@ const RATE_PRIVATE    = 100_000;
 const RATE_SEMI_GROUP = 135_000;
 const WORKSHEET_PRICE =  20_000;
 
+// Penyesuaian manual: 6,5 jam private + 0,5 jam semi-group di Mei yang tidak tercatat (siklus Jun 2026)
+const XUYUAN_ADJ_2026_06 = Math.round(6.5 * RATE_PRIVATE + 0.5 * RATE_SEMI_GROUP); // 717_500
+
 export default function Finance() {
   const { data, updateTeacher } = useApp();
   const [month, setMonth] = useState(() => {
@@ -106,6 +109,7 @@ export default function Finance() {
           const rate = student.xuYuanType === 'semi-group' ? RATE_SEMI_GROUP : RATE_PRIVATE;
           incomeXuYuan += Math.round(durationMinutes(s) / 60 * rate);
         });
+        if (monthStr === '2026-06') incomeXuYuan += XUYUAN_ADJ_2026_06;
 
         // Pribadi & WenWen: paket → harga paket penuh di bulan startDate; per-sesi → per sesi selesai
         data.students
