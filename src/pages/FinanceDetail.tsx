@@ -33,6 +33,16 @@ export default function FinanceDetail() {
     );
   }
 
+  // XuYuan pakai siklus 26 bulan lalu – 25 bulan ini
+  const prevMonthStr = format(subMonths(month, 1), 'yyyy-MM');
+  const xyCycleStart = `${prevMonthStr}-26`;
+  const xyCycleEnd   = `${monthStr}-25`;
+
+  const xuyuanSessions = data.sessions.filter(s =>
+    s.teacherId === teacher.id &&
+    s.date >= xyCycleStart && s.date <= xyCycleEnd &&
+    s.status === 'completed'
+  );
   const monthSessions = data.sessions.filter(s =>
     s.teacherId === teacher.id &&
     s.date.startsWith(monthStr) &&
@@ -45,24 +55,24 @@ export default function FinanceDetail() {
       data.students.filter(s => s.teacherId === teacher.id).map(s => s.id)
     );
 
-    // XuYuan per student
+    // XuYuan per student — siklus 26–25
     const xuyuanStudents = data.students.filter(
       s => s.teacherId === teacher.id && s.group === 'xuyuan'
     );
     const xuyuanRows = xuyuanStudents.map(student => {
-      const sessions = monthSessions.filter(s => s.studentId === student.id);
+      const sessions = xuyuanSessions.filter(s => s.studentId === student.id);
       const totalMins = sessions.reduce((sum, s) => sum + durationMinutes(s), 0);
       const rate = student.xuYuanType === 'semi-group' ? RATE_SEMI_GROUP : RATE_PRIVATE;
       const income = Math.round(totalMins / 60 * rate);
       return { student, sessions, totalMins, income };
     }).filter(r => r.sessions.length > 0);
 
-    // Worksheet per student
+    // Worksheet per student — ikut siklus XuYuan
     const worksheetRows = data.students
       .filter(s => ownerStudentIds.has(s.id))
       .map(student => {
         const pages = data.worksheets
-          .filter(w => w.date.startsWith(monthStr) && w.studentId === student.id)
+          .filter(w => w.date >= xyCycleStart && w.date <= xyCycleEnd && w.studentId === student.id)
           .reduce((sum, w) => sum + w.pages, 0);
         return { student, pages, income: pages * WORKSHEET_PRICE };
       })

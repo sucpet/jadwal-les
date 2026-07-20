@@ -77,6 +77,17 @@ export default function Finance() {
           data.students.filter(s => s.teacherId === teacher.id).map(s => s.id)
         );
 
+        // XuYuan pakai siklus 26 bulan lalu – 25 bulan ini
+        const prevMonthStr = format(subMonths(month, 1), 'yyyy-MM');
+        const xyCycleStart = `${prevMonthStr}-26`;
+        const xyCycleEnd   = `${monthStr}-25`;
+
+        // Sesi XuYuan (siklus) vs non-XuYuan (bulan kalender)
+        const xuyuanSessions = data.sessions.filter(s =>
+          s.teacherId === teacher.id &&
+          s.date >= xyCycleStart && s.date <= xyCycleEnd &&
+          s.status === 'completed'
+        );
         const monthSessions = data.sessions.filter(s =>
           s.teacherId === teacher.id &&
           s.date.startsWith(monthStr) &&
@@ -88,8 +99,8 @@ export default function Finance() {
         let incomePribadi = 0;
         let incomeWenwen = 0;
 
-        // XuYuan: per jam sesi selesai bulan ini
-        monthSessions.forEach(s => {
+        // XuYuan: per jam, siklus 26–25
+        xuyuanSessions.forEach(s => {
           const student = data.students.find(st => st.id === s.studentId);
           if (!student || student.group !== 'xuyuan') return;
           const rate = student.xuYuanType === 'semi-group' ? RATE_SEMI_GROUP : RATE_PRIVATE;
@@ -105,14 +116,12 @@ export default function Finance() {
               else if (student.group === 'wenwen_aizhongwen') incomeWenwen += amount;
             };
             if (student.billingType === 'package') {
-              // Hitung paket yang dimulai bulan ini
               data.packages
                 .filter(p => p.studentId === student.id && p.startDate.startsWith(monthStr))
                 .forEach(pkg => {
                   add(pkg.packagePrice ?? pkg.totalSessions * pkg.pricePerSession);
                 });
             } else {
-              // Per-sesi: gunakan rateSnapshot jika ada, fallback ke ratePerSession saat ini
               const studentSessions = monthSessions.filter(s => s.studentId === student.id);
               const income = studentSessions.reduce(
                 (sum, s) => sum + (s.rateSnapshot ?? student.ratePerSession), 0
@@ -121,8 +130,9 @@ export default function Finance() {
             }
           });
 
+        // Worksheet: ikut siklus XuYuan
         incomeWorksheet = data.worksheets
-          .filter(w => w.date.startsWith(monthStr) && ownerStudentIds.has(w.studentId))
+          .filter(w => w.date >= xyCycleStart && w.date <= xyCycleEnd && ownerStudentIds.has(w.studentId))
           .reduce((sum, w) => sum + w.pages * WORKSHEET_PRICE, 0);
 
         const totalOwnerIncome = incomeXuYuan + incomeWorksheet + incomePribadi + incomeWenwen;
