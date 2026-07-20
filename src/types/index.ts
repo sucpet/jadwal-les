@@ -3,6 +3,7 @@ export interface Teacher {
   name: string;
   color: string;
   honorPerSession: number;
+  isOwner: boolean;
   createdAt: string;
 }
 
