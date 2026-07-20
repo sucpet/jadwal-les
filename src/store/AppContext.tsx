@@ -7,20 +7,20 @@ import { supabase } from '../lib/supabase';
 const defaultData: AppData = { teachers: [], students: [], packages: [], sessions: [], worksheets: [] };
 
 // ─── DB row types (snake_case) ────────────────────────────────────────────────
-interface DbTeacher  { id: string; name: string; color: string; created_at: string; }
+interface DbTeacher  { id: string; name: string; color: string; honor_per_session: number; created_at: string; }
 interface DbStudent  { id: string; teacher_id: string; name: string; billing_type: string; rate_per_session: number; group: string; xu_yuan_type?: string; notes?: string; is_active: boolean; created_at: string; }
 interface DbPackage  { id: string; student_id: string; teacher_id: string; total_sessions: number; pricing_type: string; price_per_session: number; package_price?: number; start_date: string; notes?: string; created_at: string; }
 interface DbSession   { id: string; student_id: string; teacher_id: string; date: string; start_time: string; end_time: string; status: string; notes?: string; worksheet_pages?: number; created_at: string; }
 interface DbWorksheet { id: string; student_id: string; date: string; pages: number; created_at: string; }
 
 // ─── Mappers DB → App ─────────────────────────────────────────────────────────
-const mapTeacher  = (r: DbTeacher):  Teacher        => ({ id: r.id, name: r.name, color: r.color, createdAt: r.created_at });
+const mapTeacher  = (r: DbTeacher):  Teacher        => ({ id: r.id, name: r.name, color: r.color, honorPerSession: r.honor_per_session ?? 100000, createdAt: r.created_at });
 const mapStudent  = (r: DbStudent):  Student        => ({ id: r.id, teacherId: r.teacher_id, name: r.name, billingType: r.billing_type as BillingType, ratePerSession: r.rate_per_session, group: r.group as StudentGroup, xuYuanType: (r.xu_yuan_type ?? 'private') as 'private' | 'semi-group', notes: r.notes, isActive: r.is_active ?? true, createdAt: r.created_at });
 const mapPackage  = (r: DbPackage):  SessionPackage => ({ id: r.id, studentId: r.student_id, teacherId: r.teacher_id, totalSessions: r.total_sessions, pricingType: r.pricing_type as PackagePricingType, pricePerSession: r.price_per_session, packagePrice: r.package_price, startDate: r.start_date, notes: r.notes, createdAt: r.created_at });
 const mapSession  = (r: DbSession):  LessonSession  => ({ id: r.id, studentId: r.student_id, teacherId: r.teacher_id, date: r.date, startTime: r.start_time, endTime: r.end_time, status: r.status as LessonSession['status'], notes: r.notes, worksheetPages: r.worksheet_pages ?? 0, createdAt: r.created_at });
 
 // ─── Mappers App → DB ─────────────────────────────────────────────────────────
-const toDbTeacher = (t: Teacher)        => ({ id: t.id, name: t.name, color: t.color, created_at: t.createdAt });
+const toDbTeacher = (t: Teacher)        => ({ id: t.id, name: t.name, color: t.color, honor_per_session: t.honorPerSession, created_at: t.createdAt });
 const toDbStudent = (s: Student)        => ({ id: s.id, teacher_id: s.teacherId, name: s.name, billing_type: s.billingType, rate_per_session: s.ratePerSession, group: s.group, xu_yuan_type: s.xuYuanType ?? 'private', notes: s.notes ?? null, is_active: s.isActive, created_at: s.createdAt });
 const toDbPackage = (p: SessionPackage) => ({ id: p.id, student_id: p.studentId, teacher_id: p.teacherId, total_sessions: p.totalSessions, pricing_type: p.pricingType, price_per_session: p.pricePerSession, package_price: p.packagePrice ?? null, start_date: p.startDate, notes: p.notes ?? null, created_at: p.createdAt });
 const toDbSession = (s: LessonSession)  => ({ id: s.id, student_id: s.studentId, teacher_id: s.teacherId, date: s.date, start_time: s.startTime, end_time: s.endTime, status: s.status, notes: s.notes ?? null, worksheet_pages: s.worksheetPages ?? 0, created_at: s.createdAt });
@@ -197,7 +197,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // ─── Teachers ─────────────────────────────────────────────────────────────
   const addTeacher = (name: string, color: string): Teacher => {
-    const teacher: Teacher = { id: generateId(), name, color, createdAt: new Date().toISOString() };
+    const teacher: Teacher = { id: generateId(), name, color, honorPerSession: 100000, createdAt: new Date().toISOString() };
     setData(d => ({ ...d, teachers: [...d.teachers, teacher] }));
     db(supabase.from('teachers').insert(toDbTeacher(teacher)));
     return teacher;
@@ -205,8 +205,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const updateTeacher = (id: string, updates: Partial<Teacher>) => {
     setData(d => ({ ...d, teachers: d.teachers.map(t => t.id === id ? { ...t, ...updates } : t) }));
     const row: Partial<DbTeacher> = {};
-    if (updates.name  !== undefined) row.name  = updates.name;
-    if (updates.color !== undefined) row.color = updates.color;
+    if (updates.name             !== undefined) row.name              = updates.name;
+    if (updates.color            !== undefined) row.color             = updates.color;
+    if (updates.honorPerSession  !== undefined) row.honor_per_session = updates.honorPerSession;
     db(supabase.from('teachers').update(row).eq('id', id));
   };
   const deleteTeacher = (id: string) => {

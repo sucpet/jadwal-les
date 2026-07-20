@@ -2,6 +2,7 @@ export interface Teacher {
   id: string;
   name: string;
   color: string;
+  honorPerSession: number;
   createdAt: string;
 }
 

@@ -1,218 +1,182 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, TrendingUp, Package, Clock } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { format, addMonths, subMonths } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
+import { ChevronLeft, ChevronRight, Pencil, Check, X } from 'lucide-react';
 import { useApp } from '../store/AppContext';
-import { formatCurrency, getPackageStatus } from '../utils/helpers';
+import { formatCurrency } from '../utils/helpers';
+import { durationMinutes } from '../utils/xuyuan';
 
 export default function Finance() {
-  const { data } = useApp();
-  const now = new Date();
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth()); // 0-indexed
-  const [filterTeacher, setFilterTeacher] = useState('all');
+  const { data, updateTeacher } = useApp();
+  const [month, setMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
 
-  const monthStr = `${year}-${String(month + 1).padStart(2, '0')}`;
+  const monthStr = format(month, 'yyyy-MM');
 
-  const prevMonth = () => {
-    if (month === 0) { setMonth(11); setYear(y => y - 1); }
-    else setMonth(m => m - 1);
-  };
-  const nextMonth = () => {
-    if (month === 11) { setMonth(0); setYear(y => y + 1); }
-    else setMonth(m => m + 1);
+  const startEdit = (id: string, current: number) => {
+    setEditingId(id);
+    setEditValue(String(current));
   };
 
-  // Sessions this month
-  const monthSessions = data.sessions.filter(
-    s => s.date.startsWith(monthStr) && s.status === 'completed'
-  );
+  const saveEdit = (id: string) => {
+    const val = Number(editValue.replace(/\D/g, ''));
+    if (val > 0) updateTeacher(id, { honorPerSession: val });
+    setEditingId(null);
+  };
 
-  const teacherFilter = (teacherId: string) =>
-    filterTeacher === 'all' || filterTeacher === teacherId;
+  const cancelEdit = () => setEditingId(null);
 
-  // Per-student breakdown
-  const studentBreakdown = data.students
-    .filter(s => teacherFilter(s.teacherId))
-    .map(student => {
-      const teacher = data.teachers.find(t => t.id === student.teacherId);
-      const pkg = data.packages.find(p => p.studentId === student.id);
-      const sessions = monthSessions.filter(s => s.studentId === student.id);
-      const rate = pkg?.pricePerSession ?? student.ratePerSession;
-      const total = sessions.length * rate;
-      return { student, teacher, sessions, rate, total, pkg };
-    })
-    .filter(r => r.sessions.length > 0 || r.pkg);
+  const teacherStats = data.teachers.map(teacher => {
+    const sessions = data.sessions.filter(s =>
+      s.teacherId === teacher.id &&
+      s.date.startsWith(monthStr) &&
+      s.status === 'completed'
+    );
+    const totalMinutes = sessions.reduce((sum, s) => sum + durationMinutes(s.startTime, s.endTime), 0);
+    const totalHonor = sessions.length * teacher.honorPerSession;
+    return { teacher, sessions, totalMinutes, totalHonor };
+  });
 
-  const grandTotal = studentBreakdown.reduce((sum, r) => sum + r.total, 0);
-
-  // Package status overview
-  const allPackageStatuses = data.packages
-    .filter(p => teacherFilter(p.teacherId))
-    .map(pkg => {
-      const student = data.students.find(s => s.id === pkg.studentId);
-      const teacher = data.teachers.find(t => t.id === pkg.teacherId);
-      const studentPkgs = data.packages.filter(p => p.studentId === pkg.studentId);
-      return { ...getPackageStatus(pkg, studentPkgs, data.sessions), student, teacher };
-    });
+  const totalPayroll = teacherStats.reduce((sum, t) => sum + t.totalHonor, 0);
+  const hasAny = teacherStats.some(t => t.sessions.length > 0);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="max-w-2xl mx-auto space-y-6">
+      <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Keuangan</h1>
+        <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">Honor laoshi per bulan</p>
       </div>
-
-      {/* Teacher filter */}
-      {data.teachers.length > 1 && (
-        <div className="flex gap-2 flex-wrap">
-          <button
-            onClick={() => setFilterTeacher('all')}
-            className={`text-sm px-3 py-1.5 rounded-lg border ${filterTeacher === 'all' ? 'bg-indigo-600 text-white border-indigo-600' : 'border-gray-300 text-gray-600'}`}
-          >Semua</button>
-          {data.teachers.map(t => (
-            <button key={t.id} onClick={() => setFilterTeacher(t.id)}
-              className={`text-sm px-3 py-1.5 rounded-lg border flex items-center gap-1.5 ${filterTeacher === t.id ? 'text-white' : 'border-gray-300 text-gray-600'}`}
-              style={filterTeacher === t.id ? { background: t.color, borderColor: t.color } : {}}
-            >
-              <div className="w-2 h-2 rounded-full" style={{ background: filterTeacher === t.id ? 'white' : t.color }} />
-              {t.name}
-            </button>
-          ))}
-        </div>
-      )}
 
       {/* Month selector */}
-      <div className="flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2">
-        <button onClick={prevMonth} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded dark:text-gray-300"><ChevronLeft size={18} /></button>
-        <span className="flex-1 text-center text-sm font-medium capitalize dark:text-gray-200">
-          {format(new Date(year, month, 1), 'MMMM yyyy', { locale: localeId })}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => setMonth(m => subMonths(m, 1))}
+          className="p-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+        >
+          <ChevronLeft size={16} />
+        </button>
+        <span className="font-semibold text-gray-900 dark:text-white capitalize min-w-36 text-center">
+          {format(month, 'MMMM yyyy', { locale: localeId })}
         </span>
-        <button onClick={nextMonth} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded dark:text-gray-300"><ChevronRight size={18} /></button>
+        <button
+          onClick={() => setMonth(m => addMonths(m, 1))}
+          className="p-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+        >
+          <ChevronRight size={16} />
+        </button>
       </div>
 
-      {/* Summary card */}
-      <div className="bg-indigo-600 text-white rounded-2xl p-6">
-        <div className="flex items-center gap-2 text-indigo-200 text-sm mb-1">
-          <TrendingUp size={16} />
-          Total Pendapatan {format(new Date(year, month, 1), 'MMMM yyyy', { locale: localeId })}
-        </div>
-        <div className="text-3xl font-bold">{formatCurrency(grandTotal)}</div>
-        <div className="text-indigo-200 text-sm mt-1">
-          dari {studentBreakdown.reduce((s, r) => s + r.sessions.length, 0)} sesi selesai
-        </div>
-      </div>
+      {/* Per-teacher cards */}
+      <div className="space-y-3">
+        {teacherStats.map(({ teacher, sessions, totalMinutes, totalHonor }) => {
+          const isEditing = editingId === teacher.id;
+          const hours = Math.floor(totalMinutes / 60);
+          const mins  = totalMinutes % 60;
+          const durationLabel = totalMinutes > 0
+            ? (hours > 0 ? `${hours} jam${mins > 0 ? ` ${mins} mnt` : ''}` : `${mins} mnt`)
+            : null;
 
-      {/* Per-teacher breakdown */}
-      {filterTeacher === 'all' && data.teachers.length > 1 && (
-        <div className="grid gap-3 md:grid-cols-2">
-          {data.teachers.map(teacher => {
-            const teacherTotal = studentBreakdown
-              .filter(r => r.teacher?.id === teacher.id)
-              .reduce((s, r) => s + r.total, 0);
-            const teacherSessions = studentBreakdown
-              .filter(r => r.teacher?.id === teacher.id)
-              .reduce((s, r) => s + r.sessions.length, 0);
-            return (
-              <div key={teacher.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-3 h-3 rounded-full" style={{ background: teacher.color }} />
-                  <span className="font-medium text-gray-900 dark:text-white">{teacher.name}</span>
-                </div>
-                <div className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(teacherTotal)}</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{teacherSessions} sesi selesai</div>
+          return (
+            <div
+              key={teacher.id}
+              className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5"
+            >
+              {/* Header */}
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: teacher.color }} />
+                <span className="font-semibold text-gray-900 dark:text-white">{teacher.name}</span>
+                {sessions.length === 0 && (
+                  <span className="ml-auto text-xs text-gray-400 dark:text-gray-500">Tidak ada sesi bulan ini</span>
+                )}
               </div>
-            );
-          })}
-        </div>
-      )}
 
-      {/* Per-student breakdown */}
-      <div>
-        <h2 className="font-semibold text-gray-900 dark:text-white mb-3">Detail Per Murid</h2>
-        {studentBreakdown.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 text-center text-gray-400 dark:text-gray-500 text-sm">
-            Belum ada sesi selesai bulan ini
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {studentBreakdown.filter(r => r.sessions.length > 0).map(({ student, teacher, sessions, rate, total }) => (
-              <div key={student.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: teacher?.color }} />
-                      <span className="font-medium text-gray-900 dark:text-white">{student.name}</span>
-                      {student.billingType === 'package' && (
-                        <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded">paket</span>
-                      )}
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                      {teacher?.name} · {sessions.length} sesi × {formatCurrency(rate)}
-                    </div>
-                    <div className="text-xs text-gray-400 dark:text-gray-500 mt-1 break-words">
-                      {sessions.map(s => format(parseISO(s.date), 'd MMM', { locale: localeId })).join(', ')}
-                    </div>
+              {/* Stats row */}
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg px-3 py-2.5">
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Sesi selesai</div>
+                  <div className="text-lg font-bold tabular-nums text-gray-900 dark:text-white">{sessions.length}</div>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg px-3 py-2.5">
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Total durasi</div>
+                  <div className="text-lg font-bold tabular-nums text-gray-900 dark:text-white">
+                    {durationLabel ?? '—'}
                   </div>
-                  <div className="text-right flex-shrink-0">
-                    <div className="font-semibold text-gray-900 dark:text-white">{formatCurrency(total)}</div>
+                </div>
+                <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg px-3 py-2.5">
+                  <div className="text-xs text-indigo-600 dark:text-indigo-400 mb-0.5">Total honor</div>
+                  <div className="text-lg font-bold tabular-nums text-indigo-700 dark:text-indigo-300">
+                    {formatCurrency(totalHonor)}
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
 
-      {/* Package status */}
-      {allPackageStatuses.length > 0 && (
-        <div>
-          <h2 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-            <Package size={16} /> Status Paket
-          </h2>
-          <div className="space-y-2">
-            {allPackageStatuses.map(({ pkg, student, teacher, usedSessions, remainingSessions, estimatedEndDate, isExpired, isExpiringSoon }) => (
-              <div
-                key={pkg.id}
-                className={`bg-white dark:bg-gray-800 border rounded-xl p-4 ${
-                  isExpired ? 'border-red-200 dark:border-red-800' : isExpiringSoon ? 'border-amber-200 dark:border-amber-700' : 'border-gray-200 dark:border-gray-700'
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full" style={{ background: teacher?.color }} />
-                      <span className="font-medium text-gray-900 dark:text-white">{student?.name}</span>
-                      {isExpired && <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 px-1.5 py-0.5 rounded">HABIS</span>}
-                      {isExpiringSoon && !isExpired && <span className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded">Hampir habis</span>}
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{teacher?.name}</div>
+              {/* Honor rate row */}
+              <div className="flex items-center gap-2 pt-3 border-t border-gray-100 dark:border-gray-700">
+                <span className="text-sm text-gray-500 dark:text-gray-400 flex-1">Honor per sesi</span>
+                {isEditing ? (
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm text-gray-400">Rp</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1000"
+                      value={editValue}
+                      onChange={e => setEditValue(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') saveEdit(teacher.id); if (e.key === 'Escape') cancelEdit(); }}
+                      autoFocus
+                      className="w-28 border border-indigo-400 rounded-lg px-2 py-1 text-sm text-right tabular-nums bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <button
+                      onClick={() => saveEdit(teacher.id)}
+                      className="p-1 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
+                    >
+                      <Check size={14} />
+                    </button>
+                    <button
+                      onClick={cancelEdit}
+                      className="p-1 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                      <X size={14} />
+                    </button>
                   </div>
-                  <div className="text-right">
-                    <div className="font-semibold text-gray-900 dark:text-white">{usedSessions}/{pkg.totalSessions} sesi</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">sisa {remainingSessions}</div>
-                  </div>
-                </div>
-
-                {/* Progress bar */}
-                <div className="mt-3 bg-gray-100 dark:bg-gray-700 rounded-full h-1.5">
-                  <div
-                    className="h-full rounded-full transition-all"
-                    style={{
-                      width: `${Math.min(100, (usedSessions / pkg.totalSessions) * 100)}%`,
-                      background: isExpired ? '#ef4444' : isExpiringSoon ? '#f59e0b' : teacher?.color ?? '#6366f1',
-                    }}
-                  />
-                </div>
-
-                {estimatedEndDate && !isExpired && (
-                  <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                    <Clock size={11} />
-                    Estimasi habis: {format(estimatedEndDate, 'd MMMM yyyy', { locale: localeId })}
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium tabular-nums text-gray-900 dark:text-white">
+                      {formatCurrency(teacher.honorPerSession)}
+                    </span>
+                    <button
+                      onClick={() => startEdit(teacher.id, teacher.honorPerSession)}
+                      className="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                      <Pencil size={13} />
+                    </button>
                   </div>
                 )}
               </div>
-            ))}
-          </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Total */}
+      {hasAny && (
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 px-5 py-4 flex items-center justify-between">
+          <span className="font-semibold text-gray-900 dark:text-white">
+            Total Honor {format(month, 'MMMM', { locale: localeId })}
+          </span>
+          <span className="text-xl font-bold tabular-nums text-gray-900 dark:text-white">
+            {formatCurrency(totalPayroll)}
+          </span>
+        </div>
+      )}
+
+      {data.teachers.length === 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-10 text-center text-gray-400 dark:text-gray-500">
+          <p className="text-sm">Belum ada laoshi terdaftar.</p>
         </div>
       )}
     </div>

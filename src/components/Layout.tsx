@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, BookOpen, GraduationCap, Settings, Timer, LogOut, FileText } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, GraduationCap, Settings, Timer, LogOut, FileText, Wallet } from 'lucide-react';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { supabase } from '../lib/supabase';
@@ -13,6 +13,7 @@ const navItems = [
   { to: '/schedule', icon: BookOpen, label: 'Jadwal' },
   { to: '/worksheet', icon: FileText, label: 'Worksheet' },
   { to: '/hours', icon: Timer, label: 'Jam Mengajar', mobileHide: true },
+  { to: '/finance', icon: Wallet, label: 'Keuangan', mobileHide: true },
   { to: '/settings', icon: Settings, label: 'Pengaturan' },
 ];
 
