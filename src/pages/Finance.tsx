@@ -87,28 +87,35 @@ export default function Finance() {
         let incomePribadi = 0;
         let incomeWenwen = 0;
 
+        // XuYuan: per jam sesi selesai bulan ini
         monthSessions.forEach(s => {
           const student = data.students.find(st => st.id === s.studentId);
-          if (!student) return;
-
-          if (student.group === 'xuyuan') {
-            const rate = student.xuYuanType === 'semi-group' ? RATE_SEMI_GROUP : RATE_PRIVATE;
-            incomeXuYuan += Math.round(durationMinutes(s) / 60 * rate);
-          } else {
-            const studentPkgs = data.packages.filter(p => p.studentId === student.id);
-            let sessionRate: number;
-            if (student.billingType === 'per-session' || studentPkgs.length === 0) {
-              sessionRate = student.ratePerSession;
-            } else {
-              const activePkg = [...studentPkgs].sort((a, b) =>
-                b.startDate.localeCompare(a.startDate)
-              )[0];
-              sessionRate = activePkg?.pricePerSession ?? student.ratePerSession;
-            }
-            if (student.group === 'pribadi') incomePribadi += sessionRate;
-            else if (student.group === 'wenwen_aizhongwen') incomeWenwen += sessionRate;
-          }
+          if (!student || student.group !== 'xuyuan') return;
+          const rate = student.xuYuanType === 'semi-group' ? RATE_SEMI_GROUP : RATE_PRIVATE;
+          incomeXuYuan += Math.round(durationMinutes(s) / 60 * rate);
         });
+
+        // Pribadi & WenWen: paket → harga paket penuh di bulan startDate; per-sesi → per sesi selesai
+        data.students
+          .filter(s => s.teacherId === teacher.id && s.group !== 'xuyuan')
+          .forEach(student => {
+            const add = (amount: number) => {
+              if (student.group === 'pribadi') incomePribadi += amount;
+              else if (student.group === 'wenwen_aizhongwen') incomeWenwen += amount;
+            };
+            if (student.billingType === 'package') {
+              // Hitung paket yang dimulai bulan ini
+              data.packages
+                .filter(p => p.studentId === student.id && p.startDate.startsWith(monthStr))
+                .forEach(pkg => {
+                  add(pkg.packagePrice ?? pkg.totalSessions * pkg.pricePerSession);
+                });
+            } else {
+              // Per-sesi: hitung sesi selesai bulan ini
+              const count = monthSessions.filter(s => s.studentId === student.id).length;
+              if (count > 0) add(count * student.ratePerSession);
+            }
+          });
 
         incomeWorksheet = data.worksheets
           .filter(w => w.date.startsWith(monthStr) && ownerStudentIds.has(w.studentId))
