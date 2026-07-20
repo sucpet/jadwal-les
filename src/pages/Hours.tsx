@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
-import { FileText, Download } from 'lucide-react';
+import { FileText, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import XLSXStyle from 'xlsx-js-style';
 import { useApp } from '../store/AppContext';
 import type { LessonSession, Student } from '../types';
@@ -227,6 +228,7 @@ interface CycleEntry {
 
 export default function Hours() {
   const { data } = useApp();
+  const [cycleIndex, setCycleIndex] = useState(0); // 0 = siklus terbaru
 
   const xuYuanStudents = data.students.filter(s => s.group === 'xuyuan');
   const xuYuanIds = new Set(xuYuanStudents.map(s => s.id));
@@ -292,6 +294,8 @@ export default function Hours() {
     });
   }
 
+  const cycle = cycles[cycleIndex] ?? cycles[0];
+
   return (
     <div className="max-w-2xl mx-auto space-y-5">
       <div>
@@ -305,33 +309,47 @@ export default function Hours() {
         </div>
       )}
 
-      {cycles.map(cycle => (
-        <div
-          key={cycle.key}
-          className={`rounded-xl border overflow-hidden ${
-            cycle.isCurrent ? 'border-indigo-300 dark:border-indigo-600' : 'border-gray-200 dark:border-gray-700'
-          }`}
-        >
+      {cycle && (
+        <>
+          {/* Cycle navigator */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setCycleIndex(i => Math.min(i + 1, cycles.length - 1))}
+              disabled={cycleIndex >= cycles.length - 1}
+              className="p-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <span className="font-semibold text-gray-900 dark:text-white min-w-48 text-center">
+              {cycle.label}
+              {cycle.isCurrent && (
+                <span className="ml-2 text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-full">Berjalan</span>
+              )}
+            </span>
+            <button
+              onClick={() => setCycleIndex(i => Math.max(i - 1, 0))}
+              disabled={cycleIndex === 0}
+              className="p-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+
+          <div
+            className={`rounded-xl border overflow-hidden ${
+              cycle.isCurrent ? 'border-indigo-300 dark:border-indigo-600' : 'border-gray-200 dark:border-gray-700'
+            }`}
+          >
           {/* Cycle header */}
           <div className={`px-5 py-4 ${cycle.isCurrent ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-800'}`}>
             <div className="flex items-start justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className={`font-semibold ${cycle.isCurrent ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
-                    {cycle.label}
-                  </span>
-                  {cycle.isCurrent && (
-                    <span className="text-xs bg-white/20 text-white px-2 py-0.5 rounded-full">Berjalan</span>
-                  )}
-                </div>
-                <div className={`text-sm mt-0.5 ${cycle.isCurrent ? 'text-indigo-200' : 'text-gray-500 dark:text-gray-400'}`}>
-                  {cycle.totalSessions} sesi · {formatDuration(cycle.totalMinutes)}
-                </div>
+              <div className={`text-sm ${cycle.isCurrent ? 'text-indigo-200' : 'text-gray-500 dark:text-gray-400'}`}>
+                {cycle.totalSessions} sesi · {formatDuration(cycle.totalMinutes)}
               </div>
               {cycle.studentGroups.length > 0 && (
                 <button
                   onClick={() => exportCycleToExcel(cycle, data.worksheets)}
-                  className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-colors mt-0.5 ${
+                  className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${
                     cycle.isCurrent
                       ? 'border-white/30 text-white hover:bg-white/10'
                       : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
@@ -381,8 +399,9 @@ export default function Hours() {
               Belum ada sesi di periode ini.
             </div>
           )}
-        </div>
-      ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
