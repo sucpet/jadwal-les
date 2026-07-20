@@ -36,7 +36,7 @@ export default function Finance() {
       s.date.startsWith(monthStr) &&
       s.status === 'completed'
     );
-    const totalMinutes = sessions.reduce((sum, s) => sum + durationMinutes(s.startTime, s.endTime), 0);
+    const totalMinutes = sessions.reduce((sum, s) => sum + durationMinutes(s), 0);
     const totalHonor = sessions.length * teacher.honorPerSession;
     return { teacher, sessions, totalMinutes, totalHonor };
   });
