@@ -162,12 +162,6 @@ export default function Finance() {
               >
                 Detail <ArrowRight size={11} />
               </Link>
-              <button
-                onClick={() => updateTeacher(teacher.id, { isOwner: false })}
-                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-              >
-                Ubah ke laoshi biasa
-              </button>
             </div>
 
             <div className="space-y-2">
@@ -231,12 +225,6 @@ export default function Finance() {
               >
                 Detail <ArrowRight size={11} />
               </Link>
-              <button
-                onClick={() => updateTeacher(teacher.id, { isOwner: true })}
-                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-              >
-                Tandai sebagai pemilik
-              </button>
             </div>
 
             {/* Per-student breakdown */}
