@@ -4,7 +4,7 @@ import { FileText, Download } from 'lucide-react';
 import XLSXStyle from 'xlsx-js-style';
 import { useApp } from '../store/AppContext';
 import type { LessonSession, Student } from '../types';
-import { xuYuanCycleStart as cycleStart, xuYuanCycleLabel as cycleLabel, durationMinutes, formatDuration, formatRp } from '../utils/xuyuan';
+import { xuYuanCycleStart as cycleStart, xuYuanCycleLabel as cycleLabel, durationMinutes, formatDuration } from '../utils/xuyuan';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const RATE_PRIVATE    = 100_000; // IDR/hour
@@ -328,35 +328,25 @@ export default function Hours() {
                   {cycle.totalSessions} sesi · {formatDuration(cycle.totalMinutes)}
                 </div>
               </div>
-              <div className="flex items-start gap-3">
-                {cycle.studentGroups.length > 0 && (
-                  <button
-                    onClick={() => exportCycleToExcel(cycle, data.worksheets)}
-                    className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-colors mt-0.5 ${
-                      cycle.isCurrent
-                        ? 'border-white/30 text-white hover:bg-white/10'
-                        : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                    }`}
-                  >
-                    <Download size={13} /> Excel
-                  </button>
-                )}
-                <div className="text-right">
-                  <div className={`text-2xl font-bold tabular-nums ${cycle.isCurrent ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
-                    {formatRp(cycle.totalEarning)}
-                  </div>
-                  <div className={`text-xs mt-0.5 ${cycle.isCurrent ? 'text-indigo-200' : 'text-gray-400 dark:text-gray-500'}`}>
-                    total
-                  </div>
-                </div>
-              </div>
+              {cycle.studentGroups.length > 0 && (
+                <button
+                  onClick={() => exportCycleToExcel(cycle, data.worksheets)}
+                  className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-colors mt-0.5 ${
+                    cycle.isCurrent
+                      ? 'border-white/30 text-white hover:bg-white/10'
+                      : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <Download size={13} /> Excel
+                </button>
+              )}
             </div>
           </div>
 
           {/* Per-student breakdown */}
           {cycle.studentGroups.length > 0 && (
             <div className="divide-y divide-gray-100 dark:divide-gray-700">
-              {cycle.studentGroups.map(({ student, rows, minutes: stuMins, earning: stuEarn }) => (
+              {cycle.studentGroups.map(({ student, rows, minutes: stuMins }) => (
                 <div key={student?.id ?? 'unknown'} className="px-5 py-4 bg-white dark:bg-gray-800">
                   {/* Student header */}
                   <div className="flex items-center gap-2 mb-2">
@@ -365,11 +355,10 @@ export default function Hours() {
                       <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded">semi</span>
                     )}
                     <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">{rows.length} sesi · {formatDuration(stuMins)}</span>
-                    <span className="text-sm font-semibold text-gray-900 dark:text-white tabular-nums">{formatRp(stuEarn)}</span>
                   </div>
                   {/* Session list */}
                   <div className="space-y-1 pl-2 border-l-2 border-gray-100 dark:border-gray-700">
-                    {rows.map(({ session: s, minutes: sMins, earning: sEarn }) => (
+                    {rows.map(({ session: s, minutes: sMins }) => (
                       <div key={s.id} className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                         <span className="w-16 flex-shrink-0 tabular-nums">{format(parseISO(s.date), 'd MMM', { locale: localeId })}</span>
                         <span className="w-24 flex-shrink-0 tabular-nums">{s.startTime}–{s.endTime}</span>
@@ -379,7 +368,6 @@ export default function Hours() {
                             <FileText size={11} /> {s.worksheetPages} hal
                           </span>
                         )}
-                        <span className="tabular-nums text-gray-600 dark:text-gray-300">{formatRp(sEarn)}</span>
                       </div>
                     ))}
                   </div>
