@@ -3,7 +3,7 @@ import { format, addMonths, subMonths } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Pencil, Check, X, Crown } from 'lucide-react';
 import { useApp } from '../store/AppContext';
-import { formatCurrency, formatDate, getPackageStatus } from '../utils/helpers';
+import { formatCurrency } from '../utils/helpers';
 import { durationMinutes } from '../utils/xuyuan';
 
 const RATE_PRIVATE    = 100_000;
@@ -35,11 +35,39 @@ export default function Finance() {
   const owners    = data.teachers.filter(t => t.isOwner);
   const nonOwners = data.teachers.filter(t => !t.isOwner);
 
+  const totalPayroll = nonOwners.reduce((sum, teacher) => {
+    const sessions = data.sessions.filter(s =>
+      s.teacherId === teacher.id &&
+      s.date.startsWith(monthStr) &&
+      s.status === 'completed'
+    );
+    return sum + sessions.length * teacher.honorPerSession;
+  }, 0);
+
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
+    <div className="max-w-2xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Keuangan</h1>
         <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">Pendapatan pemilik & honor laoshi</p>
+      </div>
+
+      {/* Month selector */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => setMonth(m => subMonths(m, 1))}
+          className="p-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+        >
+          <ChevronLeft size={16} />
+        </button>
+        <span className="font-semibold text-gray-900 dark:text-white capitalize min-w-36 text-center">
+          {format(month, 'MMMM yyyy', { locale: localeId })}
+        </span>
+        <button
+          onClick={() => setMonth(m => addMonths(m, 1))}
+          className="p-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+        >
+          <ChevronRight size={16} />
+        </button>
       </div>
 
       {/* ── Pemilik ── */}
@@ -111,26 +139,6 @@ export default function Finance() {
               </button>
             </div>
 
-            {/* Month selector */}
-            <div className="flex items-center gap-2 mb-4">
-              <button
-                onClick={() => setMonth(m => subMonths(m, 1))}
-                className="p-1 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-              >
-                <ChevronLeft size={14} />
-              </button>
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 capitalize min-w-28 text-center">
-                {format(month, 'MMMM yyyy', { locale: localeId })}
-              </span>
-              <button
-                onClick={() => setMonth(m => addMonths(m, 1))}
-                className="p-1 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-              >
-                <ChevronRight size={14} />
-              </button>
-            </div>
-
-            {/* Income breakdown */}
             <div className="space-y-2">
               {incomeRows.map(row => (
                 <div
@@ -161,48 +169,31 @@ export default function Finance() {
       {nonOwners.map(teacher => {
         const isEditing = editingId === teacher.id;
 
-        // Package-based students
-        const teacherPkgs = data.packages.filter(p => p.teacherId === teacher.id);
-        const pkgRows = teacherPkgs.map(pkg => {
-          const studentPkgs = data.packages.filter(p => p.studentId === pkg.studentId);
-          const studentSessions = data.sessions.filter(s => s.studentId === pkg.studentId);
-          const status = getPackageStatus(pkg, studentPkgs, studentSessions);
-          const student = data.students.find(s => s.id === pkg.studentId);
-          return { status, student };
-        }).sort((a, b) => {
-          if (a.status.isExpired !== b.status.isExpired) return a.status.isExpired ? 1 : -1;
-          return b.status.pkg.startDate.localeCompare(a.status.pkg.startDate);
-        });
+        const monthSessions = data.sessions.filter(s =>
+          s.teacherId === teacher.id &&
+          s.date.startsWith(monthStr) &&
+          s.status === 'completed'
+        );
 
-        // Per-session students (no packages linked to this teacher)
-        const pkgStudentIds = new Set(teacherPkgs.map(p => p.studentId));
-        const perSessionStudents = data.students.filter(
-          s => s.teacherId === teacher.id && !pkgStudentIds.has(s.id)
-        );
-        const perSessionRows = perSessionStudents.map(student => {
-          const completedSessions = data.sessions.filter(
-            s => s.studentId === student.id && s.status === 'completed'
-          ).length;
-          return { student, completedSessions };
-        });
+        const studentBreakdown = data.students
+          .filter(s => s.teacherId === teacher.id)
+          .map(student => {
+            const count = monthSessions.filter(s => s.studentId === student.id).length;
+            return { student, count };
+          })
+          .filter(r => r.count > 0)
+          .sort((a, b) => b.count - a.count);
 
-        const honorFromPkgs = pkgRows.reduce(
-          (sum, { status }) => sum + status.usedSessions * teacher.honorPerSession, 0
-        );
-        const honorFromPerSession = perSessionRows.reduce(
-          (sum, r) => sum + r.completedSessions * teacher.honorPerSession, 0
-        );
-        const totalHonorEarned = honorFromPkgs + honorFromPerSession;
-        const totalHonorCommitted = pkgRows.reduce(
-          (sum, { status }) => sum + status.pkg.totalSessions * teacher.honorPerSession, 0
-        );
+        const totalHonor = monthSessions.length * teacher.honorPerSession;
 
         return (
           <div key={teacher.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
-            {/* Header */}
             <div className="flex items-center gap-2 mb-4">
               <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: teacher.color }} />
               <span className="font-semibold text-gray-900 dark:text-white">{teacher.name}</span>
+              {monthSessions.length === 0 && (
+                <span className="text-xs text-gray-400 dark:text-gray-500">Tidak ada sesi bulan ini</span>
+              )}
               <button
                 onClick={() => updateTeacher(teacher.id, { isOwner: true })}
                 className="ml-auto text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
@@ -211,108 +202,40 @@ export default function Finance() {
               </button>
             </div>
 
-            {/* Package rows */}
-            {pkgRows.length === 0 && perSessionRows.length === 0 ? (
-              <p className="text-sm text-gray-400 dark:text-gray-500 py-2">
-                Belum ada murid terdaftar.
-              </p>
-            ) : (
-              <div className="space-y-2 mb-4">
-                {pkgRows.map(({ status, student }) => {
-                  const honorEarned = status.usedSessions * teacher.honorPerSession;
-                  const honorTotal  = status.pkg.totalSessions * teacher.honorPerSession;
-                  const pct = status.pkg.totalSessions > 0
-                    ? (status.usedSessions / status.pkg.totalSessions) * 100
-                    : 0;
-
-                  return (
-                    <div
-                      key={status.pkg.id}
-                      className={`rounded-lg p-3 ${
-                        status.isExpired
-                          ? 'bg-gray-50 dark:bg-gray-700/30'
-                          : 'bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-800/30'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">
-                          {student?.name ?? '—'}
-                        </span>
-                        <div className="flex items-center gap-3">
-                          <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">
-                            {status.usedSessions}/{status.pkg.totalSessions} sesi
-                          </span>
-                          <span className={`text-sm font-semibold tabular-nums ${
-                            status.isExpired
-                              ? 'text-gray-500 dark:text-gray-400'
-                              : 'text-indigo-700 dark:text-indigo-300'
-                          }`}>
-                            {formatCurrency(honorEarned)}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all ${
-                            status.isExpired ? 'bg-gray-400 dark:bg-gray-500' : 'bg-indigo-500'
-                          }`}
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                      <div className="flex items-center justify-between mt-1">
-                        <span className="text-xs text-gray-400 dark:text-gray-500">
-                          {formatDate(status.pkg.startDate, 'd MMM yyyy')}
-                          {status.isExpired && <span className="ml-1">· Selesai</span>}
-                        </span>
-                        <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">
-                          total paket {formatCurrency(honorTotal)}
-                        </span>
-                      </div>
+            {/* Per-student breakdown */}
+            {studentBreakdown.length > 0 && (
+              <div className="space-y-1.5 mb-4">
+                {studentBreakdown.map(({ student, count }) => (
+                  <div
+                    key={student.id}
+                    className="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
+                  >
+                    <span className="text-sm text-gray-700 dark:text-gray-300">{student.name}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">
+                        {count} sesi
+                      </span>
+                      <span className="text-sm font-semibold tabular-nums text-gray-900 dark:text-white">
+                        {formatCurrency(count * teacher.honorPerSession)}
+                      </span>
                     </div>
-                  );
-                })}
-
-                {perSessionRows.map(({ student, completedSessions }) => {
-                  const honorEarned = completedSessions * teacher.honorPerSession;
-                  return (
-                    <div
-                      key={student.id}
-                      className="rounded-lg p-3 bg-gray-50 dark:bg-gray-700/30"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="text-sm font-medium text-gray-900 dark:text-white">
-                            {student.name}
-                          </span>
-                          <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">per sesi</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">
-                            {completedSessions} sesi selesai
-                          </span>
-                          <span className="text-sm font-semibold tabular-nums text-gray-700 dark:text-gray-300">
-                            {formatCurrency(honorEarned)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             )}
 
             {/* Footer: total + edit rate */}
             <div className="flex items-center gap-4 pt-3 border-t border-gray-100 dark:border-gray-700">
               <div className="flex-1">
-                <div className="text-xs text-gray-500 dark:text-gray-400">Honor terkumpul</div>
-                <div className="text-xl font-bold tabular-nums text-indigo-700 dark:text-indigo-300">
-                  {formatCurrency(totalHonorEarned)}
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  Total honor {format(month, 'MMMM', { locale: localeId })}
                 </div>
-                {totalHonorCommitted > totalHonorEarned && (
-                  <div className="text-xs text-gray-400 dark:text-gray-500 tabular-nums mt-0.5">
-                    dari total komitmen {formatCurrency(totalHonorCommitted)}
-                  </div>
-                )}
+                <div className="text-xl font-bold tabular-nums text-indigo-700 dark:text-indigo-300">
+                  {formatCurrency(totalHonor)}
+                </div>
+                <div className="text-xs text-gray-400 dark:text-gray-500 tabular-nums mt-0.5">
+                  {monthSessions.length} sesi × {formatCurrency(teacher.honorPerSession)}
+                </div>
               </div>
               <div className="flex items-center gap-2 text-sm flex-shrink-0">
                 <span className="text-gray-500 dark:text-gray-400">Honor/sesi</span>
@@ -363,6 +286,18 @@ export default function Finance() {
           </div>
         );
       })}
+
+      {/* Total payroll */}
+      {nonOwners.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 px-5 py-4 flex items-center justify-between">
+          <span className="font-semibold text-gray-900 dark:text-white">
+            Total Honor {format(month, 'MMMM', { locale: localeId })}
+          </span>
+          <span className="text-xl font-bold tabular-nums text-gray-900 dark:text-white">
+            {formatCurrency(totalPayroll)}
+          </span>
+        </div>
+      )}
 
       {data.teachers.length === 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-10 text-center text-gray-400 dark:text-gray-500">
