@@ -205,11 +205,16 @@ export default function Schedule() {
     const studentPkgs = data.packages.filter(p => p.studentId === form.studentId);
     if (studentPkgs.length > 0) {
       const currentPkg = [...studentPkgs].sort((a, b) => b.startDate.localeCompare(a.startDate))[0];
-      remainingPkgSessions = getPackageStatus(currentPkg, studentPkgs, data.sessions).remainingSessions;
+      // Saat edit, kecualikan sesi yang sedang diedit dari hitungan slot paket
+      const sessionsForCount = editSession
+        ? data.sessions.filter(s => s.id !== editSession.id)
+        : data.sessions;
+      remainingPkgSessions = getPackageStatus(currentPkg, studentPkgs, sessionsForCount).remainingSessions;
     }
   }
 
-  const prepaidOverLimit = isPrepaid && remainingPkgSessions !== null && (
+  // Saat edit sesi yang sudah ada, tidak perlu cek over-limit (reschedule, bukan tambah baru)
+  const prepaidOverLimit = !editSession && isPrepaid && remainingPkgSessions !== null && (
     recurring ? recurringCountNum > remainingPkgSessions : remainingPkgSessions === 0
   );
 
