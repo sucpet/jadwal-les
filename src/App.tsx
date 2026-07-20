@@ -14,6 +14,7 @@ import Settings from './pages/Settings';
 import Hours from './pages/Hours';
 import Worksheet from './pages/Worksheet';
 import Finance from './pages/Finance';
+import FinanceDetail from './pages/FinanceDetail';
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -50,6 +51,7 @@ export default function App() {
                 <Route path="/hours" element={<Hours />} />
                 <Route path="/worksheet" element={<Worksheet />} />
                 <Route path="/finance" element={<Finance />} />
+                <Route path="/finance/:teacherId" element={<FinanceDetail />} />
                 <Route path="/settings" element={<Settings />} />
               </Routes>
             </Layout>

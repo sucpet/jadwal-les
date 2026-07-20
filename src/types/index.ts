@@ -55,6 +55,7 @@ export interface LessonSession {
   status: 'scheduled' | 'completed';
   notes?: string;
   worksheetPages?: number;
+  rateSnapshot?: number; // ratePerSession murid saat sesi selesai (postpaid only)
   createdAt: string;
 }
 

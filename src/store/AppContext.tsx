@@ -10,20 +10,20 @@ const defaultData: AppData = { teachers: [], students: [], packages: [], session
 interface DbTeacher  { id: string; name: string; color: string; honor_per_session: number; is_owner: boolean; created_at: string; }
 interface DbStudent  { id: string; teacher_id: string; name: string; billing_type: string; rate_per_session: number; group: string; xu_yuan_type?: string; notes?: string; is_active: boolean; created_at: string; }
 interface DbPackage  { id: string; student_id: string; teacher_id: string; total_sessions: number; pricing_type: string; price_per_session: number; package_price?: number; start_date: string; notes?: string; created_at: string; }
-interface DbSession   { id: string; student_id: string; teacher_id: string; date: string; start_time: string; end_time: string; status: string; notes?: string; worksheet_pages?: number; created_at: string; }
+interface DbSession   { id: string; student_id: string; teacher_id: string; date: string; start_time: string; end_time: string; status: string; notes?: string; worksheet_pages?: number; rate_snapshot?: number | null; created_at: string; }
 interface DbWorksheet { id: string; student_id: string; date: string; pages: number; created_at: string; }
 
 // ─── Mappers DB → App ─────────────────────────────────────────────────────────
 const mapTeacher  = (r: DbTeacher):  Teacher        => ({ id: r.id, name: r.name, color: r.color, honorPerSession: r.honor_per_session ?? 100000, isOwner: r.is_owner ?? false, createdAt: r.created_at });
 const mapStudent  = (r: DbStudent):  Student        => ({ id: r.id, teacherId: r.teacher_id, name: r.name, billingType: r.billing_type as BillingType, ratePerSession: r.rate_per_session, group: r.group as StudentGroup, xuYuanType: (r.xu_yuan_type ?? 'private') as 'private' | 'semi-group', notes: r.notes, isActive: r.is_active ?? true, createdAt: r.created_at });
 const mapPackage  = (r: DbPackage):  SessionPackage => ({ id: r.id, studentId: r.student_id, teacherId: r.teacher_id, totalSessions: r.total_sessions, pricingType: r.pricing_type as PackagePricingType, pricePerSession: r.price_per_session, packagePrice: r.package_price, startDate: r.start_date, notes: r.notes, createdAt: r.created_at });
-const mapSession  = (r: DbSession):  LessonSession  => ({ id: r.id, studentId: r.student_id, teacherId: r.teacher_id, date: r.date, startTime: r.start_time, endTime: r.end_time, status: r.status as LessonSession['status'], notes: r.notes, worksheetPages: r.worksheet_pages ?? 0, createdAt: r.created_at });
+const mapSession  = (r: DbSession):  LessonSession  => ({ id: r.id, studentId: r.student_id, teacherId: r.teacher_id, date: r.date, startTime: r.start_time, endTime: r.end_time, status: r.status as LessonSession['status'], notes: r.notes, worksheetPages: r.worksheet_pages ?? 0, rateSnapshot: r.rate_snapshot ?? undefined, createdAt: r.created_at });
 
 // ─── Mappers App → DB ─────────────────────────────────────────────────────────
 const toDbTeacher = (t: Teacher)        => ({ id: t.id, name: t.name, color: t.color, honor_per_session: t.honorPerSession, is_owner: t.isOwner, created_at: t.createdAt });
 const toDbStudent = (s: Student)        => ({ id: s.id, teacher_id: s.teacherId, name: s.name, billing_type: s.billingType, rate_per_session: s.ratePerSession, group: s.group, xu_yuan_type: s.xuYuanType ?? 'private', notes: s.notes ?? null, is_active: s.isActive, created_at: s.createdAt });
 const toDbPackage = (p: SessionPackage) => ({ id: p.id, student_id: p.studentId, teacher_id: p.teacherId, total_sessions: p.totalSessions, pricing_type: p.pricingType, price_per_session: p.pricePerSession, package_price: p.packagePrice ?? null, start_date: p.startDate, notes: p.notes ?? null, created_at: p.createdAt });
-const toDbSession = (s: LessonSession)  => ({ id: s.id, student_id: s.studentId, teacher_id: s.teacherId, date: s.date, start_time: s.startTime, end_time: s.endTime, status: s.status, notes: s.notes ?? null, worksheet_pages: s.worksheetPages ?? 0, created_at: s.createdAt });
+const toDbSession = (s: LessonSession)  => ({ id: s.id, student_id: s.studentId, teacher_id: s.teacherId, date: s.date, start_time: s.startTime, end_time: s.endTime, status: s.status, notes: s.notes ?? null, worksheet_pages: s.worksheetPages ?? 0, rate_snapshot: s.rateSnapshot ?? null, created_at: s.createdAt });
 const mapWorksheet  = (r: DbWorksheet): Worksheet => ({ id: r.id, studentId: r.student_id, date: r.date, pages: r.pages, createdAt: r.created_at });
 const toDbWorksheet = (w: Worksheet) => ({ id: w.id, student_id: w.studentId, date: w.date, pages: w.pages, created_at: w.createdAt });
 
@@ -282,15 +282,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return s;
   };
   const updateSession = (id: string, updates: Partial<LessonSession>) => {
-    setData(d => ({ ...d, sessions: d.sessions.map(s => s.id === id ? { ...s, ...updates } : s) }));
+    // Capture rateSnapshot when marking a postpaid session as completed
+    let finalUpdates = updates;
+    if (updates.status === 'completed') {
+      const session = data.sessions.find(s => s.id === id);
+      if (session && session.rateSnapshot == null) {
+        const student = data.students.find(s => s.id === session.studentId);
+        if (student && student.billingType === 'per-session') {
+          finalUpdates = { ...updates, rateSnapshot: student.ratePerSession };
+        }
+      }
+    }
+    setData(d => ({ ...d, sessions: d.sessions.map(s => s.id === id ? { ...s, ...finalUpdates } : s) }));
     const row: Partial<DbSession> = {};
-    if (updates.teacherId  !== undefined) row.teacher_id = updates.teacherId;
-    if (updates.studentId  !== undefined) row.student_id = updates.studentId;
-    if (updates.date       !== undefined) row.date       = updates.date;
-    if (updates.startTime  !== undefined) row.start_time = updates.startTime;
-    if (updates.endTime    !== undefined) row.end_time   = updates.endTime;
-    if (updates.status     !== undefined) row.status     = updates.status;
-    if (updates.notes      !== undefined) row.notes      = updates.notes;
+    if (finalUpdates.teacherId     !== undefined) row.teacher_id    = finalUpdates.teacherId;
+    if (finalUpdates.studentId     !== undefined) row.student_id    = finalUpdates.studentId;
+    if (finalUpdates.date          !== undefined) row.date          = finalUpdates.date;
+    if (finalUpdates.startTime     !== undefined) row.start_time    = finalUpdates.startTime;
+    if (finalUpdates.endTime       !== undefined) row.end_time      = finalUpdates.endTime;
+    if (finalUpdates.status        !== undefined) row.status        = finalUpdates.status;
+    if (finalUpdates.notes         !== undefined) row.notes         = finalUpdates.notes;
+    if (finalUpdates.rateSnapshot  !== undefined) row.rate_snapshot = finalUpdates.rateSnapshot;
     db(supabase.from('sessions').update(row).eq('id', id));
   };
   const deleteSession = (id: string) => {

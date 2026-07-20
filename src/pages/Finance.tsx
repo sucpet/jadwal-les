@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { format, addMonths, subMonths } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Pencil, Check, X, Crown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Pencil, Check, X, Crown, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useApp } from '../store/AppContext';
 import { formatCurrency } from '../utils/helpers';
 import { durationMinutes } from '../utils/xuyuan';
@@ -111,9 +112,12 @@ export default function Finance() {
                   add(pkg.packagePrice ?? pkg.totalSessions * pkg.pricePerSession);
                 });
             } else {
-              // Per-sesi: hitung sesi selesai bulan ini
-              const count = monthSessions.filter(s => s.studentId === student.id).length;
-              if (count > 0) add(count * student.ratePerSession);
+              // Per-sesi: gunakan rateSnapshot jika ada, fallback ke ratePerSession saat ini
+              const studentSessions = monthSessions.filter(s => s.studentId === student.id);
+              const income = studentSessions.reduce(
+                (sum, s) => sum + (s.rateSnapshot ?? student.ratePerSession), 0
+              );
+              if (income > 0) add(income);
             }
           });
 
@@ -138,9 +142,15 @@ export default function Finance() {
               <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded-full ml-1">
                 <Crown size={11} /> Pemilik
               </span>
+              <Link
+                to={`/finance/${teacher.id}`}
+                className="ml-auto flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+              >
+                Detail <ArrowRight size={11} />
+              </Link>
               <button
                 onClick={() => updateTeacher(teacher.id, { isOwner: false })}
-                className="ml-auto text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               >
                 Ubah ke laoshi biasa
               </button>
@@ -201,9 +211,15 @@ export default function Finance() {
               {monthSessions.length === 0 && (
                 <span className="text-xs text-gray-400 dark:text-gray-500">Tidak ada sesi bulan ini</span>
               )}
+              <Link
+                to={`/finance/${teacher.id}`}
+                className="ml-auto flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+              >
+                Detail <ArrowRight size={11} />
+              </Link>
               <button
                 onClick={() => updateTeacher(teacher.id, { isOwner: true })}
-                className="ml-auto text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               >
                 Tandai sebagai pemilik
               </button>
