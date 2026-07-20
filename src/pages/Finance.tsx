@@ -131,7 +131,7 @@ export default function Finance() {
           { label: 'XuYuan (jam mengajar)', value: incomeXuYuan },
           { label: 'Worksheet XuYuan', value: incomeWorksheet },
           { label: 'Pribadi', value: incomePribadi },
-          { label: 'WenWen / AiZhongWen', value: incomeWenwen },
+          { label: 'WenWen_AiZhongWen', value: incomeWenwen },
         ];
 
         return (
