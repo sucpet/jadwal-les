@@ -12,6 +12,10 @@ const RATE_PRIVATE    = 100_000; // IDR/hour
 const RATE_SEMI_GROUP = 135_000; // IDR/hour
 const WORKSHEET_PRICE =  20_000; // IDR/page
 
+// Penyesuaian manual siklus 26 Mei – 25 Jun 2026: 6,5 jam private + 0,5 jam semi yang tidak tercatat
+const ADJ_CYCLE_KEY   = '2026-05-26';
+const ADJ_MINUTES     = 7 * 60; // 420 menit total
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function currentCycleKey(): string {
@@ -344,7 +348,7 @@ export default function Hours() {
           <div className={`px-5 py-4 ${cycle.isCurrent ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-800'}`}>
             <div className="flex items-start justify-between">
               <div className={`text-sm ${cycle.isCurrent ? 'text-indigo-200' : 'text-gray-500 dark:text-gray-400'}`}>
-                {cycle.totalSessions} sesi · {formatDuration(cycle.totalMinutes)}
+                {cycle.totalSessions} sesi · {formatDuration(cycle.totalMinutes + (cycle.key === ADJ_CYCLE_KEY ? ADJ_MINUTES : 0))}
               </div>
               {cycle.studentGroups.length > 0 && (
                 <button
@@ -397,6 +401,15 @@ export default function Hours() {
           {cycle.studentGroups.length === 0 && (
             <div className="px-5 py-4 bg-white dark:bg-gray-800 text-sm text-gray-400 dark:text-gray-500 text-center">
               Belum ada sesi di periode ini.
+            </div>
+          )}
+
+          {cycle.key === ADJ_CYCLE_KEY && (
+            <div className="px-5 py-3 bg-amber-50 dark:bg-amber-900/10 border-t border-amber-100 dark:border-amber-800/30">
+              <div className="flex items-center gap-2 text-xs text-amber-700 dark:text-amber-400">
+                <span className="flex-1 italic">Penyesuaian Mei — 6,5 jam private + 0,5 jam semi yang tidak tercatat</span>
+                <span className="tabular-nums font-medium">{formatDuration(ADJ_MINUTES)}</span>
+              </div>
             </div>
           )}
           </div>
