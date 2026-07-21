@@ -20,7 +20,10 @@ const DAY_LABELS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Mingg
 export default function Schedule() {
   const { data, addSession, updateSession, deleteSession } = useApp();
   const [searchParams] = useSearchParams();
-  const [currentWeek, setCurrentWeek] = useState(new Date());
+  const [currentWeek, setCurrentWeek] = useState(() => {
+    const d = searchParams.get('date');
+    return d ? parseISO(d) : new Date();
+  });
   const [filterTeacher, setFilterTeacher] = useState(searchParams.get('teacher') ?? 'all');
   const [showForm, setShowForm] = useState(false);
   const [showErrors, setShowErrors] = useState(false);

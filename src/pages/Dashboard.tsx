@@ -136,7 +136,7 @@ export default function Dashboard() {
                 <span className="font-medium">{h.name}</span>
                 {h.tentative && <span className="text-xs opacity-75"> (tanggal tentatif)</span>}
                 {' '}— {format(parseISO(h.date), 'd MMMM yyyy', { locale: localeId })}.{' '}
-                <Link to="/schedule" className="underline text-xs opacity-75 hover:opacity-100">
+                <Link to={`/schedule?date=${h.date}`} className="underline text-xs opacity-75 hover:opacity-100">
                   Cek jadwal →
                 </Link>
               </div>
