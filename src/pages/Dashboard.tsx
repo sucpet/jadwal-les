@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import { format, parseISO, differenceInDays, addDays } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
-import { Clock, AlertTriangle, CheckCircle2, Calendar, UserX, CalendarClock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Clock, AlertTriangle, CheckCircle2, Calendar, UserX, CalendarClock, ChevronLeft, ChevronRight, CalendarX, FileText } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { getTodaySessions, getPackageStatus } from '../utils/helpers';
+import { getHoliday } from '../utils/holidays';
 import { Link } from 'react-router-dom';
 
 export default function Dashboard() {
   const { data } = useApp();
   const today = new Date();
+  const todayStr    = format(today, 'yyyy-MM-dd');
+  const monthStr    = format(today, 'yyyy-MM');
   const todaySessions = getTodaySessions(data.sessions);
 
   const [upcomingPage, setUpcomingPage] = useState(0);
@@ -44,6 +47,67 @@ export default function Dashboard() {
       return student?.isActive && s.isCurrent && (s.isExpiringSoon || s.isExpired);
     });
 
+  // ── Alert #1: Sesi terjadwal di hari libur nasional ──────────────────────
+  const holidayAlerts = (() => {
+    const map = new Map<string, { name: string; date: string; count: number; tentative?: boolean }>();
+    data.sessions.forEach(s => {
+      if (s.status !== 'scheduled' || s.date < todayStr) return;
+      const h = getHoliday(s.date);
+      if (!h) return;
+      if (!map.has(s.date)) map.set(s.date, { name: h.name, date: s.date, count: 0, tentative: h.tentative });
+      map.get(s.date)!.count++;
+    });
+    return [...map.values()].sort((a, b) => a.date.localeCompare(b.date));
+  })();
+
+  // ── Alert #2: Paket aktif tapi 0 sesi scheduled ──────────────────────────
+  const packageAlertIds = new Set(packageAlerts.map(a => a.pkg.studentId));
+  const packageNoSchedule = data.students.filter(student => {
+    if (!student.isActive || student.billingType !== 'package') return false;
+    if (packageAlertIds.has(student.id)) return false;
+    const pkgs = data.packages.filter(p => p.studentId === student.id);
+    if (!pkgs.length) return false;
+    const latest = [...pkgs].sort((a, b) => b.startDate.localeCompare(a.startDate))[0];
+    const st = getPackageStatus(latest, pkgs, data.sessions);
+    if (!st.isCurrent || (st.remainingSessions !== null && st.remainingSessions <= 0)) return false;
+    return !data.sessions.some(s => s.studentId === student.id && s.status === 'scheduled');
+  });
+
+  // ── Alert #3: Murid prepaid tanpa paket sama sekali ──────────────────────
+  const prepaidNoPackage = data.students.filter(student => {
+    if (!student.isActive || student.billingType !== 'package') return false;
+    return data.packages.filter(p => p.studentId === student.id).length === 0;
+  });
+
+  // ── Alert #4: Laoshi non-owner tanpa jadwal 7 hari ke depan ──────────────
+  const teacherNoSchedule = data.teachers.filter(teacher => {
+    if (teacher.isOwner) return false;
+    const hasActiveStudents = data.students.some(s => s.teacherId === teacher.id && s.isActive);
+    if (!hasActiveStudents) return false;
+    return !data.sessions.some(s =>
+      s.teacherId === teacher.id &&
+      s.status === 'scheduled' &&
+      s.date >= tomorrowStr &&
+      s.date <= in7DaysStr
+    );
+  });
+
+  // ── Alert #5: Murid XuYuan belum ada worksheet bulan ini (setelah tgl 15) ─
+  const xuyuanNoWorksheet = today.getDate() >= 15
+    ? data.students.filter(student => {
+        if (!student.isActive || student.group !== 'xuyuan') return false;
+        const hasSessionThisMonth = data.sessions.some(s =>
+          s.studentId === student.id &&
+          s.status === 'completed' &&
+          s.date.startsWith(monthStr)
+        );
+        if (!hasSessionThisMonth) return false;
+        return !data.worksheets.some(w =>
+          w.studentId === student.id && w.date.startsWith(monthStr)
+        );
+      })
+    : [];
+
   // Group by teacher, each teacher gets max 1 completed (most recent) + 3 next scheduled
   const sessionsByTeacher = data.teachers.map(teacher => {
     const teacherSessions = todaySessions.filter(s => s.teacherId === teacher.id);
@@ -73,8 +137,58 @@ export default function Dashboard() {
       </div>
 
       {/* Alerts */}
-      {(packageAlerts.length > 0 || churnRisk.length > 0) && (
+      {(packageAlerts.length > 0 || churnRisk.length > 0 ||
+        holidayAlerts.length > 0 || packageNoSchedule.length > 0 ||
+        prepaidNoPackage.length > 0 || teacherNoSchedule.length > 0 ||
+        xuyuanNoWorksheet.length > 0) && (
         <div className="space-y-2">
+
+          {/* #1 Sesi di hari libur nasional */}
+          {holidayAlerts.map(h => (
+            <div key={h.date} className="flex items-start gap-3 p-3 rounded-lg border bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 text-orange-800 dark:text-orange-300">
+              <CalendarX size={16} className="mt-0.5 flex-shrink-0" />
+              <div className="text-sm flex-1">
+                <span className="font-medium">{h.count} sesi</span>
+                {' '}terjadwal pada{' '}
+                <span className="font-medium">{h.name}</span>
+                {h.tentative && <span className="text-xs opacity-75"> (tanggal tentatif)</span>}
+                {' '}— {format(parseISO(h.date), 'd MMMM yyyy', { locale: localeId })}.{' '}
+                <Link to="/schedule" className="underline text-xs opacity-75 hover:opacity-100">
+                  Cek jadwal →
+                </Link>
+              </div>
+            </div>
+          ))}
+
+          {/* #2 Paket aktif tapi 0 sesi scheduled */}
+          {packageNoSchedule.map(student => (
+            <div key={student.id} className="flex items-start gap-3 p-3 rounded-lg border bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-300">
+              <CalendarClock size={16} className="mt-0.5 flex-shrink-0" />
+              <div className="text-sm flex-1">
+                <span className="font-medium">{student.name}</span>
+                {' '}— paket aktif tapi belum ada sesi yang dijadwalkan.{' '}
+                <Link to="/schedule" className="underline text-xs opacity-75 hover:opacity-100">
+                  Jadwalkan →
+                </Link>
+              </div>
+            </div>
+          ))}
+
+          {/* #3 Prepaid tanpa paket sama sekali */}
+          {prepaidNoPackage.map(student => (
+            <div key={student.id} className="flex items-start gap-3 p-3 rounded-lg border bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-300">
+              <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
+              <div className="text-sm flex-1">
+                <span className="font-medium">{student.name}</span>
+                {' '}— murid paket tapi belum ada paket yang dibuat.{' '}
+                <Link to="/students" className="underline text-xs opacity-75 hover:opacity-100">
+                  Buat paket →
+                </Link>
+              </div>
+            </div>
+          ))}
+
+          {/* Existing: churn risk */}
           {churnRisk.map(student => (
             <div key={student.id} className="flex items-start gap-3 p-3 rounded-lg border bg-gray-50 dark:bg-gray-800/60 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">
               <UserX size={16} className="mt-0.5 flex-shrink-0 text-gray-400" />
@@ -87,6 +201,8 @@ export default function Dashboard() {
               </div>
             </div>
           ))}
+
+          {/* Existing: package expiry */}
           {packageAlerts.map(({ pkg, isExpired }) => {
             const student = data.students.find(s => s.id === pkg.studentId);
             const teacher = data.teachers.find(t => t.id === pkg.teacherId);
@@ -114,6 +230,35 @@ export default function Dashboard() {
               </div>
             );
           })}
+
+          {/* #4 Laoshi tanpa jadwal 7 hari ke depan */}
+          {teacherNoSchedule.map(teacher => (
+            <div key={teacher.id} className="flex items-start gap-3 p-3 rounded-lg border bg-gray-50 dark:bg-gray-800/60 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">
+              <Clock size={16} className="mt-0.5 flex-shrink-0 text-gray-400" />
+              <div className="text-sm flex-1">
+                <span className="font-medium">{teacher.name}</span>
+                {' '}— tidak ada jadwal dalam 7 hari ke depan.{' '}
+                <Link to={`/schedule?teacher=${teacher.id}`} className="underline text-xs opacity-75 hover:opacity-100">
+                  Lihat jadwal →
+                </Link>
+              </div>
+            </div>
+          ))}
+
+          {/* #5 XuYuan belum ada worksheet bulan ini */}
+          {xuyuanNoWorksheet.map(student => (
+            <div key={student.id} className="flex items-start gap-3 p-3 rounded-lg border bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300">
+              <FileText size={16} className="mt-0.5 flex-shrink-0" />
+              <div className="text-sm flex-1">
+                <span className="font-medium">{student.name}</span>
+                {' '}— belum ada worksheet yang dicatat bulan ini.{' '}
+                <Link to="/worksheet" className="underline text-xs opacity-75 hover:opacity-100">
+                  Catat worksheet →
+                </Link>
+              </div>
+            </div>
+          ))}
+
         </div>
       )}
 
