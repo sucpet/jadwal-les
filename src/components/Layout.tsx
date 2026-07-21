@@ -110,23 +110,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </nav>
 
         {/* Main content */}
-        <main className="flex-1 p-4 md:p-6 pb-20 md:pb-6 overflow-auto">{children}</main>
+        <main className="flex-1 p-4 md:p-6 pb-24 md:pb-6 overflow-auto">{children}</main>
       </div>
 
-      {/* Bottom nav mobile — scrollable so all items are reachable */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex overflow-x-auto scrollbar-none">
+      {/* Bottom nav mobile — 4×2 grid so all 8 items are always visible */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 grid grid-cols-4">
         {navItems.map(({ to, icon: Icon, label }) => {
           const active = to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
           return (
             <Link
               key={to}
               to={to}
-              className={`flex-none flex flex-col items-center py-2 px-3 gap-0.5 text-xs font-medium min-w-[64px] ${
+              className={`flex flex-col items-center py-1.5 gap-0.5 font-medium ${
                 active ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400'
               }`}
             >
-              <Icon size={20} />
-              <span className="truncate w-full text-center">{label}</span>
+              <Icon size={18} />
+              <span className="text-[10px] truncate w-full text-center px-0.5 leading-tight">{label}</span>
             </Link>
           );
         })}
