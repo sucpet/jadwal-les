@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { format, parseISO, differenceInDays, addDays } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
-import { Clock, AlertTriangle, CheckCircle2, Calendar, UserX, CalendarClock, ChevronLeft, ChevronRight, CalendarX, FileText } from 'lucide-react';
+import { Clock, AlertTriangle, CheckCircle2, Calendar, UserX, CalendarClock, ChevronLeft, ChevronRight, CalendarX } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { getTodaySessions, getPackageStatus } from '../utils/helpers';
 import { getHoliday } from '../utils/holidays';
@@ -11,7 +11,6 @@ export default function Dashboard() {
   const { data } = useApp();
   const today = new Date();
   const todayStr    = format(today, 'yyyy-MM-dd');
-  const monthStr    = format(today, 'yyyy-MM');
   const todaySessions = getTodaySessions(data.sessions);
 
   const [upcomingPage, setUpcomingPage] = useState(0);
@@ -92,21 +91,6 @@ export default function Dashboard() {
     );
   });
 
-  // ── Alert #5: Murid XuYuan belum ada worksheet bulan ini (setelah tgl 15) ─
-  const xuyuanNoWorksheet = today.getDate() >= 15
-    ? data.students.filter(student => {
-        if (!student.isActive || student.group !== 'xuyuan') return false;
-        const hasSessionThisMonth = data.sessions.some(s =>
-          s.studentId === student.id &&
-          s.status === 'completed' &&
-          s.date.startsWith(monthStr)
-        );
-        if (!hasSessionThisMonth) return false;
-        return !data.worksheets.some(w =>
-          w.studentId === student.id && w.date.startsWith(monthStr)
-        );
-      })
-    : [];
 
   // Group by teacher, each teacher gets max 1 completed (most recent) + 3 next scheduled
   const sessionsByTeacher = data.teachers.map(teacher => {
@@ -139,8 +123,7 @@ export default function Dashboard() {
       {/* Alerts */}
       {(packageAlerts.length > 0 || churnRisk.length > 0 ||
         holidayAlerts.length > 0 || packageNoSchedule.length > 0 ||
-        prepaidNoPackage.length > 0 || teacherNoSchedule.length > 0 ||
-        xuyuanNoWorksheet.length > 0) && (
+        prepaidNoPackage.length > 0 || teacherNoSchedule.length > 0) && (
         <div className="space-y-2">
 
           {/* #1 Sesi di hari libur nasional */}
@@ -245,19 +228,6 @@ export default function Dashboard() {
             </div>
           ))}
 
-          {/* #5 XuYuan belum ada worksheet bulan ini */}
-          {xuyuanNoWorksheet.map(student => (
-            <div key={student.id} className="flex items-start gap-3 p-3 rounded-lg border bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300">
-              <FileText size={16} className="mt-0.5 flex-shrink-0" />
-              <div className="text-sm flex-1">
-                <span className="font-medium">{student.name}</span>
-                {' '}— belum ada worksheet yang dicatat bulan ini.{' '}
-                <Link to="/worksheet" className="underline text-xs opacity-75 hover:opacity-100">
-                  Catat worksheet →
-                </Link>
-              </div>
-            </div>
-          ))}
 
         </div>
       )}
