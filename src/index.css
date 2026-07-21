@@ -45,3 +45,10 @@ body {
   border-color: #f87171;
   background-color: rgba(239, 68, 68, 0.15);
 }
+
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}

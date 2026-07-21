@@ -113,20 +113,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <main className="flex-1 p-4 md:p-6 pb-20 md:pb-6 overflow-auto">{children}</main>
       </div>
 
-      {/* Bottom nav mobile */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex">
-        {navItems.filter(i => !i.mobileHide).map(({ to, icon: Icon, label }) => {
+      {/* Bottom nav mobile — scrollable so all items are reachable */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex overflow-x-auto scrollbar-none">
+        {navItems.map(({ to, icon: Icon, label }) => {
           const active = to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
           return (
             <Link
               key={to}
               to={to}
-              className={`flex-1 flex flex-col items-center py-2 gap-0.5 text-xs font-medium ${
+              className={`flex-none flex flex-col items-center py-2 px-3 gap-0.5 text-xs font-medium min-w-[64px] ${
                 active ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400'
               }`}
             >
               <Icon size={20} />
-              {label}
+              <span className="truncate w-full text-center">{label}</span>
             </Link>
           );
         })}
