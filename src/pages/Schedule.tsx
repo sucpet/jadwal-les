@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight, Plus, X, Check, Trash2, Clock, AlertTriangle, RefreshCw, ListChecks, CalendarClock, Search } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
-import { addWeeks, subWeeks, startOfWeek, addDays, isSameDay, parseISO, format } from 'date-fns';
+import { addWeeks, subWeeks, startOfWeek, addDays, isSameDay, parseISO, format, startOfMonth, addMonths, subMonths, isSameMonth } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { useApp } from '../store/AppContext';
 import type { LessonSession } from '../types';
@@ -32,6 +32,8 @@ export default function Schedule() {
   const [rescheduleWeeks, setRescheduleWeeks] = useState('1');
   const [bulkConfirm, setBulkConfirm] = useState<'cancel' | 'reschedule' | null>(null);
   const [bulkStudentFilter, setBulkStudentFilter] = useState('');
+  const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
+  const [currentMonth, setCurrentMonth] = useState(() => new Date());
   const [form, setForm] = useState({
     teacherId: data.teachers[0]?.id ?? '',
     studentId: '',
@@ -45,6 +47,11 @@ export default function Schedule() {
 
   const weekStart = startOfWeek(currentWeek, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+
+  // Month view grid — always 6 rows × 7 cols = 42 days
+  const monthGridStart = startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 1 });
+  const monthGridDays = Array.from({ length: 42 }, (_, i) => addDays(monthGridStart, i));
+  const monthGridWeeks = Array.from({ length: 6 }, (_, w) => monthGridDays.slice(w * 7, (w + 1) * 7));
 
   const filteredSessions = filterTeacher === 'all'
     ? data.sessions
@@ -367,24 +374,50 @@ export default function Schedule() {
         </div>
       )}
 
-      {/* Week navigation — hidden in bulk mode */}
-      <div className={`flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2 ${bulkMode ? 'hidden' : ''}`}>
-        <button onClick={() => setCurrentWeek(w => subWeeks(w, 1))} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded dark:text-gray-300">
+      {/* Navigation — hidden in bulk mode */}
+      <div className={`flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 ${bulkMode ? 'hidden' : ''}`}>
+        <button
+          onClick={() => viewMode === 'week' ? setCurrentWeek(w => subWeeks(w, 1)) : setCurrentMonth(m => subMonths(m, 1))}
+          className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded dark:text-gray-300"
+        >
           <ChevronLeft size={18} />
         </button>
-        <span className="flex-1 text-center text-sm font-medium dark:text-gray-200">
-          {format(weekStart, 'd MMMM', { locale: localeId })} – {format(addDays(weekStart, 6), 'd MMMM yyyy', { locale: localeId })}
+        <span className="flex-1 text-center text-sm font-medium dark:text-gray-200 capitalize">
+          {viewMode === 'week'
+            ? `${format(weekStart, 'd MMMM', { locale: localeId })} – ${format(addDays(weekStart, 6), 'd MMMM yyyy', { locale: localeId })}`
+            : format(currentMonth, 'MMMM yyyy', { locale: localeId })}
         </span>
-        <button onClick={() => setCurrentWeek(new Date())} className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline px-2">
+        <button
+          onClick={() => { setCurrentWeek(new Date()); setCurrentMonth(new Date()); }}
+          className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline px-1"
+        >
           Hari ini
         </button>
-        <button onClick={() => setCurrentWeek(w => addWeeks(w, 1))} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded dark:text-gray-300">
+        <button
+          onClick={() => viewMode === 'week' ? setCurrentWeek(w => addWeeks(w, 1)) : setCurrentMonth(m => addMonths(m, 1))}
+          className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded dark:text-gray-300"
+        >
           <ChevronRight size={18} />
         </button>
+        {/* View mode toggle */}
+        <div className="flex items-center gap-0.5 bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5 ml-1">
+          <button
+            onClick={() => setViewMode('week')}
+            className={`text-xs px-2.5 py-1 rounded transition-colors ${viewMode === 'week' ? 'bg-white dark:bg-gray-600 text-gray-800 dark:text-white shadow-sm font-medium' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
+          >
+            Minggu
+          </button>
+          <button
+            onClick={() => setViewMode('month')}
+            className={`text-xs px-2.5 py-1 rounded transition-colors ${viewMode === 'month' ? 'bg-white dark:bg-gray-600 text-gray-800 dark:text-white shadow-sm font-medium' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
+          >
+            Bulan
+          </button>
+        </div>
       </div>
 
-      {/* Mobile week list — visible only on small screens, hidden in bulk mode */}
-      <div className={`md:hidden space-y-2 ${bulkMode ? 'hidden' : ''}`}>
+      {/* Mobile week list — visible only on small screens, hidden in bulk/month mode */}
+      <div className={`md:hidden space-y-2 ${bulkMode || viewMode === 'month' ? 'hidden' : ''}`}>
         {weekDays.map((day, di) => {
           const dayStr = format(day, 'yyyy-MM-dd');
           const daySessions = filteredSessions
@@ -448,9 +481,9 @@ export default function Schedule() {
         })}
       </div>
 
-      {/* Calendar grid — desktop only, hidden in bulk mode */}
+      {/* Calendar grid — desktop only, hidden in bulk/month mode */}
       {/* overflow-clip: clips border-radius without creating a scroll container (so sticky header works) */}
-      <div className={`border border-gray-200 dark:border-gray-700 rounded-xl overflow-clip ${bulkMode ? 'hidden' : 'hidden md:block'}`}>
+      <div className={`border border-gray-200 dark:border-gray-700 rounded-xl overflow-clip ${bulkMode || viewMode === 'month' ? 'hidden' : 'hidden md:block'}`}>
         {/* Single scroll container — header + body share the same width so columns always align */}
         <div className="overflow-y-auto max-h-[748px]">
           {/* Sticky header */}
@@ -563,6 +596,81 @@ export default function Schedule() {
           </div>
         </div>
       </div>
+
+      {/* Month view grid */}
+      {!bulkMode && viewMode === 'month' && (
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+          {/* Day name headers */}
+          <div className="grid grid-cols-7 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30">
+            {DAY_LABELS.map(label => (
+              <div key={label} className="py-2 text-center text-xs font-semibold text-gray-500 dark:text-gray-400">
+                <span className="hidden sm:inline">{label.slice(0, 3)}</span>
+                <span className="sm:hidden">{label.slice(0, 1)}</span>
+              </div>
+            ))}
+          </div>
+          {/* Weeks */}
+          <div className="divide-y divide-gray-100 dark:divide-gray-700/50">
+            {monthGridWeeks.map((week, wi) => (
+              <div key={wi} className="grid grid-cols-7 divide-x divide-gray-100 dark:divide-gray-700/50">
+                {week.map((day, di) => {
+                  const dayStr = format(day, 'yyyy-MM-dd');
+                  const inMonth = isSameMonth(day, currentMonth);
+                  const isToday = isSameDay(day, today);
+                  const daySessions = filteredSessions
+                    .filter(s => s.date === dayStr)
+                    .sort((a, b) => a.startTime.localeCompare(b.startTime));
+                  const visibleSessions = daySessions.slice(0, 3);
+                  const overflow = daySessions.length - 3;
+                  return (
+                    <div
+                      key={di}
+                      onClick={() => openAdd(dayStr)}
+                      className={`min-h-[72px] sm:min-h-[100px] p-1 cursor-pointer transition-colors select-none
+                        ${inMonth ? 'hover:bg-gray-50 dark:hover:bg-gray-700/30' : 'bg-gray-50/60 dark:bg-gray-900/20'}`}
+                    >
+                      {/* Date number */}
+                      <div className="flex justify-end mb-0.5">
+                        <span className={`text-xs font-semibold flex items-center justify-center rounded-full w-5 h-5 sm:w-6 sm:h-6
+                          ${isToday ? 'bg-indigo-600 text-white' : inMonth ? 'text-gray-700 dark:text-gray-200' : 'text-gray-300 dark:text-gray-600'}`}>
+                          {format(day, 'd')}
+                        </span>
+                      </div>
+                      {/* Session chips */}
+                      <div className="space-y-0.5">
+                        {visibleSessions.map(s => {
+                          const student = data.students.find(st => st.id === s.studentId);
+                          const teacher = data.teachers.find(t => t.id === s.teacherId);
+                          const color = teacher?.color ?? '#6366f1';
+                          return (
+                            <button
+                              key={s.id}
+                              onClick={e => { e.stopPropagation(); openEdit(s); }}
+                              className={`w-full text-left block rounded overflow-hidden leading-tight ${s.status === 'completed' ? 'opacity-60' : ''}`}
+                              style={{ backgroundColor: color }}
+                              title={`${student?.name} ${s.startTime}–${s.endTime}`}
+                            >
+                              {/* Mobile: dot only */}
+                              <span className="sm:hidden flex items-center justify-center py-0.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-white/80 inline-block" />
+                              </span>
+                              {/* Desktop: name */}
+                              <span className="hidden sm:block text-xs text-white px-1.5 py-0.5 truncate">{student?.name ?? '—'}</span>
+                            </button>
+                          );
+                        })}
+                        {overflow > 0 && (
+                          <div className="text-xs text-gray-400 dark:text-gray-500 px-0.5 font-medium">+{overflow}</div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Bulk action bar */}
       {bulkMode && selectedIds.size > 0 && (
