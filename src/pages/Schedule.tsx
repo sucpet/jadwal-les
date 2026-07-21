@@ -34,6 +34,7 @@ export default function Schedule() {
   const [bulkStudentFilter, setBulkStudentFilter] = useState('');
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
+  const [dayPanel, setDayPanel] = useState<string | null>(null);
   const [form, setForm] = useState({
     teacherId: data.teachers[0]?.id ?? '',
     studentId: '',
@@ -625,7 +626,7 @@ export default function Schedule() {
                   return (
                     <div
                       key={di}
-                      onClick={() => openAdd(dayStr)}
+                      onClick={() => setDayPanel(dayStr)}
                       className={`min-h-[72px] sm:min-h-[100px] p-1 cursor-pointer transition-colors select-none
                         ${inMonth ? 'hover:bg-gray-50 dark:hover:bg-gray-700/30' : 'bg-gray-50/60 dark:bg-gray-900/20'}`}
                     >
@@ -636,27 +637,23 @@ export default function Schedule() {
                           {format(day, 'd')}
                         </span>
                       </div>
-                      {/* Session chips */}
+                      {/* Session indicators — visual only, detail via panel */}
                       <div className="space-y-0.5">
                         {visibleSessions.map(s => {
-                          const student = data.students.find(st => st.id === s.studentId);
                           const teacher = data.teachers.find(t => t.id === s.teacherId);
                           const color = teacher?.color ?? '#6366f1';
+                          const student = data.students.find(st => st.id === s.studentId);
                           return (
-                            <button
+                            <div
                               key={s.id}
-                              onClick={e => { e.stopPropagation(); openEdit(s); }}
-                              className={`w-full text-left block rounded overflow-hidden leading-tight ${s.status === 'completed' ? 'opacity-60' : ''}`}
+                              className={`w-full block rounded overflow-hidden leading-tight pointer-events-none ${s.status === 'completed' ? 'opacity-55' : ''}`}
                               style={{ backgroundColor: color }}
-                              title={`${student?.name} ${s.startTime}–${s.endTime}`}
                             >
-                              {/* Mobile: dot only */}
                               <span className="sm:hidden flex items-center justify-center py-0.5">
                                 <span className="w-1.5 h-1.5 rounded-full bg-white/80 inline-block" />
                               </span>
-                              {/* Desktop: name */}
                               <span className="hidden sm:block text-xs text-white px-1.5 py-0.5 truncate">{student?.name ?? '—'}</span>
-                            </button>
+                            </div>
                           );
                         })}
                         {overflow > 0 && (
@@ -668,6 +665,91 @@ export default function Schedule() {
                 })}
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Day detail panel (month view) */}
+      {dayPanel && (
+        <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4" onClick={() => setDayPanel(null)}>
+          <div
+            className="bg-white dark:bg-gray-800 w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl shadow-xl flex flex-col max-h-[80vh]"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
+              <div>
+                <div className="font-semibold text-gray-900 dark:text-white capitalize">
+                  {format(parseISO(dayPanel), 'EEEE', { locale: localeId })}
+                </div>
+                <div className="text-sm text-gray-400 dark:text-gray-500">
+                  {format(parseISO(dayPanel), 'd MMMM yyyy', { locale: localeId })}
+                </div>
+              </div>
+              <button onClick={() => setDayPanel(null)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-400">
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Session list */}
+            <div className="overflow-y-auto flex-1">
+              {(() => {
+                const daySessions = filteredSessions
+                  .filter(s => s.date === dayPanel)
+                  .sort((a, b) => a.startTime.localeCompare(b.startTime));
+                if (daySessions.length === 0) {
+                  return (
+                    <div className="px-5 py-8 text-center text-sm text-gray-400 dark:text-gray-500 italic">
+                      Tidak ada sesi
+                    </div>
+                  );
+                }
+                return (
+                  <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                    {daySessions.map(s => {
+                      const student = data.students.find(st => st.id === s.studentId);
+                      const teacher = data.teachers.find(t => t.id === s.teacherId);
+                      return (
+                        <button
+                          key={s.id}
+                          onClick={() => { setDayPanel(null); openEdit(s); }}
+                          className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-700/40 text-left transition-colors"
+                        >
+                          <div className="w-1 self-stretch rounded-full flex-shrink-0" style={{ background: teacher?.color ?? '#6366f1' }} />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm text-gray-900 dark:text-white truncate">{student?.name ?? '—'}</div>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <Clock size={11} className="text-gray-400 flex-shrink-0" />
+                              <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums">{s.startTime} – {s.endTime}</span>
+                              {filterTeacher === 'all' && (
+                                <span className="text-xs text-gray-400 dark:text-gray-500">· {teacher?.name}</span>
+                              )}
+                            </div>
+                          </div>
+                          <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
+                            s.status === 'completed'
+                              ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                              : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                          }`}>
+                            {s.status === 'completed' ? 'Selesai' : 'Terjadwal'}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Footer — add session */}
+            <div className="px-5 py-4 border-t border-gray-100 dark:border-gray-700 flex-shrink-0">
+              <button
+                onClick={() => { setDayPanel(null); openAdd(dayPanel); }}
+                className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white text-sm px-4 py-2.5 rounded-xl hover:bg-indigo-700"
+              >
+                <Plus size={16} /> Tambah Sesi
+              </button>
+            </div>
           </div>
         </div>
       )}
