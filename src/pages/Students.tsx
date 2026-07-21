@@ -592,10 +592,20 @@ function PackageCard({
       {/* Progress bar */}
       <div>
         <div className="flex justify-between text-xs mb-1">
-          <span className="text-gray-500">
-            <span className={isExpired ? 'text-green-700 font-medium' : ''}>{usedSessions} selesai</span>
-            {scheduledSessions > 0 && <span className="text-blue-500"> · {scheduledSessions} terjadwal</span>}
-            <span className="text-gray-400"> / {pkg.totalSessions}</span>
+          <span className="flex items-center gap-2 flex-wrap">
+            <span className={`flex items-center gap-1 ${isExpired ? 'text-green-700 font-medium' : 'text-gray-500'}`}>
+              <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{
+                background: isExpired ? '#10b981' : isExpiringSoon ? '#f59e0b' : teacherColor,
+              }} />
+              {usedSessions} selesai
+            </span>
+            {scheduledSessions > 0 && (
+              <span className="flex items-center gap-1 text-blue-500">
+                <span className="w-2 h-2 rounded-sm flex-shrink-0 bg-blue-400" />
+                {scheduledSessions} terjadwal
+              </span>
+            )}
+            <span className="text-gray-400">/ {pkg.totalSessions}</span>
           </span>
           <span className={`font-medium ${isExpired ? 'text-green-700' : isExpiringSoon ? 'text-amber-600' : remainingSessions === 0 ? 'text-gray-500' : 'text-gray-700'}`}>
             {isExpired ? 'Selesai' : remainingSessions === 0 ? 'Penuh' : `Sisa ${remainingSessions}`}
@@ -607,7 +617,7 @@ function PackageCard({
             background: isExpired ? '#10b981' : isExpiringSoon ? '#f59e0b' : teacherColor,
           }} />
           {scheduledSessions > 0 && (
-            <div className="h-full bg-blue-200 transition-all" style={{
+            <div className="h-full bg-blue-400 transition-all" style={{
               width: `${(scheduledSessions / pkg.totalSessions) * 100}%`,
             }} />
           )}
