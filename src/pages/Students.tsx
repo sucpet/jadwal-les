@@ -657,7 +657,7 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
 
   useEffect(() => {
     if (highlight && cardRef.current) {
-      cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, [highlight]);
 
