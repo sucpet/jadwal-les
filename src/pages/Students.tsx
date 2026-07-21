@@ -642,10 +642,10 @@ function PackageCard({
             </div>
             <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-sm bg-gray-200 inline-block" /> selesai
+                <span className="px-1 rounded bg-gray-100 text-gray-500 text-[10px]">tgl</span> selesai
               </span>
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-sm bg-blue-200 border border-blue-300 inline-block" /> terjadwal
+                <span className="px-1 rounded bg-blue-50 text-blue-400 border border-blue-200 text-[10px]">tgl</span> terjadwal
               </span>
             </div>
           </div>
