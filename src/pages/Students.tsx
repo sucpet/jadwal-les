@@ -790,8 +790,8 @@ function StudentCard({ student, dimmed }: { student: Student; dimmed?: boolean }
       {expanded && (
         <div className="border-t border-gray-100 dark:border-gray-700 p-4 space-y-3 bg-gray-50/50 dark:bg-gray-700/20">
 
-          {/* ── WenWen: paket + sesi per paket ── */}
-          {student.group === 'wenwen_aizhongwen' && (
+          {/* ── Prepaid (paket): riwayat paket — semua group kecuali xuyuan ── */}
+          {student.billingType === 'package' && (
             <>
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Riwayat Paket</span>
