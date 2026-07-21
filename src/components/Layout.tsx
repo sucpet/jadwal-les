@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, BookOpen, GraduationCap, Settings, Timer, LogOut, FileText, Wallet } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, GraduationCap, Settings, Timer, LogOut, FileText, Wallet, MoreHorizontal } from 'lucide-react';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { supabase } from '../lib/supabase';
@@ -8,14 +8,19 @@ import { useApp } from '../store/AppContext';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/teachers', icon: GraduationCap, label: 'Laoshi', mobileHide: true },
+  { to: '/teachers', icon: GraduationCap, label: 'Laoshi' },
   { to: '/students', icon: Users, label: 'Murid' },
   { to: '/schedule', icon: BookOpen, label: 'Jadwal' },
   { to: '/worksheet', icon: FileText, label: 'Worksheet' },
-  { to: '/hours', icon: Timer, label: 'Jam Mengajar', mobileHide: true },
-  { to: '/finance', icon: Wallet, label: 'Keuangan', mobileHide: true },
+  { to: '/hours', icon: Timer, label: 'Jam Mengajar' },
+  { to: '/finance', icon: Wallet, label: 'Keuangan' },
   { to: '/settings', icon: Settings, label: 'Pengaturan' },
 ];
+
+// 4 items shown in bottom nav; the rest in "Lainnya" sheet
+const MAIN_ROUTES = new Set(['/', '/students', '/schedule', '/finance']);
+const mainNavItems = navItems.filter(n => MAIN_ROUTES.has(n.to));
+const moreNavItems = navItems.filter(n => !MAIN_ROUTES.has(n.to));
 
 function LiveClock() {
   const [now, setNow] = useState(new Date());
@@ -42,6 +47,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { loading } = useApp();
   const idleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [showMore, setShowMore] = useState(false);
+
+  // Close "more" sheet on navigation
+  useEffect(() => { setShowMore(false); }, [location.pathname]);
+
+  const isMoreActive = moreNavItems.some(n =>
+    n.to === '/' ? location.pathname === '/' : location.pathname.startsWith(n.to)
+  );
 
   useEffect(() => {
     const reset = () => {
@@ -113,24 +126,62 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <main className="flex-1 p-4 md:p-6 pb-24 md:pb-6 overflow-auto">{children}</main>
       </div>
 
-      {/* Bottom nav mobile — 4×2 grid so all 8 items are always visible */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 grid grid-cols-4">
-        {navItems.map(({ to, icon: Icon, label }) => {
+      {/* Bottom nav mobile — 4 main items + "Lainnya" */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex">
+        {mainNavItems.map(({ to, icon: Icon, label }) => {
           const active = to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
           return (
             <Link
               key={to}
               to={to}
-              className={`flex flex-col items-center py-1.5 gap-0.5 font-medium ${
+              className={`flex-1 flex flex-col items-center py-2 gap-0.5 text-xs font-medium ${
                 active ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400'
               }`}
             >
-              <Icon size={18} />
-              <span className="text-[10px] truncate w-full text-center px-0.5 leading-tight">{label}</span>
+              <Icon size={20} />
+              {label}
             </Link>
           );
         })}
+        <button
+          onClick={() => setShowMore(v => !v)}
+          className={`flex-1 flex flex-col items-center py-2 gap-0.5 text-xs font-medium ${
+            isMoreActive || showMore ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400'
+          }`}
+        >
+          <MoreHorizontal size={20} />
+          Lainnya
+        </button>
       </nav>
+
+      {/* "Lainnya" overlay */}
+      {showMore && (
+        <div className="md:hidden fixed inset-0 z-40" onClick={() => setShowMore(false)}>
+          <div
+            className="absolute bottom-14 inset-x-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="grid grid-cols-4 py-1">
+              {moreNavItems.map(({ to, icon: Icon, label }) => {
+                const active = to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
+                return (
+                  <Link
+                    key={to}
+                    to={to}
+                    onClick={() => setShowMore(false)}
+                    className={`flex flex-col items-center py-3 gap-0.5 text-xs font-medium ${
+                      active ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400'
+                    }`}
+                  >
+                    <Icon size={20} />
+                    {label}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
