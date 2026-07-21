@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Plus, Pencil, Trash2, X, Check, ChevronDown, ChevronUp, Package, AlertTriangle, Clock, CalendarDays, PowerOff, RotateCcw, Search } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
@@ -647,11 +648,18 @@ function PackageCard({
 
 // ─── Student Card ─────────────────────────────────────────────────────────────
 
-function StudentCard({ student, dimmed }: { student: Student; dimmed?: boolean }) {
+function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?: boolean; highlight?: boolean }) {
   const { data, updateStudent, deleteStudent, addPackage, updatePackage, deletePackage } = useApp();
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(highlight ?? false);
   const [editing, setEditing] = useState(false);
   const [addingPackage, setAddingPackage] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (highlight && cardRef.current) {
+      cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [highlight]);
 
   const teacher = data.teachers.find(t => t.id === student.teacherId);
   const studentPkgs = data.packages
@@ -706,7 +714,7 @@ function StudentCard({ student, dimmed }: { student: Student; dimmed?: boolean }
   }
 
   return (
-    <div className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden ${dimmed ? 'opacity-50' : ''}`}>
+    <div ref={cardRef} className={`bg-white dark:bg-gray-800 rounded-xl overflow-hidden scroll-mt-4 ${highlight ? 'border-2 border-indigo-400 dark:border-indigo-500' : 'border border-gray-200 dark:border-gray-700'} ${dimmed ? 'opacity-50' : ''}`}>
       {/* Header row */}
       <div className="flex items-center gap-3 p-4">
         <div className="w-1.5 self-stretch rounded-full flex-shrink-0"
@@ -895,6 +903,8 @@ function StudentCard({ student, dimmed }: { student: Student; dimmed?: boolean }
 
 export default function Students() {
   const { data, addStudent, addPackage } = useApp();
+  const [searchParams] = useSearchParams();
+  const highlightId = searchParams.get('student') ?? null;
   const [showForm, setShowForm] = useState(false);
   const [filterTeacher, setFilterTeacher] = useState('all');
 
@@ -1014,7 +1024,7 @@ export default function Students() {
                 {hasPrepaid && (
                   <p className="text-xs text-gray-400 pl-1">Klik ▼ untuk kelola paket.</p>
                 )}
-                {group.map(s => <StudentCard key={s.id} student={s} />)}
+                {group.map(s => <StudentCard key={s.id} student={s} highlight={s.id === highlightId} />)}
               </section>
             );
           })}
@@ -1035,7 +1045,7 @@ export default function Students() {
             {showInactive ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
           </button>
-          {showInactive && inactiveStudents.map(s => <StudentCard key={s.id} student={s} dimmed />)}
+          {showInactive && inactiveStudents.map(s => <StudentCard key={s.id} student={s} dimmed highlight={s.id === highlightId} />)}
         </div>
       )}
     </div>

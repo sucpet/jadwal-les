@@ -164,7 +164,7 @@ export default function Dashboard() {
               <div className="text-sm flex-1">
                 <span className="font-medium">{student.name}</span>
                 {' '}— murid paket tapi belum ada paket yang dibuat.{' '}
-                <Link to="/students" className="underline text-xs opacity-75 hover:opacity-100">
+                <Link to={`/students?student=${student.id}`} className="underline text-xs opacity-75 hover:opacity-100">
                   Buat paket →
                 </Link>
               </div>
@@ -206,7 +206,7 @@ export default function Dashboard() {
                     : ' — paket hampir habis, tinggal 1 sesi. '}
                   {teacher && <span className="text-xs opacity-75">({teacher.name})</span>}
                   {' '}
-                  <Link to="/students" className="underline text-xs opacity-75 hover:opacity-100">
+                  <Link to={`/students?student=${pkg.studentId}`} className="underline text-xs opacity-75 hover:opacity-100">
                     Perbarui paket →
                   </Link>
                 </div>
