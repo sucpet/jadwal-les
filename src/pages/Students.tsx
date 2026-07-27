@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Plus, Pencil, Trash2, X, Check, ChevronDown, ChevronUp, Package, AlertTriangle, Clock, CalendarDays, CalendarClock, PowerOff, RotateCcw, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Check, ChevronDown, ChevronUp, Package, AlertTriangle, Clock, CalendarDays, CalendarClock, StickyNote, PowerOff, RotateCcw, Search } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { useApp } from '../store/AppContext';
@@ -849,6 +849,12 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
               </>
             )}
           </div>
+          {student.notes && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 italic flex items-start gap-1">
+              <StickyNote size={11} className="mt-0.5 flex-shrink-0 text-gray-400" />
+              <span className="min-w-0 break-words">{student.notes}</span>
+            </p>
+          )}
         </div>
 
         <div className="flex items-center gap-1">
