@@ -17,8 +17,8 @@ function SessionDateChips({ sessions }: { sessions: LessonSession[] }) {
       {sessions.map(s => (
         <span key={s.id} className={`text-xs px-1.5 py-0.5 rounded ${
           s.status === 'scheduled'
-            ? 'bg-blue-50 text-blue-500 border border-blue-200'
-            : 'bg-gray-100 text-gray-600'
+            ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-500 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
         }`}>
           {format(parseISO(s.date), 'd MMM', { locale: localeId })}
         </span>
@@ -208,7 +208,7 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
       {/* Postpaid: isi rate manual */}
       {!isXuYuan && !isPrepaid && (
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Biaya / Sesi (Rp)</label>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Biaya / Sesi (Rp)</label>
           <input type="number" min="0" onKeyDown={e => (e.key === '-' || e.key === 'e') && e.preventDefault()} value={form.ratePerSession}
             onChange={e => {
               const v = e.target.value;
@@ -272,14 +272,14 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
 
       {/* Prepaid + murid baru: isi paket pertama langsung */}
       {isPrepaid && isNew && (
-        <div className="border border-purple-200 rounded-xl p-4 space-y-3 bg-purple-50/60">
-          <div className="text-xs font-semibold text-purple-700 flex items-center gap-1.5 uppercase tracking-wide">
+        <div className="border border-purple-200 dark:border-purple-800 rounded-xl p-4 space-y-3 bg-purple-50/60 dark:bg-purple-900/20">
+          <div className="text-xs font-semibold text-purple-700 dark:text-purple-300 flex items-center gap-1.5 uppercase tracking-wide">
             <Package size={13} /> Paket Pertama
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Jumlah Pertemuan</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Jumlah Pertemuan</label>
               <input type="number" min="0" onKeyDown={e => (e.key === '-' || e.key === 'e') && e.preventDefault()} value={pkg.totalSessions}
                 onChange={e => setPkg(p => ({ ...p, totalSessions: e.target.value }))}
                 placeholder="8" className={`input w-full ${showErrors && !pkg.totalSessions ? 'input-error' : ''}`} />
@@ -288,7 +288,7 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
               )}
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Tanggal Mulai</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Tanggal Mulai</label>
               <input type="date" value={pkg.startDate}
                 onChange={e => setPkg(p => ({ ...p, startDate: e.target.value }))}
                 className="input w-full" />
@@ -296,7 +296,7 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">Cara Hitung Harga</label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Cara Hitung Harga</label>
             <div className="grid grid-cols-2 gap-2">
               {([
                 ['per-session', 'Per Pertemuan', 'Harga × jumlah sesi'],
@@ -306,8 +306,8 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
                   onClick={() => setPricingType(val)}
                   className={`py-2.5 px-3 rounded-lg border text-left transition-colors ${
                     pricingType === val
-                      ? 'bg-purple-100 border-purple-400 text-purple-800'
-                      : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50'
+                      ? 'bg-purple-100 dark:bg-purple-900/40 border-purple-400 dark:border-purple-500 text-purple-800 dark:text-purple-200'
+                      : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600'
                   }`}>
                   <div className="text-sm font-medium">{label}</div>
                   <div className="text-xs opacity-70 mt-0.5">{desc}</div>
@@ -318,7 +318,7 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
 
           {pricingType === 'per-session' ? (
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Harga / Pertemuan (Rp)</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Harga / Pertemuan (Rp)</label>
               <input type="number" min="0" onKeyDown={e => (e.key === '-' || e.key === 'e') && e.preventDefault()} value={pkg.pricePerSession}
                 onChange={e => setPkg(p => ({ ...p, pricePerSession: e.target.value }))}
                 placeholder="145000" className={`input w-full ${showErrors && !pkg.pricePerSession ? 'input-error' : ''}`} />
@@ -328,7 +328,7 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
             </div>
           ) : (
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Total Harga Paket (Rp)</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Total Harga Paket (Rp)</label>
               <input type="number" min="0" onKeyDown={e => (e.key === '-' || e.key === 'e') && e.preventDefault()} value={pkg.packagePrice}
                 onChange={e => setPkg(p => ({ ...p, packagePrice: e.target.value }))}
                 placeholder="1160000" className={`input w-full ${showErrors && !pkg.packagePrice ? 'input-error' : ''}`} />
@@ -339,22 +339,22 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
           )}
 
           {pkgSessions > 0 && effectiveTotal > 0 && (
-            <div className="bg-purple-100 rounded-lg px-3 py-2.5 space-y-0.5">
+            <div className="bg-purple-100 dark:bg-purple-900/40 rounded-lg px-3 py-2.5 space-y-0.5">
               {pricingType === 'per-session' ? (
                 <>
-                  <div className="text-xs text-purple-700">
+                  <div className="text-xs text-purple-700 dark:text-purple-300">
                     {pkgSessions} pertemuan × {formatCurrency(Number(pkg.pricePerSession))}
                   </div>
-                  <div className="text-sm font-semibold text-purple-900">
+                  <div className="text-sm font-semibold text-purple-900 dark:text-purple-100">
                     Total: {formatCurrency(effectiveTotal)}
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="text-xs text-purple-700">
+                  <div className="text-xs text-purple-700 dark:text-purple-300">
                     {formatCurrency(effectiveTotal)} ÷ {pkgSessions} pertemuan
                   </div>
-                  <div className="text-sm font-semibold text-purple-900">
+                  <div className="text-sm font-semibold text-purple-900 dark:text-purple-100">
                     = {formatCurrency(effectivePerSession)} / pertemuan
                   </div>
                 </>
@@ -363,7 +363,7 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
           )}
 
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Catatan Paket (opsional)</label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Catatan Paket (opsional)</label>
             <input type="text" value={pkg.notes}
               onChange={e => setPkg(p => ({ ...p, notes: e.target.value }))}
               placeholder="Contoh: Paket Juli 2026" className="input w-full" />
@@ -374,7 +374,7 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
       {/* Prepaid edit: rate hanya display info */}
       {!isXuYuan && isPrepaid && !isNew && (
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Biaya / Sesi (Rp)</label>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Biaya / Sesi (Rp)</label>
           <input type="number" min="0" onKeyDown={e => (e.key === '-' || e.key === 'e') && e.preventDefault()} value={form.ratePerSession}
             onChange={e => setForm(f => ({ ...f, ratePerSession: e.target.value }))}
             placeholder="145000" className="input w-full" />
@@ -383,7 +383,7 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
       )}
 
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Catatan (opsional)</label>
+        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Catatan (opsional)</label>
         <input type="text" value={form.notes}
           onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
           placeholder="Info tambahan" className="input w-full" />
@@ -470,14 +470,14 @@ function PackageForm({ studentId, teacherId, defaultRate, existingPackages, init
   };
 
   return (
-    <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 space-y-3">
-      <div className="text-sm font-semibold text-purple-800 flex items-center gap-1.5">
+    <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-xl p-4 space-y-3">
+      <div className="text-sm font-semibold text-purple-800 dark:text-purple-300 flex items-center gap-1.5">
         <Package size={14} /> {initial ? 'Edit Paket' : 'Tambah Paket Baru'}
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Jumlah Pertemuan</label>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Jumlah Pertemuan</label>
           <input type="number" min="0" onKeyDown={e => (e.key === '-' || e.key === 'e') && e.preventDefault()} value={form.totalSessions}
             onChange={e => setForm(f => ({ ...f, totalSessions: e.target.value }))}
             placeholder="8" className={`input w-full ${showErrors && !form.totalSessions ? 'input-error' : ''}`} />
@@ -486,7 +486,7 @@ function PackageForm({ studentId, teacherId, defaultRate, existingPackages, init
           )}
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Tanggal Mulai</label>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Tanggal Mulai</label>
           <input type="date" value={form.startDate}
             onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))}
             className="input w-full" />
@@ -495,7 +495,7 @@ function PackageForm({ studentId, teacherId, defaultRate, existingPackages, init
 
       {/* Pricing type toggle */}
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1.5">Cara Hitung Harga</label>
+        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Cara Hitung Harga</label>
         <div className="grid grid-cols-2 gap-2">
           {([
             ['per-session', 'Per Pertemuan', 'Harga × jumlah sesi'],
@@ -505,8 +505,8 @@ function PackageForm({ studentId, teacherId, defaultRate, existingPackages, init
               onClick={() => setPricingType(val)}
               className={`py-2.5 px-3 rounded-lg border text-left transition-colors ${
                 pricingType === val
-                  ? 'bg-purple-100 border-purple-400 text-purple-800'
-                  : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50'
+                  ? 'bg-purple-100 dark:bg-purple-900/40 border-purple-400 dark:border-purple-500 text-purple-800 dark:text-purple-200'
+                  : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600'
               }`}>
               <div className="text-sm font-medium">{label}</div>
               <div className="text-xs opacity-70 mt-0.5">{desc}</div>
@@ -518,7 +518,7 @@ function PackageForm({ studentId, teacherId, defaultRate, existingPackages, init
       {/* Price input — berubah tergantung pricingType */}
       {pricingType === 'per-session' ? (
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Harga / Pertemuan (Rp)</label>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Harga / Pertemuan (Rp)</label>
           <input type="number" min="0" onKeyDown={e => (e.key === '-' || e.key === 'e') && e.preventDefault()} value={form.pricePerSession}
             onChange={e => setForm(f => ({ ...f, pricePerSession: e.target.value }))}
             placeholder="145000" className={`input w-full ${showErrors && !form.pricePerSession ? 'input-error' : ''}`} />
@@ -528,7 +528,7 @@ function PackageForm({ studentId, teacherId, defaultRate, existingPackages, init
         </div>
       ) : (
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Total Harga Paket (Rp)</label>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Total Harga Paket (Rp)</label>
           <input type="number" min="0" onKeyDown={e => (e.key === '-' || e.key === 'e') && e.preventDefault()} value={form.packagePrice}
             onChange={e => setForm(f => ({ ...f, packagePrice: e.target.value }))}
             placeholder="1160000" className={`input w-full ${showErrors && !form.packagePrice ? 'input-error' : ''}`} />
@@ -540,22 +540,22 @@ function PackageForm({ studentId, teacherId, defaultRate, existingPackages, init
 
       {/* Summary */}
       {valid && sessions > 0 && effectiveTotal > 0 && (
-        <div className="bg-purple-100 rounded-lg px-3 py-2.5 space-y-0.5">
+        <div className="bg-purple-100 dark:bg-purple-900/40 rounded-lg px-3 py-2.5 space-y-0.5">
           {pricingType === 'per-session' ? (
             <>
-              <div className="text-xs text-purple-700">
+              <div className="text-xs text-purple-700 dark:text-purple-300">
                 {sessions} pertemuan × {formatCurrency(Number(form.pricePerSession))}
               </div>
-              <div className="text-sm font-semibold text-purple-900">
+              <div className="text-sm font-semibold text-purple-900 dark:text-purple-100">
                 Total: {formatCurrency(effectiveTotal)}
               </div>
             </>
           ) : (
             <>
-              <div className="text-xs text-purple-700">
+              <div className="text-xs text-purple-700 dark:text-purple-300">
                 {formatCurrency(effectiveTotal)} ÷ {sessions} pertemuan
               </div>
-              <div className="text-sm font-semibold text-purple-900">
+              <div className="text-sm font-semibold text-purple-900 dark:text-purple-100">
                 = {formatCurrency(effectivePerSession)} / pertemuan
               </div>
             </>
@@ -564,7 +564,7 @@ function PackageForm({ studentId, teacherId, defaultRate, existingPackages, init
       )}
 
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Catatan (opsional)</label>
+        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Catatan (opsional)</label>
         <input type="text" value={form.notes}
           onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
           placeholder="Contoh: Paket Juli 2026" className="input w-full" />
@@ -631,10 +631,10 @@ function PackageCard({
               Mulai {formatDate(pkg.startDate, 'd MMM yyyy')}
             </span>
             {isCurrent && !isExpired && (
-              <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full font-medium">Aktif</span>
+              <span className="text-xs bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded-full font-medium">Aktif</span>
             )}
             {isExpired && isCurrent && (
-              <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">Selesai</span>
+              <span className="text-xs bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded-full font-medium">Selesai</span>
             )}
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
@@ -710,10 +710,10 @@ function PackageCard({
             </div>
             <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
               <span className="flex items-center gap-1">
-                <span className="px-1 rounded bg-gray-100 text-gray-500 text-[10px]">tgl</span> selesai
+                <span className="px-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-[10px]">tgl</span> selesai
               </span>
               <span className="flex items-center gap-1">
-                <span className="px-1 rounded bg-blue-50 text-blue-400 border border-blue-200 text-[10px]">tgl</span> terjadwal
+                <span className="px-1 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-400 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-[10px]">tgl</span> terjadwal
               </span>
             </div>
           </div>
