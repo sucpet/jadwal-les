@@ -1,27 +1,27 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { AppData, Teacher, Student, SessionPackage, LessonSession, Worksheet, BillingType, StudentGroup, PackagePricingType } from '../types';
-import { generateId } from '../utils/helpers';
+import { generateId, effectiveRate } from '../utils/helpers';
 import { supabase } from '../lib/supabase';
 
 const defaultData: AppData = { teachers: [], students: [], packages: [], sessions: [], worksheets: [] };
 
 // ─── DB row types (snake_case) ────────────────────────────────────────────────
 interface DbTeacher  { id: string; name: string; color: string; honor_per_session: number; is_owner: boolean; created_at: string; }
-interface DbStudent  { id: string; teacher_id: string; name: string; billing_type: string; rate_per_session: number; group: string; xu_yuan_type?: string; notes?: string; is_active: boolean; created_at: string; }
+interface DbStudent  { id: string; teacher_id: string; name: string; billing_type: string; rate_per_session: number; pending_rate?: number | null; pending_rate_effective_date?: string | null; group: string; xu_yuan_type?: string; notes?: string; is_active: boolean; created_at: string; }
 interface DbPackage  { id: string; student_id: string; teacher_id: string; total_sessions: number; pricing_type: string; price_per_session: number; package_price?: number; start_date: string; notes?: string; created_at: string; }
 interface DbSession   { id: string; student_id: string; teacher_id: string; date: string; start_time: string; end_time: string; status: string; notes?: string; worksheet_pages?: number; rate_snapshot?: number | null; created_at: string; }
 interface DbWorksheet { id: string; student_id: string; date: string; pages: number; created_at: string; }
 
 // ─── Mappers DB → App ─────────────────────────────────────────────────────────
 const mapTeacher  = (r: DbTeacher):  Teacher        => ({ id: r.id, name: r.name, color: r.color, honorPerSession: r.honor_per_session ?? 100000, isOwner: r.is_owner ?? false, createdAt: r.created_at });
-const mapStudent  = (r: DbStudent):  Student        => ({ id: r.id, teacherId: r.teacher_id, name: r.name, billingType: r.billing_type as BillingType, ratePerSession: r.rate_per_session, group: r.group as StudentGroup, xuYuanType: (r.xu_yuan_type ?? 'private') as 'private' | 'semi-group', notes: r.notes, isActive: r.is_active ?? true, createdAt: r.created_at });
+const mapStudent  = (r: DbStudent):  Student        => ({ id: r.id, teacherId: r.teacher_id, name: r.name, billingType: r.billing_type as BillingType, ratePerSession: r.rate_per_session, pendingRate: r.pending_rate ?? undefined, pendingRateEffectiveDate: r.pending_rate_effective_date ?? undefined, group: r.group as StudentGroup, xuYuanType: (r.xu_yuan_type ?? 'private') as 'private' | 'semi-group', notes: r.notes, isActive: r.is_active ?? true, createdAt: r.created_at });
 const mapPackage  = (r: DbPackage):  SessionPackage => ({ id: r.id, studentId: r.student_id, teacherId: r.teacher_id, totalSessions: r.total_sessions, pricingType: r.pricing_type as PackagePricingType, pricePerSession: r.price_per_session, packagePrice: r.package_price, startDate: r.start_date, notes: r.notes, createdAt: r.created_at });
 const mapSession  = (r: DbSession):  LessonSession  => ({ id: r.id, studentId: r.student_id, teacherId: r.teacher_id, date: r.date, startTime: r.start_time, endTime: r.end_time, status: r.status as LessonSession['status'], notes: r.notes, worksheetPages: r.worksheet_pages ?? 0, rateSnapshot: r.rate_snapshot ?? undefined, createdAt: r.created_at });
 
 // ─── Mappers App → DB ─────────────────────────────────────────────────────────
 const toDbTeacher = (t: Teacher)        => ({ id: t.id, name: t.name, color: t.color, honor_per_session: t.honorPerSession, is_owner: t.isOwner, created_at: t.createdAt });
-const toDbStudent = (s: Student)        => ({ id: s.id, teacher_id: s.teacherId, name: s.name, billing_type: s.billingType, rate_per_session: s.ratePerSession, group: s.group, xu_yuan_type: s.xuYuanType ?? 'private', notes: s.notes ?? null, is_active: s.isActive, created_at: s.createdAt });
+const toDbStudent = (s: Student)        => ({ id: s.id, teacher_id: s.teacherId, name: s.name, billing_type: s.billingType, rate_per_session: s.ratePerSession, pending_rate: s.pendingRate ?? null, pending_rate_effective_date: s.pendingRateEffectiveDate ?? null, group: s.group, xu_yuan_type: s.xuYuanType ?? 'private', notes: s.notes ?? null, is_active: s.isActive, created_at: s.createdAt });
 const toDbPackage = (p: SessionPackage) => ({ id: p.id, student_id: p.studentId, teacher_id: p.teacherId, total_sessions: p.totalSessions, pricing_type: p.pricingType, price_per_session: p.pricePerSession, package_price: p.packagePrice ?? null, start_date: p.startDate, notes: p.notes ?? null, created_at: p.createdAt });
 const toDbSession = (s: LessonSession)  => ({ id: s.id, student_id: s.studentId, teacher_id: s.teacherId, date: s.date, start_time: s.startTime, end_time: s.endTime, status: s.status, notes: s.notes ?? null, worksheet_pages: s.worksheetPages ?? 0, rate_snapshot: s.rateSnapshot ?? null, created_at: s.createdAt });
 const mapWorksheet  = (r: DbWorksheet): Worksheet => ({ id: r.id, studentId: r.student_id, date: r.date, pages: r.pages, createdAt: r.created_at });
@@ -165,7 +165,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         toComplete.forEach(s => {
           const student = d.students.find(st => st.id === s.studentId);
           const snap = (student?.billingType === 'per-session' && s.rateSnapshot == null)
-            ? student.ratePerSession
+            ? effectiveRate(student, s.date)
             : undefined;
           supabase.from('sessions')
             .update({ status: 'completed', ...(snap != null ? { rate_snapshot: snap } : {}) })
@@ -180,7 +180,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             if (!match) return s;
             const student = d.students.find(st => st.id === s.studentId);
             const snap = (student?.billingType === 'per-session' && s.rateSnapshot == null)
-              ? student.ratePerSession
+              ? effectiveRate(student, s.date)
               : s.rateSnapshot;
             return { ...s, status: 'completed' as const, rateSnapshot: snap };
           }),
@@ -208,6 +208,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
       clearTimeout(timeoutId);
       if (intervalId !== undefined) clearInterval(intervalId);
     };
+  }, [loading]);
+
+  // ─── Promote pending rate once its effective date has arrived ────────────
+  useEffect(() => {
+    if (loading) return;
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+    setData(d => {
+      const due = d.students.filter(s =>
+        s.pendingRate != null &&
+        s.pendingRateEffectiveDate != null &&
+        s.pendingRateEffectiveDate <= todayStr
+      );
+      if (!due.length) return d;
+
+      due.forEach(s => {
+        supabase.from('students')
+          .update({ rate_per_session: s.pendingRate, pending_rate: null, pending_rate_effective_date: null })
+          .eq('id', s.id)
+          .then(({ error }) => { if (error) console.error('Promote rate error:', error); });
+      });
+
+      return {
+        ...d,
+        students: d.students.map(s =>
+          due.some(x => x.id === s.id)
+            ? { ...s, ratePerSession: s.pendingRate!, pendingRate: undefined, pendingRateEffectiveDate: undefined }
+            : s
+        ),
+      };
+    });
   }, [loading]);
 
   // ─── Teachers ─────────────────────────────────────────────────────────────
@@ -251,6 +283,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (updates.teacherId      !== undefined) row.teacher_id      = updates.teacherId;
     if (updates.billingType    !== undefined) row.billing_type    = updates.billingType;
     if (updates.ratePerSession !== undefined) row.rate_per_session = updates.ratePerSession;
+    if ('pendingRate' in updates)                row.pending_rate                = updates.pendingRate ?? null;
+    if ('pendingRateEffectiveDate' in updates)   row.pending_rate_effective_date = updates.pendingRateEffectiveDate ?? null;
     if (updates.group          !== undefined) row.group           = updates.group;
     if (updates.notes          !== undefined) row.notes           = updates.notes;
     if (updates.isActive       !== undefined) row.is_active       = updates.isActive;
@@ -304,7 +338,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (session && session.rateSnapshot == null) {
         const student = data.students.find(s => s.id === session.studentId);
         if (student && student.billingType === 'per-session') {
-          finalUpdates = { ...updates, rateSnapshot: student.ratePerSession };
+          finalUpdates = { ...updates, rateSnapshot: effectiveRate(student, session.date) };
         }
       }
     }

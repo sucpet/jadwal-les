@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Plus, Pencil, Trash2, X, Check, ChevronDown, ChevronUp, Package, AlertTriangle, Clock, CalendarDays, PowerOff, RotateCcw, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Check, ChevronDown, ChevronUp, Package, AlertTriangle, Clock, CalendarDays, CalendarClock, PowerOff, RotateCcw, Search } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { useApp } from '../store/AppContext';
@@ -54,6 +54,11 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
     initial?.xuYuanType ?? 'private'
   );
 
+  // Perubahan harga terjadwal (postpaid, edit only)
+  const [pendingRate, setPendingRate] = useState(initial?.pendingRate != null ? String(initial.pendingRate) : '');
+  const [pendingDate, setPendingDate] = useState(initial?.pendingRateEffectiveDate ?? '');
+  const [pendingCancelledNote, setPendingCancelledNote] = useState(false);
+
   // Package fields — only relevant for new prepaid students
   const [showErrors, setShowErrors] = useState(false);
   const [pricingType, setPricingType] = useState<PackagePricingType>('per-session');
@@ -67,7 +72,14 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
 
   const isXuYuan = form.group === 'xuyuan';
   const isPrepaid = !isXuYuan && form.billingType === 'package';
+  const isPostpaidEdit = !isNew && !isXuYuan && !isPrepaid;
   const pkgSessions = Number(pkg.totalSessions);
+
+  // Perubahan harga terjadwal: harus isi keduanya atau kosongkan keduanya
+  const pendingRateNum = Number(pendingRate);
+  const hasPending = pendingRate !== '' && pendingDate !== '';
+  const pendingPartial = (pendingRate !== '') !== (pendingDate !== '');
+  const pendingInvalid = pendingPartial || (pendingRate !== '' && pendingRateNum <= 0);
 
   const effectivePerSession = pricingType === 'per-session'
     ? Number(pkg.pricePerSession)
@@ -85,13 +97,17 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
 
   // XuYuan & prepaid-new tidak perlu rate manual
   const rateValid = isXuYuan || (isPrepaid && isNew) ? true : form.ratePerSession;
-  const valid = form.name.trim() && form.teacherId && rateValid && pkgValid;
+  const valid = form.name.trim() && form.teacherId && rateValid && pkgValid && !pendingInvalid;
 
   const handleSave = () => {
     if (!valid) { setShowErrors(true); return; }
     const ratePerSession = isXuYuan ? 0 : isPrepaid && isNew ? effectivePerSession : Number(form.ratePerSession);
     const billingType: BillingType = isXuYuan ? 'per-session' : form.billingType;
-    const studentData = { ...form, billingType, ratePerSession, notes: form.notes, xuYuanType };
+    const studentData = {
+      ...form, billingType, ratePerSession, notes: form.notes, xuYuanType,
+      pendingRate: hasPending ? pendingRateNum : undefined,
+      pendingRateEffectiveDate: hasPending ? pendingDate : undefined,
+    };
     const pkgData: InitialPackageData | undefined = (isNew && isPrepaid) ? {
       totalSessions: pkgSessions,
       pricingType,
@@ -194,10 +210,62 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">Biaya / Sesi (Rp)</label>
           <input type="number" min="0" onKeyDown={e => (e.key === '-' || e.key === 'e') && e.preventDefault()} value={form.ratePerSession}
-            onChange={e => setForm(f => ({ ...f, ratePerSession: e.target.value }))}
+            onChange={e => {
+              const v = e.target.value;
+              setForm(f => ({ ...f, ratePerSession: v }));
+              // Edit-behavior B: mengubah harga langsung membatalkan perubahan terjadwal
+              if (isPostpaidEdit && Number(v) !== initial?.ratePerSession && (pendingRate || pendingDate)) {
+                setPendingRate('');
+                setPendingDate('');
+                if (initial?.pendingRate != null) setPendingCancelledNote(true);
+              }
+            }}
             placeholder="150000" className={`input w-full ${showErrors && !form.ratePerSession ? 'input-error' : ''}`} />
           {showErrors && !form.ratePerSession && (
             <p className="text-xs text-red-500 mt-1">Biaya per sesi wajib diisi</p>
+          )}
+          {pendingCancelledNote && (
+            <p className="text-xs text-amber-600 mt-1">Perubahan harga terjadwal dibatalkan karena harga diubah langsung.</p>
+          )}
+        </div>
+      )}
+
+      {/* Postpaid edit: jadwalkan perubahan harga untuk periode berikutnya */}
+      {isPostpaidEdit && (
+        <div className="border border-blue-200 dark:border-blue-800 rounded-xl p-4 space-y-3 bg-blue-50/60 dark:bg-blue-900/20">
+          <div className="text-xs font-semibold text-blue-700 dark:text-blue-300 flex items-center gap-1.5 uppercase tracking-wide">
+            <CalendarClock size={13} /> Jadwalkan Perubahan Harga (opsional)
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Harga baru berlaku otomatis mulai tanggal yang dipilih. Sesi yang sudah selesai tidak terpengaruh.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Harga Baru / Sesi (Rp)</label>
+              <input type="number" min="0" onKeyDown={e => (e.key === '-' || e.key === 'e') && e.preventDefault()} value={pendingRate}
+                onChange={e => { setPendingRate(e.target.value); setPendingCancelledNote(false); }}
+                placeholder="175000" className={`input w-full ${showErrors && pendingInvalid ? 'input-error' : ''}`} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Mulai Berlaku</label>
+              <input type="date" value={pendingDate}
+                onChange={e => { setPendingDate(e.target.value); setPendingCancelledNote(false); }}
+                className={`input w-full ${showErrors && pendingInvalid ? 'input-error' : ''}`} />
+            </div>
+          </div>
+          {showErrors && pendingInvalid && (
+            <p className="text-xs text-red-500">Isi harga baru dan tanggal mulai, atau kosongkan keduanya.</p>
+          )}
+          {hasPending && pendingRateNum > 0 && (
+            <div className="bg-blue-100 dark:bg-blue-900/40 rounded-lg px-3 py-2 flex items-center justify-between gap-2">
+              <span className="text-xs text-blue-800 dark:text-blue-200">
+                Mulai {formatDate(pendingDate, 'd MMM yyyy')}: <span className="font-semibold">{formatCurrency(pendingRateNum)}</span>/sesi
+              </span>
+              <button type="button" onClick={() => { setPendingRate(''); setPendingDate(''); }}
+                className="text-xs text-red-500 hover:text-red-600 flex items-center gap-1 flex-shrink-0">
+                <X size={12} /> Hapus
+              </button>
+            </div>
           )}
         </div>
       )}
@@ -765,6 +833,12 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
                 <span>·</span>
                 <span>{formatCurrency(student.ratePerSession)}/sesi</span>
               </>
+            )}
+            {isPostpaid && student.pendingRate != null && student.pendingRateEffectiveDate && (
+              <span className="flex items-center gap-1 text-blue-500">
+                <CalendarClock size={11} />
+                {formatCurrency(student.pendingRate)}/sesi mulai {formatDate(student.pendingRateEffectiveDate, 'd MMM')}
+              </span>
             )}
             {!isPostpaid && currentStatus && !currentStatus.isExpired && (
               <>

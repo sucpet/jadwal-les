@@ -71,7 +71,7 @@ export default function Settings() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const teachers  = json.teachers.map((t: any)  => ({ id: t.id, name: t.name, color: t.color, created_at: t.createdAt }));
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const students  = json.students.map((s: any)  => ({ id: s.id, teacher_id: s.teacherId, name: s.name, billing_type: s.billingType, rate_per_session: s.ratePerSession, group: s.group ?? 'xuyuan', xu_yuan_type: s.xuYuanType ?? 'private', notes: s.notes ?? null, created_at: s.createdAt }));
+        const students  = json.students.map((s: any)  => ({ id: s.id, teacher_id: s.teacherId, name: s.name, billing_type: s.billingType, rate_per_session: s.ratePerSession, pending_rate: s.pendingRate ?? null, pending_rate_effective_date: s.pendingRateEffectiveDate ?? null, group: s.group ?? 'xuyuan', xu_yuan_type: s.xuYuanType ?? 'private', notes: s.notes ?? null, created_at: s.createdAt }));
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const packages  = json.packages.map((p: any)  => ({ id: p.id, student_id: p.studentId, teacher_id: p.teacherId, total_sessions: p.totalSessions, pricing_type: p.pricingType ?? 'per-session', price_per_session: p.pricePerSession, package_price: p.packagePrice ?? null, start_date: p.startDate, notes: p.notes ?? null, created_at: p.createdAt }));
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

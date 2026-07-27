@@ -14,6 +14,7 @@ Berdasarkan analisis codebase + riset dari repo publik:
 - Flag murid berisiko churn (tidak ada sesi ≥21 hari)
 - Search murid di halaman Murid
 - Panel "7 hari ke depan" di Dashboard dengan paging
+- Perubahan harga terjadwal untuk murid postpaid (set harga baru + tanggal berlaku, auto-promote saat tanggal lewat)
 
 ---
 

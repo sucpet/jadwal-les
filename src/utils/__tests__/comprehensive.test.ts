@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { ROW_H, timeToPixels, computeDayLayout, addOneHour, shiftDateByWeeks, dayOfWeek } from '../calendar';
 import { xuYuanCycleStart, xuYuanCycleLabel, durationMinutes, formatDuration, formatRp } from '../xuyuan';
 import { groupByMonth, groupByXuYuanCycle, totalDurationLabel, getPackageAttributedSessions } from '../student-groups';
-import { getPackageStatus, getMonthlyRevenue } from '../helpers';
+import { getPackageStatus, getMonthlyRevenue, effectiveRate } from '../helpers';
 import type { LessonSession, SessionPackage, Student } from '../../types';
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
@@ -48,6 +48,29 @@ function makeStudent(overrides: Partial<Student> = {}): Student {
     ...overrides,
   };
 }
+
+describe('effectiveRate', () => {
+  it('returns current rate when no scheduled change', () => {
+    const s = makeStudent({ billingType: 'per-session', ratePerSession: 150_000 });
+    expect(effectiveRate(s, '2026-08-15')).toBe(150_000);
+  });
+
+  it('returns current rate for dates before the effective date', () => {
+    const s = makeStudent({ billingType: 'per-session', ratePerSession: 150_000, pendingRate: 175_000, pendingRateEffectiveDate: '2026-09-01' });
+    expect(effectiveRate(s, '2026-08-31')).toBe(150_000);
+  });
+
+  it('returns pending rate on and after the effective date', () => {
+    const s = makeStudent({ billingType: 'per-session', ratePerSession: 150_000, pendingRate: 175_000, pendingRateEffectiveDate: '2026-09-01' });
+    expect(effectiveRate(s, '2026-09-01')).toBe(175_000);
+    expect(effectiveRate(s, '2026-10-05')).toBe(175_000);
+  });
+
+  it('ignores pending rate if effective date is missing', () => {
+    const s = makeStudent({ billingType: 'per-session', ratePerSession: 150_000, pendingRate: 175_000 });
+    expect(effectiveRate(s, '2026-12-31')).toBe(150_000);
+  });
+});
 
 // ─── calendar.ts ─────────────────────────────────────────────────────────────
 

@@ -23,6 +23,8 @@ export interface Student {
   name: string;
   billingType: BillingType;
   ratePerSession: number;
+  pendingRate?: number;              // harga baru yang menunggu berlaku (postpaid only)
+  pendingRateEffectiveDate?: string; // YYYY-MM-DD, tanggal pendingRate mulai berlaku
   group: StudentGroup;
   xuYuanType?: 'private' | 'semi-group';
   notes?: string;

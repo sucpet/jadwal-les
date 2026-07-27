@@ -5,7 +5,7 @@ import { addWeeks, subWeeks, startOfWeek, addDays, isSameDay, parseISO, format, 
 import { id as localeId } from 'date-fns/locale';
 import { useApp } from '../store/AppContext';
 import type { LessonSession } from '../types';
-import { formatCurrency, getPackageStatus } from '../utils/helpers';
+import { formatCurrency, getPackageStatus, effectiveRate } from '../utils/helpers';
 import { ROW_H, timeToPixels, computeDayLayout, addOneHour, shiftDateByWeeks, dayOfWeek } from '../utils/calendar';
 import { getHoliday } from '../utils/holidays';
 
@@ -923,7 +923,7 @@ export default function Schedule() {
                 <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-sm flex items-center gap-2">
                   <Clock size={14} className="text-gray-400 dark:text-gray-500" />
                   <span className="text-gray-600 dark:text-gray-300">
-                    Biaya: <strong>{formatCurrency(selectedStudent.ratePerSession)}</strong>
+                    Biaya: <strong>{formatCurrency(selectedStudent.billingType === 'per-session' && form.date ? effectiveRate(selectedStudent, form.date) : selectedStudent.ratePerSession)}</strong>
                     {selectedStudent.billingType === 'package' && ' (paket)'}
                   </span>
                 </div>

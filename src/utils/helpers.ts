@@ -15,6 +15,22 @@ export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount);
 }
 
+/**
+ * Harga per-sesi yang berlaku untuk tanggal tertentu (postpaid).
+ * Jika ada perubahan harga terjadwal dan tanggal sesi sudah mencapai
+ * tanggal berlaku, pakai harga baru; selain itu pakai harga saat ini.
+ */
+export function effectiveRate(student: Student, date: string): number {
+  if (
+    student.pendingRate != null &&
+    student.pendingRateEffectiveDate != null &&
+    date >= student.pendingRateEffectiveDate
+  ) {
+    return student.pendingRate;
+  }
+  return student.ratePerSession;
+}
+
 
 export interface PackageStatus {
   pkg: SessionPackage;
