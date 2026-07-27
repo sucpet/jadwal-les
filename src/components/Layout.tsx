@@ -12,7 +12,7 @@ const navItems = [
   { to: '/students', icon: Users, label: 'Murid' },
   { to: '/schedule', icon: BookOpen, label: 'Jadwal' },
   { to: '/worksheet', icon: FileText, label: 'Worksheet' },
-  { to: '/hours', icon: Timer, label: 'Jam Mengajar' },
+  { to: '/hours', icon: Timer, label: 'Jam XuYuan' },
   { to: '/finance', icon: Wallet, label: 'Keuangan' },
   { to: '/settings', icon: Settings, label: 'Pengaturan' },
 ];
