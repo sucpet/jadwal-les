@@ -3,6 +3,10 @@ import type { ReactNode } from 'react';
 import type { AppData, Teacher, Student, SessionPackage, LessonSession, Worksheet, BillingType, StudentGroup, PackagePricingType } from '../types';
 import { generateId, effectiveRate } from '../utils/helpers';
 import { supabase } from '../lib/supabase';
+import { format, parseISO } from 'date-fns';
+import { id as localeId } from 'date-fns/locale';
+
+const fmtLogDate = (d: string) => format(parseISO(d), 'd MMM', { locale: localeId });
 
 const defaultData: AppData = { teachers: [], students: [], packages: [], sessions: [], worksheets: [] };
 
@@ -52,6 +56,10 @@ interface AppContextType {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function db(query: PromiseLike<{ error: any }>) {
   query.then(({ error }) => { if (error) console.error('Supabase error:', error); });
+}
+
+function logActivity(action: 'create' | 'reschedule' | 'delete', description: string) {
+  db(supabase.from('activity_log').insert({ id: generateId(), action, description, created_at: new Date().toISOString() }));
 }
 
 const BACKUP_KEY = 'jadwal-les-last-backup';
@@ -328,6 +336,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const s: LessonSession = { ...session, id: generateId(), createdAt: new Date().toISOString() };
     setData(d => ({ ...d, sessions: [...d.sessions, s] }));
     db(supabase.from('sessions').insert(toDbSession(s)));
+    const student = data.students.find(st => st.id === s.studentId);
+    logActivity('create', `Tambah sesi — ${student?.name ?? '—'}, ${fmtLogDate(s.date)} ${s.startTime}–${s.endTime}`);
     return s;
   };
   const updateSession = (id: string, updates: Partial<LessonSession>) => {
@@ -353,10 +363,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (finalUpdates.notes         !== undefined) row.notes         = finalUpdates.notes;
     if (finalUpdates.rateSnapshot  !== undefined) row.rate_snapshot = finalUpdates.rateSnapshot;
     db(supabase.from('sessions').update(row).eq('id', id));
+
+    // Log reschedule (perubahan tanggal/jam)
+    const old = data.sessions.find(s => s.id === id);
+    if (old) {
+      const newDate  = finalUpdates.date      ?? old.date;
+      const newStart = finalUpdates.startTime ?? old.startTime;
+      const newEnd   = finalUpdates.endTime   ?? old.endTime;
+      if (newDate !== old.date || newStart !== old.startTime || newEnd !== old.endTime) {
+        const student = data.students.find(st => st.id === old.studentId);
+        logActivity('reschedule', `Reschedule — ${student?.name ?? '—'}: ${fmtLogDate(old.date)} ${old.startTime} → ${fmtLogDate(newDate)} ${newStart}`);
+      }
+    }
   };
   const deleteSession = (id: string) => {
+    const old = data.sessions.find(s => s.id === id);
     setData(d => ({ ...d, sessions: d.sessions.filter(s => s.id !== id) }));
     db(supabase.from('sessions').delete().eq('id', id));
+    if (old) {
+      const student = data.students.find(st => st.id === old.studentId);
+      logActivity('delete', `Hapus sesi — ${student?.name ?? '—'}, ${fmtLogDate(old.date)} ${old.startTime}–${old.endTime}`);
+    }
   };
 
   // ─── Worksheets ───────────────────────────────────────────────────────────

@@ -152,9 +152,13 @@ export default function Schedule() {
     updateSession(session.id, { date, startTime, endTime, status: resolveStatus(date, endTime) });
   };
 
-  // Feature A — geser satu sesi N minggu, jam tetap
+  // Feature A — geser satu sesi N minggu, jam tetap (dengan konfirmasi)
   const shiftSessionWeeks = (session: LessonSession, weeks: number) => {
-    rescheduleTo(session, shiftDateByWeeks(session.date, weeks), session.startTime, session.endTime);
+    const newDate = shiftDateByWeeks(session.date, weeks);
+    const student = data.students.find(s => s.id === session.studentId);
+    const msg = `Geser sesi ${student?.name ?? ''} (${session.startTime}) dari ${format(parseISO(session.date), 'EEE d MMM', { locale: localeId })} ke ${format(parseISO(newDate), 'EEE d MMM yyyy', { locale: localeId })}?`;
+    if (!confirm(msg)) return;
+    rescheduleTo(session, newDate, session.startTime, session.endTime);
   };
 
   // Feature B — mini-popover jadwal ulang
