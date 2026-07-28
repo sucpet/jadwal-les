@@ -505,10 +505,12 @@ export default function Schedule() {
                   {daySessions.map(s => {
                     const student = data.students.find(st => st.id === s.studentId);
                     const teacher = data.teachers.find(t => t.id === s.teacherId);
+                    const groupColor = student ? GROUP_COLORS[student.group] : '#6366f1';
                     return (
                       <div
                         key={s.id}
                         onClick={() => openEdit(s)}
+                        style={{ background: `${groupColor}22` }}
                         className="flex items-center gap-3 px-4 py-3 cursor-pointer active:bg-gray-50 dark:active:bg-gray-700/50"
                       >
                         <div className="w-1 self-stretch rounded-full flex-shrink-0" style={{ background: teacher?.color ?? '#6366f1' }} />
@@ -736,11 +738,12 @@ export default function Schedule() {
                           const teacher = data.teachers.find(t => t.id === s.teacherId);
                           const color = teacher?.color ?? '#6366f1';
                           const student = data.students.find(st => st.id === s.studentId);
+                          const groupColor = student ? GROUP_COLORS[student.group] : color;
                           return (
                             <div
                               key={s.id}
                               className={`w-full block rounded overflow-hidden leading-tight pointer-events-none ${s.status === 'completed' ? 'opacity-55' : ''}`}
-                              style={{ backgroundColor: color }}
+                              style={{ backgroundColor: groupColor, borderLeft: `2px solid ${color}` }}
                             >
                               <span className="sm:hidden flex items-center justify-center py-0.5">
                                 <span className="w-1.5 h-1.5 rounded-full bg-white/80 inline-block" />
@@ -802,10 +805,12 @@ export default function Schedule() {
                     {daySessions.map(s => {
                       const student = data.students.find(st => st.id === s.studentId);
                       const teacher = data.teachers.find(t => t.id === s.teacherId);
+                      const groupColor = student ? GROUP_COLORS[student.group] : '#6366f1';
                       return (
                         <div
                           key={s.id}
                           onClick={() => { setDayPanel(null); openEdit(s); }}
+                          style={{ background: `${groupColor}22` }}
                           className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-700/40 text-left transition-colors cursor-pointer"
                         >
                           <div className="w-1 self-stretch rounded-full flex-shrink-0" style={{ background: teacher?.color ?? '#6366f1' }} />
