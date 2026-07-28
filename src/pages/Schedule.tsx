@@ -6,7 +6,7 @@ import { id as localeId } from 'date-fns/locale';
 import { useApp } from '../store/AppContext';
 import type { LessonSession } from '../types';
 import { formatCurrency, getPackageStatus, effectiveRate } from '../utils/helpers';
-import { ROW_H, timeToPixels, computeDayLayout, addOneHour, shiftDateByWeeks, dayOfWeek } from '../utils/calendar';
+import { ROW_H, timeToPixels, computeDayLayout, addOneHour, shiftDateByWeeks, dayOfWeek, diffMinutes, addMinutes } from '../utils/calendar';
 import { getHoliday } from '../utils/holidays';
 
 const TIME_SLOTS = Array.from({ length: 28 }, (_, i) => {
@@ -147,6 +147,44 @@ export default function Schedule() {
     if (confirm('Hapus sesi ini?')) deleteSession(id);
   };
 
+  // ─── Quick reschedule (satu sesi) ─────────────────────────────────────────
+  const rescheduleTo = (session: LessonSession, date: string, startTime: string, endTime: string) => {
+    updateSession(session.id, { date, startTime, endTime, status: resolveStatus(date, endTime) });
+  };
+
+  // Feature A — geser satu sesi N minggu, jam tetap
+  const shiftSessionWeeks = (session: LessonSession, weeks: number) => {
+    rescheduleTo(session, shiftDateByWeeks(session.date, weeks), session.startTime, session.endTime);
+  };
+
+  // Feature B — mini-popover jadwal ulang
+  const [quickTarget, setQuickTarget] = useState<LessonSession | null>(null);
+  const [quickForm, setQuickForm] = useState({ date: '', startTime: '', endTime: '' });
+  const openQuick = (s: LessonSession) => {
+    setQuickTarget(s);
+    setQuickForm({ date: s.date, startTime: s.startTime, endTime: s.endTime });
+  };
+  const nudgeQuick = (days: number) => {
+    setQuickForm(f => ({ ...f, date: format(addDays(parseISO(f.date), days), 'yyyy-MM-dd') }));
+  };
+  const saveQuick = () => {
+    if (!quickTarget) return;
+    rescheduleTo(quickTarget, quickForm.date, quickForm.startTime, quickForm.endTime);
+    setQuickTarget(null);
+  };
+
+  // Feature C — drag & drop di grid desktop
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverCell, setDragOverCell] = useState<string | null>(null);
+  const dropOnCell = (dayStr: string, time: string) => {
+    const s = data.sessions.find(x => x.id === draggingId);
+    setDraggingId(null);
+    setDragOverCell(null);
+    if (!s) return;
+    if (s.date === dayStr && s.startTime === time) return;
+    rescheduleTo(s, dayStr, time, addMinutes(time, diffMinutes(s.startTime, s.endTime)));
+  };
+
   const exitBulkMode = () => {
     setBulkMode(false);
     setSelectedIds(new Set());
@@ -249,6 +287,17 @@ export default function Schedule() {
           s.startTime < form.endTime &&
           form.startTime < s.endTime
         ).map(s => ({ ...s, date }))
+      )
+    : [];
+
+  // Konflik untuk mini-popover jadwal ulang
+  const quickConflicts = quickTarget
+    ? data.sessions.filter(s =>
+        s.teacherId === quickTarget.teacherId &&
+        s.date === quickForm.date &&
+        s.id !== quickTarget.id &&
+        s.startTime < quickForm.endTime &&
+        quickForm.startTime < s.endTime
       )
     : [];
 
@@ -464,6 +513,20 @@ export default function Schedule() {
                         <span className="flex-1 text-sm font-medium text-gray-900 dark:text-white truncate min-w-0">
                           {student?.name ?? '—'}
                         </span>
+                        <button
+                          onClick={e => { e.stopPropagation(); shiftSessionWeeks(s, 1); }}
+                          title="Geser +1 minggu"
+                          className="flex-shrink-0 text-[11px] font-medium px-1.5 py-1 rounded text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
+                        >
+                          +1mgg
+                        </button>
+                        <button
+                          onClick={e => { e.stopPropagation(); openQuick(s); }}
+                          title="Jadwal ulang"
+                          className="flex-shrink-0 p-1 rounded text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
+                        >
+                          <CalendarClock size={15} />
+                        </button>
                         <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
                           s.status === 'completed'
                             ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
@@ -538,14 +601,21 @@ export default function Schedule() {
 
           {/* Background cells */}
           {TIME_SLOTS.map((time, i) =>
-            weekDays.map((day, di) => (
-              <div
-                key={`${time}-${di}`}
-                style={{ gridRow: i + 1, gridColumn: di + 2 }}
-                className={`cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors border-gray-100 dark:border-gray-700${isSameDay(day, today) ? ' bg-indigo-50/30 dark:bg-indigo-900/10' : ''}${i < TIME_SLOTS.length - 1 ? ' border-b' : ''}${di < 6 ? ' border-r' : ''}`}
-                onClick={() => openAdd(format(day, 'yyyy-MM-dd'), time)}
-              />
-            ))
+            weekDays.map((day, di) => {
+              const dayStr = format(day, 'yyyy-MM-dd');
+              const cellKey = `${dayStr}-${time}`;
+              const isDropTarget = draggingId !== null && dragOverCell === cellKey;
+              return (
+                <div
+                  key={`${time}-${di}`}
+                  style={{ gridRow: i + 1, gridColumn: di + 2 }}
+                  className={`cursor-pointer transition-colors border-gray-100 dark:border-gray-700${isDropTarget ? ' bg-indigo-200/60 dark:bg-indigo-500/30 ring-1 ring-inset ring-indigo-400' : ' hover:bg-gray-50 dark:hover:bg-gray-700/30'}${isSameDay(day, today) && !isDropTarget ? ' bg-indigo-50/30 dark:bg-indigo-900/10' : ''}${i < TIME_SLOTS.length - 1 ? ' border-b' : ''}${di < 6 ? ' border-r' : ''}`}
+                  onClick={() => openAdd(dayStr, time)}
+                  onDragOver={draggingId ? (e => { e.preventDefault(); if (dragOverCell !== cellKey) setDragOverCell(cellKey); }) : undefined}
+                  onDrop={draggingId ? (e => { e.preventDefault(); dropOnCell(dayStr, time); }) : undefined}
+                />
+              );
+            })
           )}
 
           {/* Day column overlays — sessions are absolutely positioned inside */}
@@ -571,9 +641,11 @@ export default function Schedule() {
                   const student = data.students.find(st => st.id === s.studentId);
                   const teacher = data.teachers.find(t => t.id === s.teacherId);
                   const color = teacher?.color ?? '#6366f1';
+                  const isDragging = draggingId === s.id;
                   return (
                     <div
                       key={s.id}
+                      draggable
                       style={{
                         position: 'absolute',
                         top: `${topPx + 1}px`,
@@ -584,10 +656,13 @@ export default function Schedule() {
                         background: `${color}80`,
                         color: '#fff',
                         borderLeft: `3px solid ${color}`,
+                        opacity: isDragging ? 0.4 : 1,
                       }}
-                      className="rounded text-xs px-1 py-0.5 cursor-pointer hover:opacity-80 overflow-hidden"
+                      className="rounded text-xs px-1 py-0.5 cursor-grab active:cursor-grabbing hover:opacity-80 overflow-hidden"
                       onClick={e => { e.stopPropagation(); openEdit(s); }}
-                      title={`${student?.name} (${s.startTime}–${s.endTime})`}
+                      onDragStart={e => { setDraggingId(s.id); e.dataTransfer.effectAllowed = 'move'; }}
+                      onDragEnd={() => { setDraggingId(null); setDragOverCell(null); }}
+                      title={`${student?.name} (${s.startTime}–${s.endTime}) — seret untuk jadwal ulang`}
                     >
                       <div className="font-medium truncate">{student?.name}</div>
                       <div className="opacity-60 truncate">{s.startTime}–{s.endTime}</div>
@@ -713,10 +788,10 @@ export default function Schedule() {
                       const student = data.students.find(st => st.id === s.studentId);
                       const teacher = data.teachers.find(t => t.id === s.teacherId);
                       return (
-                        <button
+                        <div
                           key={s.id}
                           onClick={() => { setDayPanel(null); openEdit(s); }}
-                          className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-700/40 text-left transition-colors"
+                          className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-700/40 text-left transition-colors cursor-pointer"
                         >
                           <div className="w-1 self-stretch rounded-full flex-shrink-0" style={{ background: teacher?.color ?? '#6366f1' }} />
                           <div className="flex-1 min-w-0">
@@ -729,6 +804,20 @@ export default function Schedule() {
                               )}
                             </div>
                           </div>
+                          <button
+                            onClick={e => { e.stopPropagation(); shiftSessionWeeks(s, 1); }}
+                            title="Geser +1 minggu"
+                            className="flex-shrink-0 text-[11px] font-medium px-1.5 py-1 rounded text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
+                          >
+                            +1mgg
+                          </button>
+                          <button
+                            onClick={e => { e.stopPropagation(); setDayPanel(null); openQuick(s); }}
+                            title="Jadwal ulang"
+                            className="flex-shrink-0 p-1 rounded text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
+                          >
+                            <CalendarClock size={15} />
+                          </button>
                           <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
                             s.status === 'completed'
                               ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
@@ -736,7 +825,7 @@ export default function Schedule() {
                           }`}>
                             {s.status === 'completed' ? 'Selesai' : 'Terjadwal'}
                           </span>
-                        </button>
+                        </div>
                       );
                     })}
                   </div>
@@ -829,6 +918,108 @@ export default function Schedule() {
           </div>
         </div>
       )}
+
+      {/* Quick reschedule popover */}
+      {quickTarget && (() => {
+        const student = data.students.find(s => s.id === quickTarget.studentId);
+        return (
+          <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4" onClick={() => setQuickTarget(null)}>
+            <div className="bg-white dark:bg-gray-800 w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl shadow-xl p-5 space-y-4" onClick={e => e.stopPropagation()}>
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <CalendarClock size={18} className="text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <h3 className="font-semibold text-gray-900 dark:text-white truncate">Jadwal Ulang</h3>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 truncate">
+                      {student?.name ?? '—'} · dari {format(parseISO(quickTarget.date), 'd MMM', { locale: localeId })} {quickTarget.startTime}
+                    </p>
+                  </div>
+                </div>
+                <button onClick={() => setQuickTarget(null)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-400 rounded flex-shrink-0">
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Quick nudges */}
+              <div className="flex gap-2">
+                {([['−1 mgg', -7], ['+1 hari', 1], ['+1 mgg', 7]] as [string, number][]).map(([label, days]) => (
+                  <button
+                    key={label}
+                    onClick={() => nudgeQuick(days)}
+                    className="flex-1 text-xs font-medium py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:border-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Tanggal</label>
+                <input
+                  type="date"
+                  value={quickForm.date}
+                  onChange={e => setQuickForm(f => ({ ...f, date: e.target.value }))}
+                  className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Mulai</label>
+                  <input
+                    type="time"
+                    value={quickForm.startTime}
+                    onChange={e => setQuickForm(f => ({ ...f, startTime: e.target.value }))}
+                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Selesai</label>
+                  <input
+                    type="time"
+                    value={quickForm.endTime}
+                    onChange={e => setQuickForm(f => ({ ...f, endTime: e.target.value }))}
+                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+
+              {quickForm.date && (
+                <div className="text-xs text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg px-3 py-2">
+                  → {format(parseISO(quickForm.date), 'EEEE, d MMM yyyy', { locale: localeId })} · {quickForm.startTime}–{quickForm.endTime}
+                </div>
+              )}
+
+              {quickConflicts.length > 0 && (
+                <div className="flex items-start gap-1.5 text-xs text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg px-3 py-2">
+                  <AlertTriangle size={12} className="mt-0.5 flex-shrink-0" />
+                  <span>
+                    Laoshi sudah ada sesi yang bentrok:{' '}
+                    {quickConflicts.map((s, i) => {
+                      const st = data.students.find(x => x.id === s.studentId);
+                      return (
+                        <span key={s.id}>
+                          {i > 0 && ', '}
+                          <strong>{st?.name ?? '—'}</strong> ({s.startTime}–{s.endTime})
+                        </span>
+                      );
+                    })}
+                  </span>
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-1">
+                <button onClick={() => setQuickTarget(null)} className="flex-1 text-sm px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">
+                  Batal
+                </button>
+                <button onClick={saveQuick} className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700">
+                  <Check size={15} /> Simpan
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Session Form Modal */}
       {showForm && (

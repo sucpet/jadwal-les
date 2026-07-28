@@ -43,6 +43,18 @@ export function addOneHour(time: string): string {
   return `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
 }
 
+export function diffMinutes(startTime: string, endTime: string): number {
+  const [sh, sm] = startTime.split(':').map(Number);
+  const [eh, em] = endTime.split(':').map(Number);
+  return (eh * 60 + em) - (sh * 60 + sm);
+}
+
+export function addMinutes(time: string, mins: number): string {
+  const [h, m] = time.split(':').map(Number);
+  const total = Math.max(0, Math.min(24 * 60 - 1, h * 60 + m + mins));
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+}
+
 export function shiftDateByWeeks(dateStr: string, weeks: number): string {
   const [y, mo, d] = dateStr.split('-').map(Number);
   const date = new Date(y, mo - 1, d + weeks * 7);

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ROW_H, timeToPixels, computeDayLayout, addOneHour, shiftDateByWeeks, dayOfWeek } from '../calendar';
+import { ROW_H, timeToPixels, computeDayLayout, addOneHour, shiftDateByWeeks, dayOfWeek, diffMinutes, addMinutes } from '../calendar';
 import { xuYuanCycleStart, xuYuanCycleLabel, durationMinutes, formatDuration, formatRp } from '../xuyuan';
 import { groupByMonth, groupByXuYuanCycle, totalDurationLabel, getPackageAttributedSessions } from '../student-groups';
 import { getPackageStatus, getMonthlyRevenue, effectiveRate } from '../helpers';
@@ -48,6 +48,21 @@ function makeStudent(overrides: Partial<Student> = {}): Student {
     ...overrides,
   };
 }
+
+describe('diffMinutes / addMinutes', () => {
+  it('diffMinutes returns duration in minutes', () => {
+    expect(diffMinutes('09:00', '10:00')).toBe(60);
+    expect(diffMinutes('09:15', '10:45')).toBe(90);
+  });
+  it('addMinutes preserves duration when rescheduling', () => {
+    const dur = diffMinutes('09:00', '10:30');
+    expect(addMinutes('14:00', dur)).toBe('15:30');
+  });
+  it('addMinutes clamps within a day', () => {
+    expect(addMinutes('23:30', 120)).toBe('23:59');
+    expect(addMinutes('00:10', -60)).toBe('00:00');
+  });
+});
 
 describe('effectiveRate', () => {
   it('returns current rate when no scheduled change', () => {

@@ -15,6 +15,7 @@ Berdasarkan analisis codebase + riset dari repo publik:
 - Search murid di halaman Murid
 - Panel "7 hari ke depan" di Dashboard dengan paging
 - Perubahan harga terjadwal untuk murid postpaid (set harga baru + tanggal berlaku, auto-promote saat tanggal lewat)
+- Reschedule cepat satu sesi: tombol +1 minggu, mini-popover tanggal/jam, dan drag & drop di grid desktop
 
 ---
 
@@ -32,8 +33,6 @@ Berdasarkan analisis codebase + riset dari repo publik:
 - **Status batal + alasan** — ganti "hapus sesi" dengan status `cancelled` disertai alasan (murid absen, guru berhalangan, dll). Sesi yang dibatalkan tetap tercatat di histori dan **tidak mengurangi slot paket**. *(TutorBird, LearnSpeed, Trakist)*
 - **Sesi make-up / pengganti** — saat sesi dibatalkan, tandai "perlu make-up". Saat sesi pengganti dijadwalkan, link ke sesi aslinya. Dashboard tampilkan berapa make-up masih outstanding. *(TutorBird, Trakist)*
 - **Kehadiran** — tracking hadir/tidak hadir per sesi, hitung persentase kehadiran per murid. *(AzimKrishna)*
-- **Reschedule mudah** — tombol reschedule langsung dari kartu sesi tanpa harus buka form manual. *(Trakist)*
-- **Drag & drop kalender** — geser event langsung di kalender untuk reschedule, tanpa buka form. *(standar FullCalendar, DHTMLX)*
 - **Tampilan bulan di kalender** — toggle antara tampilan minggu (sudah ada) dan tampilan bulan. Berguna untuk melihat kepadatan jadwal sebulan penuh. *(standar semua referensi kalender)*
 - **Availabilitas guru** — set jam tersedia per guru agar tidak bisa dijadwalkan di luar jam tersebut. *(TutorBird)*
 - **Export ke Google Calendar** — sync jadwal ke Google Calendar guru atau murid.
