@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { ChevronLeft, ChevronRight, Plus, X, Check, Trash2, Clock, AlertTriangle, RefreshCw, ListChecks, CalendarClock, Search } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { addWeeks, subWeeks, startOfWeek, addDays, isSameDay, parseISO, format, startOfMonth, addMonths, subMonths, isSameMonth } from 'date-fns';
-import { id as localeId } from 'date-fns/locale';
 import { useApp } from '../store/AppContext';
+import { useLang } from '../store/LanguageContext';
 import type { LessonSession } from '../types';
 import { formatCurrency, getPackageStatus, effectiveRate, GROUP_COLORS } from '../utils/helpers';
 import { ROW_H, timeToPixels, computeDayLayout, addOneHour, shiftDateByWeeks, dayOfWeek, diffMinutes, addMinutes } from '../utils/calendar';
@@ -15,10 +15,13 @@ const TIME_SLOTS = Array.from({ length: 28 }, (_, i) => {
   return `${String(hour).padStart(2, '0')}:${min}`;
 });
 
-const DAY_LABELS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+const DAY_LABELS_ID = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+const DAY_LABELS_EN = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 export default function Schedule() {
   const { data, addSession, updateSession, deleteSession } = useApp();
+  const { t, locale, lang } = useLang();
+  const DAY_LABELS = lang === 'en' ? DAY_LABELS_EN : DAY_LABELS_ID;
   const [searchParams] = useSearchParams();
   const [currentWeek, setCurrentWeek] = useState(() => {
     const d = searchParams.get('date');
@@ -144,7 +147,7 @@ export default function Schedule() {
   };
 
   const remove = (id: string) => {
-    if (confirm('Hapus sesi ini?')) deleteSession(id);
+    if (confirm(t('sch.deleteSessionConfirm'))) deleteSession(id);
   };
 
   // ─── Quick reschedule (satu sesi) ─────────────────────────────────────────
@@ -309,20 +312,20 @@ export default function Schedule() {
   return (
     <div className="space-y-4 pb-32">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Jadwal</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('sch.title')}</h1>
         <div className="flex gap-2">
           <button
             onClick={() => { setBulkMode(b => !b); setSelectedIds(new Set()); setBulkConfirm(null); }}
             className={`flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg border transition-colors ${bulkMode ? 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
           >
-            <ListChecks size={16} /> Pilih Sesi
+            <ListChecks size={16} /> {t('sch.selectSessions')}
           </button>
           {!bulkMode && (
             <button
               onClick={() => openAdd()}
               className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700"
             >
-              <Plus size={16} /> Tambah Sesi
+              <Plus size={16} /> {t('sch.addSession')}
             </button>
           )}
         </div>
@@ -334,7 +337,7 @@ export default function Schedule() {
           <button
             onClick={() => setFilterTeacher('all')}
             className={`text-sm px-3 py-1.5 rounded-lg border ${filterTeacher === 'all' ? 'bg-indigo-600 text-white border-indigo-600' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400'}`}
-          >Semua</button>
+          >{t('stu.all')}</button>
           {data.teachers.map(t => (
             <button key={t.id} onClick={() => setFilterTeacher(t.id)}
               className={`text-sm px-3 py-1.5 rounded-lg border flex items-center gap-1.5 ${filterTeacher === t.id ? 'bg-indigo-600 text-white border-indigo-600' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400'}`}
@@ -356,7 +359,7 @@ export default function Schedule() {
               type="text"
               value={bulkStudentFilter}
               onChange={e => setBulkStudentFilter(e.target.value)}
-              placeholder="Cari nama murid..."
+              placeholder={t('sch.searchStudentPh')}
               className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
             {bulkStudentFilter && (
@@ -369,25 +372,25 @@ export default function Schedule() {
           {/* Select all bar */}
           <div className="flex items-center justify-between bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5">
             <span className="text-sm text-gray-600 dark:text-gray-400">
-              {selectedIds.size > 0 ? `${selectedIds.size} sesi dipilih` : 'Pilih sesi yang ingin diubah'}
+              {selectedIds.size > 0 ? t('sch.sessionsSelected', { n: selectedIds.size }) : t('sch.selectPrompt')}
             </span>
             <div className="flex gap-2">
-              <button onClick={selectAll} className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">Pilih Semua</button>
+              <button onClick={selectAll} className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">{t('sch.selectAll')}</button>
               <span className="text-gray-300 dark:text-gray-600">·</span>
-              <button onClick={deselectAll} className="text-xs text-gray-500 dark:text-gray-400 hover:underline">Hapus Pilihan</button>
+              <button onClick={deselectAll} className="text-xs text-gray-500 dark:text-gray-400 hover:underline">{t('sch.clearSelection')}</button>
             </div>
           </div>
 
           {bulkSessions.length === 0 ? (
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center text-gray-400 dark:text-gray-500 text-sm">
-              Tidak ada sesi
+              {t('sch.noSessions')}
             </div>
           ) : (
             <div className="space-y-3">
               {bulkByDate.map(({ date, sessions: daySessions }) => (
                 <div key={date}>
                   <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 px-1">
-                    {format(parseISO(date), 'EEEE, d MMMM yyyy', { locale: localeId })}
+                    {format(parseISO(date), 'EEEE, d MMMM yyyy', { locale })}
                   </div>
                   <div className="space-y-1">
                     {daySessions.map(s => {
@@ -419,7 +422,7 @@ export default function Schedule() {
                             s.status === 'completed' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
                             : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
                           }`}>
-                            {s.status === 'completed' ? 'Selesai' : 'Terjadwal'}
+                            {s.status === 'completed' ? t('status.completed') : t('status.scheduled')}
                           </span>
                         </div>
                       );
@@ -442,14 +445,14 @@ export default function Schedule() {
         </button>
         <span className="flex-1 text-center text-sm font-medium dark:text-gray-200 capitalize">
           {viewMode === 'week'
-            ? `${format(weekStart, 'd MMMM', { locale: localeId })} – ${format(addDays(weekStart, 6), 'd MMMM yyyy', { locale: localeId })}`
-            : format(currentMonth, 'MMMM yyyy', { locale: localeId })}
+            ? `${format(weekStart, 'd MMMM', { locale })} – ${format(addDays(weekStart, 6), 'd MMMM yyyy', { locale })}`
+            : format(currentMonth, 'MMMM yyyy', { locale })}
         </span>
         <button
           onClick={() => { setCurrentWeek(new Date()); setCurrentMonth(new Date()); }}
           className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline px-1"
         >
-          Hari ini
+          {t('sch.today')}
         </button>
         <button
           onClick={() => viewMode === 'week' ? setCurrentWeek(w => addWeeks(w, 1)) : setCurrentMonth(m => addMonths(m, 1))}
@@ -463,13 +466,13 @@ export default function Schedule() {
             onClick={() => setViewMode('week')}
             className={`text-xs px-2.5 py-1 rounded transition-colors ${viewMode === 'week' ? 'bg-white dark:bg-gray-600 text-gray-800 dark:text-white shadow-sm font-medium' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
           >
-            Minggu
+            {t('sch.week')}
           </button>
           <button
             onClick={() => setViewMode('month')}
             className={`text-xs px-2.5 py-1 rounded transition-colors ${viewMode === 'month' ? 'bg-white dark:bg-gray-600 text-gray-800 dark:text-white shadow-sm font-medium' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
           >
-            Bulan
+            {t('sch.month')}
           </button>
         </div>
       </div>
@@ -486,7 +489,7 @@ export default function Schedule() {
             <div key={di} className={`rounded-xl border overflow-hidden ${isToday ? 'border-indigo-300 dark:border-indigo-600' : 'border-gray-200 dark:border-gray-700'}`}>
               <div className={`px-4 py-2.5 flex items-center gap-2 ${isToday ? 'bg-indigo-600' : 'bg-gray-50 dark:bg-gray-800/60'}`}>
                 <span className={`flex-1 text-sm font-medium ${isToday ? 'text-white' : 'text-gray-700 dark:text-gray-200'}`}>
-                  {DAY_LABELS[di]}, {format(day, 'd MMM', { locale: localeId })}
+                  {DAY_LABELS[di]}, {format(day, 'd MMM', { locale })}
                 </span>
                 {daySessions.length > 0 && (
                   <span className={`text-xs ${isToday ? 'text-indigo-200' : 'text-gray-400 dark:text-gray-500'}`}>
@@ -522,14 +525,14 @@ export default function Schedule() {
                         </span>
                         <button
                           onClick={e => { e.stopPropagation(); shiftSessionWeeks(s, 1); }}
-                          title="Geser +1 minggu"
+                          title={t('sch.reschedTitle')}
                           className="flex-shrink-0 text-[11px] font-medium px-1.5 py-1 rounded text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
                         >
-                          +1mgg
+                          {t('sch.plus1wkShort')}
                         </button>
                         <button
                           onClick={e => { e.stopPropagation(); openQuick(s); }}
-                          title="Jadwal ulang"
+                          title={t('sch.reschedule')}
                           className="flex-shrink-0 p-1 rounded text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
                         >
                           <CalendarClock size={15} />
@@ -539,7 +542,7 @@ export default function Schedule() {
                             ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
                             : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
                         }`}>
-                          {s.status === 'completed' ? 'Selesai' : 'Terjadwal'}
+                          {s.status === 'completed' ? t('status.completed') : t('status.scheduled')}
                         </span>
                       </div>
                     );
@@ -547,8 +550,8 @@ export default function Schedule() {
                 </div>
               ) : (
                 <div className="px-4 py-2.5 bg-white dark:bg-gray-800 text-xs text-gray-400 dark:text-gray-500 text-center italic">
-                  Tidak ada sesi
-                </div>
+              {t('sch.noSessions')}
+            </div>
               )}
             </div>
           );
@@ -572,7 +575,7 @@ export default function Schedule() {
                 <div key={i} className={`text-center py-2 border-r border-gray-100 dark:border-gray-700 last:border-r-0 ${isToday ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}>
                   <div className={`text-xs font-medium ${isToday ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400'}`}>{DAY_LABELS[i]}</div>
                   <div className={`text-sm font-semibold ${isToday ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-800 dark:text-gray-200'}`}>
-                    {format(day, 'd', { locale: localeId })}
+                    {format(day, 'd', { locale })}
                   </div>
                 </div>
               );
@@ -678,7 +681,7 @@ export default function Schedule() {
                         draggable={false}
                         onDragStart={e => e.preventDefault()}
                         onClick={e => { e.stopPropagation(); openQuick(s); }}
-                        title="Jadwal ulang"
+                        title={t('sch.reschedule')}
                         className="absolute top-0.5 right-0.5 p-0.5 rounded bg-black/20 hover:bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity"
                       >
                         <CalendarClock size={12} className="text-white" />
@@ -776,10 +779,10 @@ export default function Schedule() {
             <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
               <div>
                 <div className="font-semibold text-gray-900 dark:text-white capitalize">
-                  {format(parseISO(dayPanel), 'EEEE', { locale: localeId })}
+                  {format(parseISO(dayPanel), 'EEEE', { locale })}
                 </div>
                 <div className="text-sm text-gray-400 dark:text-gray-500">
-                  {format(parseISO(dayPanel), 'd MMMM yyyy', { locale: localeId })}
+                  {format(parseISO(dayPanel), 'd MMMM yyyy', { locale })}
                 </div>
               </div>
               <button onClick={() => setDayPanel(null)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-400">
@@ -796,8 +799,8 @@ export default function Schedule() {
                 if (daySessions.length === 0) {
                   return (
                     <div className="px-5 py-8 text-center text-sm text-gray-400 dark:text-gray-500 italic">
-                      Tidak ada sesi
-                    </div>
+              {t('sch.noSessions')}
+            </div>
                   );
                 }
                 return (
@@ -826,14 +829,14 @@ export default function Schedule() {
                           </div>
                           <button
                             onClick={e => { e.stopPropagation(); shiftSessionWeeks(s, 1); }}
-                            title="Geser +1 minggu"
+                            title={t('sch.reschedTitle')}
                             className="flex-shrink-0 text-[11px] font-medium px-1.5 py-1 rounded text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
                           >
-                            +1mgg
+                            {t('sch.plus1wkShort')}
                           </button>
                           <button
                             onClick={e => { e.stopPropagation(); setDayPanel(null); openQuick(s); }}
-                            title="Jadwal ulang"
+                            title={t('sch.reschedule')}
                             className="flex-shrink-0 p-1 rounded text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
                           >
                             <CalendarClock size={15} />
@@ -843,7 +846,7 @@ export default function Schedule() {
                               ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
                               : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
                           }`}>
-                            {s.status === 'completed' ? 'Selesai' : 'Terjadwal'}
+                            {s.status === 'completed' ? t('status.completed') : t('status.scheduled')}
                           </span>
                         </div>
                       );
@@ -859,7 +862,7 @@ export default function Schedule() {
                 onClick={() => { setDayPanel(null); openAdd(dayPanel); }}
                 className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white text-sm px-4 py-2.5 rounded-xl hover:bg-indigo-700"
               >
-                <Plus size={16} /> Tambah Sesi
+                <Plus size={16} /> {t('sch.addSession')}
               </button>
             </div>
           </div>
@@ -871,7 +874,7 @@ export default function Schedule() {
         <div className="fixed bottom-20 md:bottom-6 left-0 right-0 z-40 flex justify-center px-4 pointer-events-none">
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-4 w-full max-w-lg pointer-events-auto space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold text-gray-900 dark:text-white">{selectedIds.size} sesi dipilih</span>
+              <span className="text-sm font-semibold text-gray-900 dark:text-white">{t('sch.sessionsSelected', { n: selectedIds.size })}</span>
               <button onClick={() => { deselectAll(); setBulkConfirm(null); }} className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                 <X size={16} />
               </button>
@@ -883,13 +886,13 @@ export default function Schedule() {
                   onClick={() => setBulkConfirm('cancel')}
                   className="flex-1 flex items-center justify-center gap-1.5 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
                 >
-                  <Trash2 size={15} /> Hapus Jadwal
+                  <Trash2 size={15} /> {t('sch.deleteSchedule')}
                 </button>
                 <button
                   onClick={() => setBulkConfirm('reschedule')}
                   className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700"
                 >
-                  <CalendarClock size={15} /> Jadwal Ulang
+                  <CalendarClock size={15} /> {t('sch.reschedule')}
                 </button>
               </div>
             )}
@@ -897,14 +900,14 @@ export default function Schedule() {
             {bulkConfirm === 'cancel' && (
               <div className="space-y-2">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Hapus <strong>{selectedIds.size}</strong> jadwal? Tindakan ini tidak bisa dibatalkan.
+                  {t('sch.bulkDeleteConfirm', { n: selectedIds.size })}
                 </p>
                 <div className="flex gap-2">
                   <button onClick={() => setBulkConfirm(null)} className="flex-1 text-sm px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">
-                    Kembali
+                    {t('sch.back')}
                   </button>
                   <button onClick={bulkCancel} className="flex-1 flex items-center justify-center gap-1.5 bg-red-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-red-700">
-                    <Trash2 size={15} /> Ya, Hapus
+                    <Trash2 size={15} /> {t('sch.yesDelete')}
                   </button>
                 </div>
               </div>
@@ -913,7 +916,7 @@ export default function Schedule() {
             {bulkConfirm === 'reschedule' && (
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Geser</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">{t('sch.shift')}</span>
                   <input
                     type="number"
                     min="1"
@@ -923,14 +926,14 @@ export default function Schedule() {
                     onKeyDown={e => (e.key === '-' || e.key === 'e') && e.preventDefault()}
                     className="w-16 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
-                  <span className="text-sm text-gray-600 dark:text-gray-400">minggu ke depan</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">{t('sch.weeksAhead')}</span>
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => setBulkConfirm(null)} className="flex-1 text-sm px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">
-                    Kembali
+                    {t('sch.back')}
                   </button>
                   <button onClick={bulkReschedule} className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700">
-                    <CalendarClock size={15} /> Jadwal Ulang
+                    <CalendarClock size={15} /> {t('sch.reschedule')}
                   </button>
                 </div>
               </div>
@@ -949,22 +952,22 @@ export default function Schedule() {
             <div className="bg-white dark:bg-gray-800 w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl shadow-xl p-5 space-y-4" onClick={e => e.stopPropagation()}>
               <div className="flex items-center gap-2">
                 <CalendarClock size={18} className="text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
-                <h3 className="font-semibold text-gray-900 dark:text-white">Jadwal ulang sesi?</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-white">{t('sch.rescheduleQ')}</h3>
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
                 <div className="font-medium text-gray-900 dark:text-white">{student?.name ?? '—'}</div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-gray-500 dark:text-gray-400">{format(parseISO(session.date), 'EEE, d MMM', { locale: localeId })} {session.startTime}</span>
+                  <span className="text-gray-500 dark:text-gray-400">{format(parseISO(session.date), 'EEE, d MMM', { locale })} {session.startTime}</span>
                   <span className="text-gray-400">→</span>
-                  <span className="font-medium text-indigo-700 dark:text-indigo-300">{format(parseISO(date), 'EEE, d MMM yyyy', { locale: localeId })} {startTime}{sameDay && startTime !== session.startTime ? `–${endTime}` : ''}</span>
+                  <span className="font-medium text-indigo-700 dark:text-indigo-300">{format(parseISO(date), 'EEE, d MMM yyyy', { locale })} {startTime}{sameDay && startTime !== session.startTime ? `–${endTime}` : ''}</span>
                 </div>
               </div>
               <div className="flex gap-2 pt-1">
                 <button onClick={() => setPendingMove(null)} className="flex-1 text-sm px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">
-                  Batal
+                  {t('common.cancel')}
                 </button>
                 <button onClick={applyMove} className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700">
-                  <Check size={15} /> Ya, Jadwal Ulang
+                  <Check size={15} /> {t('sch.yesReschedule')}
                 </button>
               </div>
             </div>
@@ -982,9 +985,9 @@ export default function Schedule() {
                 <div className="flex items-center gap-2 min-w-0">
                   <CalendarClock size={18} className="text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
                   <div className="min-w-0">
-                    <h3 className="font-semibold text-gray-900 dark:text-white truncate">Jadwal Ulang</h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-white truncate">{t('sch.reschedule')}</h3>
                     <p className="text-xs text-gray-400 dark:text-gray-500 truncate">
-                      {student?.name ?? '—'} · dari {format(parseISO(quickTarget.date), 'd MMM', { locale: localeId })} {quickTarget.startTime}
+                      {student?.name ?? '—'} · {t('sch.fromDate', { date: format(parseISO(quickTarget.date), 'd MMM', { locale }), time: quickTarget.startTime })}
                     </p>
                   </div>
                 </div>
@@ -995,7 +998,7 @@ export default function Schedule() {
 
               {/* Quick nudges — langsung minta konfirmasi (geser dari tanggal asli sesi) */}
               <div className="flex gap-2">
-                {([['−1 mgg', -7], ['+1 hari', 1], ['+1 mgg', 7]] as [string, number][]).map(([label, days]) => (
+                {([[t('sch.minus1wk'), -7], [t('sch.plus1day'), 1], [t('sch.plus1wk'), 7]] as [string, number][]).map(([label, days]) => (
                   <button
                     key={label}
                     onClick={() => {
@@ -1012,7 +1015,7 @@ export default function Schedule() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Tanggal</label>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('common.date')}</label>
                 <input
                   type="date"
                   value={quickForm.date}
@@ -1023,7 +1026,7 @@ export default function Schedule() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Mulai</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('sch.start')}</label>
                   <input
                     type="time"
                     value={quickForm.startTime}
@@ -1032,7 +1035,7 @@ export default function Schedule() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Selesai</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('sch.end')}</label>
                   <input
                     type="time"
                     value={quickForm.endTime}
@@ -1044,7 +1047,7 @@ export default function Schedule() {
 
               {quickForm.date && (
                 <div className="text-xs text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg px-3 py-2">
-                  → {format(parseISO(quickForm.date), 'EEEE, d MMM yyyy', { locale: localeId })} · {quickForm.startTime}–{quickForm.endTime}
+                  → {format(parseISO(quickForm.date), 'EEEE, d MMM yyyy', { locale })} · {quickForm.startTime}–{quickForm.endTime}
                 </div>
               )}
 
@@ -1052,7 +1055,7 @@ export default function Schedule() {
                 <div className="flex items-start gap-1.5 text-xs text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg px-3 py-2">
                   <AlertTriangle size={12} className="mt-0.5 flex-shrink-0" />
                   <span>
-                    Laoshi sudah ada sesi yang bentrok:{' '}
+                    {t('sch.conflict')}{' '}
                     {quickConflicts.map((s, i) => {
                       const st = data.students.find(x => x.id === s.studentId);
                       return (
@@ -1068,10 +1071,10 @@ export default function Schedule() {
 
               <div className="flex gap-2 pt-1">
                 <button onClick={() => setQuickTarget(null)} className="flex-1 text-sm px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">
-                  Batal
+                  {t('common.cancel')}
                 </button>
                 <button onClick={saveQuick} className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700">
-                  <Check size={15} /> Simpan
+                  <Check size={15} /> {t('common.save')}
                 </button>
               </div>
             </div>
@@ -1084,7 +1087,7 @@ export default function Schedule() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setShowForm(false)}>
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md space-y-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900 dark:text-white">{editSession ? 'Edit Sesi' : 'Tambah Sesi'}</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white">{editSession ? t('sch.editSession') : t('sch.addSession')}</h3>
               <button onClick={() => setShowForm(false)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-400 rounded">
                 <X size={18} />
               </button>
@@ -1103,23 +1106,23 @@ export default function Schedule() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Murid</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('common.student')}</label>
                   <select
                     value={form.studentId}
                     onChange={e => setForm(f => ({ ...f, studentId: e.target.value }))}
                     className={`w-full border rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 ${showErrors && !form.studentId ? 'border-red-400 bg-red-50 dark:bg-red-900/20' : 'border-gray-300 dark:border-gray-600'}`}
                   >
-                    <option value="">Pilih murid</option>
+                    <option value="">{t('common.selectStudent')}</option>
                     {[...availableStudents].sort((a, b) => a.name.localeCompare(b.name, 'id')).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
                   {showErrors && !form.studentId && (
-                    <p className="text-xs text-red-500 mt-1">Murid wajib dipilih</p>
+                    <p className="text-xs text-red-500 mt-1">{t('sch.studentRequired')}</p>
                   )}
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Tanggal</label>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('common.date')}</label>
                 <input
                   type="date"
                   value={form.date}
@@ -1137,7 +1140,7 @@ export default function Schedule() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Mulai</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('sch.start')}</label>
                   <input
                     type="time"
                     value={form.startTime}
@@ -1146,7 +1149,7 @@ export default function Schedule() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Selesai</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('sch.end')}</label>
                   <input
                     type="time"
                     value={form.endTime}
@@ -1157,14 +1160,14 @@ export default function Schedule() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Status</label>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('sch.status')}</label>
                 <select
                   value={form.status}
                   onChange={e => setForm(f => ({ ...f, status: e.target.value as LessonSession['status'] }))}
                   className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
-                  <option value="scheduled">Terjadwal</option>
-                  <option value="completed" disabled={form.date > todayStr}>Selesai</option>
+                  <option value="scheduled">{t('status.scheduled')}</option>
+                  <option value="completed" disabled={form.date > todayStr}>{t('status.completed')}</option>
                 </select>
               </div>
 
@@ -1172,8 +1175,8 @@ export default function Schedule() {
                 <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-sm flex items-center gap-2">
                   <Clock size={14} className="text-gray-400 dark:text-gray-500" />
                   <span className="text-gray-600 dark:text-gray-300">
-                    Biaya: <strong>{formatCurrency(selectedStudent.billingType === 'per-session' && form.date ? effectiveRate(selectedStudent, form.date) : selectedStudent.ratePerSession)}</strong>
-                    {selectedStudent.billingType === 'package' && ' (paket)'}
+                    {t('sch.cost')}: <strong>{formatCurrency(selectedStudent.billingType === 'per-session' && form.date ? effectiveRate(selectedStudent, form.date) : selectedStudent.ratePerSession)}</strong>
+                    {selectedStudent.billingType === 'package' && t('sch.pkgSuffix')}
                   </span>
                 </div>
               )}
@@ -1189,14 +1192,14 @@ export default function Schedule() {
                       className="w-4 h-4 accent-indigo-600"
                     />
                     <RefreshCw size={14} className="text-gray-400 dark:text-gray-500" />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">Ulangi setiap minggu</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">{t('sch.repeatWeekly')}</span>
                   </label>
 
                   {recurring && (
                     <div className="space-y-2 pl-6">
                       <div className="flex items-center gap-3">
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Berapa kali?</label>
+                          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('sch.howMany')}</label>
                           <input
                             type="number" min="1" max="13" onKeyDown={e => (e.key === '-' || e.key === 'e') && e.preventDefault()}
                             value={recurringCount}
@@ -1204,14 +1207,14 @@ export default function Schedule() {
                             className="w-20 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                           />
                         </div>
-                        <p className="text-xs text-gray-400 dark:text-gray-500 pt-4">maks. 13 (~3 bln)</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 pt-4">{t('sch.maxWeeks')}</p>
                       </div>
 
                       {form.date && lastRecurringDate && (
                         <div className="text-xs text-indigo-700 bg-indigo-50 rounded-lg px-3 py-2">
-                          {format(parseISO(form.date), 'd MMM', { locale: localeId })}
-                          {recurringCountNum > 1 && <> → {format(parseISO(lastRecurringDate), 'd MMM yyyy', { locale: localeId })}</>}
-                          {' '}· <strong>{recurringCountNum} sesi</strong>
+                          {format(parseISO(form.date), 'd MMM', { locale })}
+                          {recurringCountNum > 1 && <> → {format(parseISO(lastRecurringDate), 'd MMM yyyy', { locale })}</>}
+                          {' '}· <strong>{t('common.sessions_n', { n: recurringCountNum })}</strong>
                         </div>
                       )}
 
@@ -1219,14 +1222,14 @@ export default function Schedule() {
                         <div className="flex items-start gap-1.5 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
                           <AlertTriangle size={12} className="mt-0.5 flex-shrink-0" />
                           {recurring
-                            ? <span>Paket tersisa <strong>{remainingPkgSessions}</strong> sesi, tidak cukup untuk <strong>{recurringCountNum}</strong> kali</span>
-                            : <span>Paket sudah habis (0 sesi tersisa). Tambah paket baru sebelum menjadwalkan sesi.</span>
+                            ? <span>{t('sch.pkgNotEnough', { remaining: remainingPkgSessions ?? 0, count: recurringCountNum })}</span>
+                            : <span>{t('sch.pkgEmpty')}</span>
                           }
                         </div>
                       )}
 
                       {isPrepaid && remainingPkgSessions !== null && !prepaidOverLimit && (
-                        <p className="text-xs text-gray-400 dark:text-gray-500">Sisa paket: {remainingPkgSessions} sesi</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">{t('sch.pkgRemaining', { n: remainingPkgSessions ?? 0 })}</p>
                       )}
                     </div>
                   )}
@@ -1239,8 +1242,8 @@ export default function Schedule() {
                   <AlertTriangle size={12} className="mt-0.5 flex-shrink-0" />
                   <span>
                     {weekendSessionDates.length === 1
-                      ? `${format(parseISO(weekendSessionDates[0]), 'EEE d MMM', { locale: localeId })} adalah hari weekend`
-                      : `${weekendSessionDates.length} sesi jatuh di hari weekend`}
+                      ? t('sch.weekend1', { date: format(parseISO(weekendSessionDates[0]), 'EEE d MMM', { locale }) })
+                      : t('sch.weekendN', { n: weekendSessionDates.length })}
                   </span>
                 </div>
               )}
@@ -1255,10 +1258,10 @@ export default function Schedule() {
                         {i > 0 && ', '}
                         <strong>{h.holiday.name}</strong>
                         {h.holiday.tentative && ' *'}
-                        {recurringDates.length > 1 && ` (${format(parseISO(h.date), 'd MMM', { locale: localeId })})`}
+                        {recurringDates.length > 1 && ` (${format(parseISO(h.date), 'd MMM', { locale })})`}
                       </span>
                     ))}
-                    {holidayHits.some(h => h.holiday.tentative) && <span className="opacity-60"> — * tanggal tentatif</span>}
+                    {holidayHits.some(h => h.holiday.tentative) && <span className="opacity-60">{t('sch.holidayTentative')}</span>}
                   </span>
                 </div>
               )}
@@ -1268,14 +1271,14 @@ export default function Schedule() {
                 <div className="flex items-start gap-1.5 text-xs text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg px-3 py-2">
                   <AlertTriangle size={12} className="mt-0.5 flex-shrink-0" />
                   <span>
-                    Laoshi sudah ada sesi yang bentrok:{' '}
+                    {t('sch.conflict')}{' '}
                     {teacherConflicts.map((s, i) => {
                       const st = data.students.find(x => x.id === s.studentId);
                       return (
                         <span key={s.id}>
                           {i > 0 && ', '}
                           <strong>{st?.name ?? '—'}</strong> ({s.startTime}–{s.endTime}
-                          {recurringDates.length > 1 ? ` · ${format(parseISO(s.date), 'd MMM', { locale: localeId })}` : ''})
+                          {recurringDates.length > 1 ? ` · ${format(parseISO(s.date), 'd MMM', { locale })}` : ''})
                         </span>
                       );
                     })}
@@ -1284,12 +1287,12 @@ export default function Schedule() {
               )}
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Catatan (opsional)</label>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('stu.notes')}</label>
                 <input
                   type="text"
                   value={form.notes}
                   onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                  placeholder="Topik, materi, dll"
+                  placeholder={t('sch.notesPh')}
                   className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -1301,7 +1304,7 @@ export default function Schedule() {
                 disabled={prepaidOverLimit}
                 className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Check size={16} /> Simpan
+                <Check size={16} /> {t('common.save')}
               </button>
               {editSession && (
                 <button
