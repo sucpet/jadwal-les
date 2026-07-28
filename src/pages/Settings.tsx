@@ -1,5 +1,5 @@
-import { useRef, useState, useEffect, useCallback } from 'react';
-import { Upload, Download, Trash2, AlertTriangle, CheckCircle2, Database, Moon, Sun, Cloud, RefreshCw } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Download, Trash2, AlertTriangle, CheckCircle2, Database, Moon, Sun, Cloud, RefreshCw, RotateCcw } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { useTheme } from '../store/ThemeContext';
 import { supabase } from '../lib/supabase';
@@ -7,13 +7,13 @@ import { supabase } from '../lib/supabase';
 export default function Settings() {
   const { data } = useApp();
   const { isDark, toggle } = useTheme();
-  const fileRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
   const [backupFiles, setBackupFiles] = useState<Array<{ name: string }>>([]);
   const [backupLoading, setBackupLoading] = useState(false);
   const [backupSetupNeeded, setBackupSetupNeeded] = useState(false);
   const [manualBacking, setManualBacking] = useState(false);
+  const [restoring, setRestoring] = useState<string | null>(null);
   const lastBackupDate = localStorage.getItem('jadwal-les-last-backup');
 
   const loadBackupFiles = useCallback(async () => {
@@ -54,64 +54,60 @@ export default function Settings() {
     URL.revokeObjectURL(url);
   };
 
-  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async ev => {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const json = JSON.parse(ev.target?.result as string) as any;
-        if (!Array.isArray(json.teachers) || !Array.isArray(json.students) || !Array.isArray(json.sessions) || !Array.isArray(json.packages)) {
-          throw new Error('Format file tidak valid (teachers/students/sessions/packages harus ada)');
-        }
+  // Pulihkan seluruh data dari isi backup (full replace: hapus semua lalu insert)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const applyBackup = async (json: any) => {
+    if (!Array.isArray(json.teachers) || !Array.isArray(json.students) || !Array.isArray(json.sessions) || !Array.isArray(json.packages)) {
+      throw new Error('Format backup tidak valid (teachers/students/sessions/packages harus ada).');
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const teachers   = json.teachers.map((t: any)  => ({ id: t.id, name: t.name, color: t.color, honor_per_session: t.honorPerSession ?? 100000, is_owner: t.isOwner ?? false, created_at: t.createdAt }));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const students   = json.students.map((s: any)  => ({ id: s.id, teacher_id: s.teacherId, name: s.name, billing_type: s.billingType, rate_per_session: s.ratePerSession, pending_rate: s.pendingRate ?? null, pending_rate_effective_date: s.pendingRateEffectiveDate ?? null, group: s.group ?? 'xuyuan', xu_yuan_type: s.xuYuanType ?? 'private', is_active: s.isActive ?? true, notes: s.notes ?? null, created_at: s.createdAt }));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const packages   = json.packages.map((p: any)  => ({ id: p.id, student_id: p.studentId, teacher_id: p.teacherId, total_sessions: p.totalSessions, pricing_type: p.pricingType ?? 'per-session', price_per_session: p.pricePerSession, package_price: p.packagePrice ?? null, start_date: p.startDate, notes: p.notes ?? null, created_at: p.createdAt }));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sessions   = json.sessions.map((s: any)  => ({ id: s.id, student_id: s.studentId, teacher_id: s.teacherId, date: s.date, start_time: s.startTime, end_time: s.endTime, status: s.status, notes: s.notes ?? null, worksheet_pages: s.worksheetPages ?? 0, rate_snapshot: s.rateSnapshot ?? null, created_at: s.createdAt }));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const worksheets = (json.worksheets ?? []).map((w: any) => ({ id: w.id, student_id: w.studentId, date: w.date, pages: w.pages, created_at: w.createdAt }));
 
-        setStatus({ type: 'success', msg: 'Mengupload data ke Supabase...' });
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const teachers  = json.teachers.map((t: any)  => ({ id: t.id, name: t.name, color: t.color, created_at: t.createdAt }));
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const students  = json.students.map((s: any)  => ({ id: s.id, teacher_id: s.teacherId, name: s.name, billing_type: s.billingType, rate_per_session: s.ratePerSession, pending_rate: s.pendingRate ?? null, pending_rate_effective_date: s.pendingRateEffectiveDate ?? null, group: s.group ?? 'xuyuan', xu_yuan_type: s.xuYuanType ?? 'private', notes: s.notes ?? null, created_at: s.createdAt }));
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const packages  = json.packages.map((p: any)  => ({ id: p.id, student_id: p.studentId, teacher_id: p.teacherId, total_sessions: p.totalSessions, pricing_type: p.pricingType ?? 'per-session', price_per_session: p.pricePerSession, package_price: p.packagePrice ?? null, start_date: p.startDate, notes: p.notes ?? null, created_at: p.createdAt }));
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const sessions  = json.sessions.map((s: any)  => ({ id: s.id, student_id: s.studentId, teacher_id: s.teacherId, date: s.date, start_time: s.startTime, end_time: s.endTime, status: s.status, notes: s.notes ?? null, worksheet_pages: s.worksheetPages ?? 0, created_at: s.createdAt }));
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const worksheets = (json.worksheets ?? []).map((w: any) => ({ id: w.id, student_id: w.studentId, date: w.date, pages: w.pages, created_at: w.createdAt }));
-
-        const { error: e1 } = await supabase.from('teachers').upsert(teachers);
-        if (e1) throw e1;
-        const { error: e2 } = await supabase.from('students').upsert(students);
-        if (e2) throw e2;
-        const { error: e3 } = await supabase.from('packages').upsert(packages);
-        if (e3) throw e3;
-        for (let i = 0; i < sessions.length; i += 100) {
-          const { error } = await supabase.from('sessions').upsert(sessions.slice(i, i + 100));
-          if (error) throw error;
-        }
-        if (worksheets.length > 0) {
-          const { error: e5 } = await supabase.from('worksheets').upsert(worksheets);
-          if (e5) throw e5;
-        }
-
-        setStatus({ type: 'success', msg: `Berhasil import: ${teachers.length} laoshi, ${students.length} murid, ${packages.length} paket, ${sessions.length} sesi. Halaman akan reload...` });
-        setTimeout(() => window.location.reload(), 1500);
-      } catch (err) {
-        setStatus({ type: 'error', msg: `Gagal import: ${(err as Error).message}` });
+    // Hapus semua (reverse FK)
+    for (const t of ['worksheets', 'sessions', 'packages', 'students', 'teachers']) {
+      const { error } = await supabase.from(t).delete().not('id', 'is', null);
+      if (error) throw error;
+    }
+    // Insert (FK order)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ins = async (table: string, rows: any[]) => {
+      for (let i = 0; i < rows.length; i += 100) {
+        const { error } = await supabase.from(table).insert(rows.slice(i, i + 100));
+        if (error) throw error;
       }
     };
-    reader.readAsText(file);
-    e.target.value = '';
+    await ins('teachers', teachers);
+    await ins('students', students);
+    await ins('packages', packages);
+    await ins('sessions', sessions);
+    await ins('worksheets', worksheets);
+    return { teachers, students, packages, sessions };
   };
 
-  const handleExport = () => {
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `jadwal-les-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const handleRestore = async (filename: string) => {
+    const label = filename.replace('backup_', '').replace('.json', '');
+    if (!confirm(`Pulihkan data dari backup "${label}"?\n\nSEMUA data saat ini akan diganti dengan isi backup ini. Tidak bisa dibatalkan.`)) return;
+    setRestoring(filename);
+    setStatus({ type: 'success', msg: 'Memulihkan data dari backup...' });
+    try {
+      const { data: blob, error } = await supabase.storage.from('backups').download(filename);
+      if (error || !blob) throw new Error('Gagal mengunduh file backup.');
+      const json = JSON.parse(await blob.text());
+      const res = await applyBackup(json);
+      setStatus({ type: 'success', msg: `Berhasil pulihkan: ${res.teachers.length} laoshi, ${res.students.length} murid, ${res.packages.length} paket, ${res.sessions.length} sesi. Halaman akan reload...` });
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (err) {
+      setRestoring(null);
+      setStatus({ type: 'error', msg: `Gagal pulihkan: ${(err as Error).message}` });
+    }
   };
 
   const handleMigrateFromLocalStorage = async () => {
@@ -244,18 +240,30 @@ export default function Settings() {
         ) : (
           <div className="divide-y divide-gray-100 dark:divide-gray-700">
             {backupFiles.map(f => (
-              <div key={f.name} className="flex items-center justify-between py-2.5">
-                <span className="text-sm text-gray-700 dark:text-gray-300">{f.name.replace('backup_', '').replace('.json', '')}</span>
-                <button
-                  onClick={() => handleDownloadBackup(f.name)}
-                  className="flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
-                >
-                  <Download size={13} /> Download
-                </button>
+              <div key={f.name} className="flex items-center justify-between gap-2 py-2.5">
+                <span className="text-sm text-gray-700 dark:text-gray-300 min-w-0 truncate">{f.name.replace('backup_', '').replace('.json', '')}</span>
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  <button
+                    onClick={() => handleDownloadBackup(f.name)}
+                    className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:underline"
+                  >
+                    <Download size={13} /> Download
+                  </button>
+                  <button
+                    onClick={() => handleRestore(f.name)}
+                    disabled={restoring !== null}
+                    className="flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <RotateCcw size={13} /> {restoring === f.name ? 'Memulihkan…' : 'Pulihkan'}
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         )}
+        <p className="text-xs text-gray-400 dark:text-gray-500 pt-1">
+          <strong>Pulihkan</strong> mengganti seluruh data saat ini dengan isi backup yang dipilih.
+        </p>
       </div>
 
       {/* Migrasi localStorage → Supabase */}
@@ -269,36 +277,6 @@ export default function Settings() {
           className="flex items-center gap-2 bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-indigo-700"
         >
           <Database size={16} /> Upload ke Supabase
-        </button>
-      </div>
-
-      {/* Import */}
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
-        <h2 className="font-semibold text-gray-900 dark:text-white mb-1">Import Data</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-          Upload file JSON untuk mengganti semua data yang ada.
-          Data lama akan diganti sepenuhnya.
-        </p>
-        <input ref={fileRef} type="file" accept=".json" onChange={handleImport} className="hidden" />
-        <button
-          onClick={() => fileRef.current?.click()}
-          className="flex items-center gap-2 bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-indigo-700"
-        >
-          <Upload size={16} /> Pilih File JSON
-        </button>
-      </div>
-
-      {/* Export */}
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
-        <h2 className="font-semibold text-gray-900 dark:text-white mb-1">Export / Backup</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-          Download semua data sebagai file JSON. Simpan sebagai backup atau untuk dipindahkan ke browser lain.
-        </p>
-        <button
-          onClick={handleExport}
-          className="flex items-center gap-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm px-4 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-        >
-          <Download size={16} /> Export Data
         </button>
       </div>
 
