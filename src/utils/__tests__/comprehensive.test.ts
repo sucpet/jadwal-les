@@ -290,17 +290,25 @@ describe('formatDuration', () => {
   });
 
   it('less than 1 hour → "X mnt"', () => {
-    expect(formatDuration(30)).toBe('30 mnt');
-    expect(formatDuration(45)).toBe('45 mnt');
+    expect(formatDuration(30)).toBe('30 menit');
+    expect(formatDuration(45)).toBe('45 menit');
   });
 
   it('hours and minutes → "X jam Y mnt"', () => {
-    expect(formatDuration(90)).toBe('1 jam 30 mnt');
-    expect(formatDuration(75)).toBe('1 jam 15 mnt');
+    expect(formatDuration(90)).toBe('1 jam 30 menit');
+    expect(formatDuration(75)).toBe('1 jam 15 menit');
   });
 
   it('0 minutes → "0 mnt"', () => {
-    expect(formatDuration(0)).toBe('0 mnt');
+    expect(formatDuration(0)).toBe('0 menit');
+  });
+
+  it('English units with pluralization', () => {
+    expect(formatDuration(60, 'en')).toBe('1 hour');
+    expect(formatDuration(120, 'en')).toBe('2 hours');
+    expect(formatDuration(30, 'en')).toBe('30 minutes');
+    expect(formatDuration(61, 'en')).toBe('1 hour 1 minute');
+    expect(formatDuration(150, 'en')).toBe('2 hours 30 minutes');
   });
 });
 
@@ -406,7 +414,7 @@ describe('groupByXuYuanCycle', () => {
 
 describe('totalDurationLabel', () => {
   it('empty → "0 mnt"', () => {
-    expect(totalDurationLabel([])).toBe('0 mnt');
+    expect(totalDurationLabel([])).toBe('0 menit');
   });
 
   it('single 1h session → "1 jam"', () => {
@@ -425,11 +433,11 @@ describe('totalDurationLabel', () => {
     const sessions = [
       makeSession({ id: 'a', startTime: '09:00', endTime: '10:30' }),
     ];
-    expect(totalDurationLabel(sessions)).toBe('1 jam 30 mnt');
+    expect(totalDurationLabel(sessions)).toBe('1 jam 30 menit');
   });
 
   it('45 min total → "45 mnt"', () => {
-    expect(totalDurationLabel([makeSession({ startTime: '09:00', endTime: '09:45' })])).toBe('45 mnt');
+    expect(totalDurationLabel([makeSession({ startTime: '09:00', endTime: '09:45' })])).toBe('45 menit');
   });
 });
 

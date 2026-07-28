@@ -1,7 +1,7 @@
 import { format, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import type { LessonSession, SessionPackage } from '../types';
-import { xuYuanCycleStart } from './xuyuan';
+import { xuYuanCycleStart, formatDuration } from './xuyuan';
 
 export function groupByMonth(sessions: LessonSession[]) {
   const map = new Map<string, LessonSession[]>();
@@ -39,17 +39,13 @@ export function groupByXuYuanCycle(sessions: LessonSession[]) {
     });
 }
 
-export function totalDurationLabel(sessions: LessonSession[]): string {
+export function totalDurationLabel(sessions: LessonSession[], lang: 'id' | 'en' = 'id'): string {
   const minutes = sessions.reduce((sum, s) => {
     const [sh, sm] = s.startTime.split(':').map(Number);
     const [eh, em] = s.endTime.split(':').map(Number);
     return sum + (eh * 60 + em) - (sh * 60 + sm);
   }, 0);
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  if (hours === 0) return `${mins} mnt`;
-  if (mins === 0) return `${hours} jam`;
-  return `${hours} jam ${mins} mnt`;
+  return formatDuration(minutes, lang);
 }
 
 export function getPackageAttributedSessions(

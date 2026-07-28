@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { useLang } from '../store/LanguageContext';
 import { formatCurrency, formatDate } from '../utils/helpers';
-import { durationMinutes } from '../utils/xuyuan';
+import { durationMinutes, formatDuration } from '../utils/xuyuan';
 
 const RATE_PRIVATE    = 100_000;
 const RATE_SEMI_GROUP = 135_000;
@@ -17,7 +17,7 @@ const XUYUAN_ADJ_2026_06 = Math.round(6.5 * RATE_PRIVATE + 0.5 * RATE_SEMI_GROUP
 export default function FinanceDetail() {
   const { teacherId } = useParams<{ teacherId: string }>();
   const { data } = useApp();
-  const { t, locale } = useLang();
+  const { t, locale, lang } = useLang();
   const [month, setMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -165,7 +165,7 @@ export default function FinanceDetail() {
                   <tr key={student.id}>
                     <td className="py-2 text-gray-800 dark:text-gray-200">{student.name}</td>
                     <td className="py-2 text-right tabular-nums text-gray-500 dark:text-gray-400">{sessions.length}</td>
-                    <td className="py-2 text-right tabular-nums text-gray-500 dark:text-gray-400">{formatMins(totalMins)}</td>
+                    <td className="py-2 text-right tabular-nums text-gray-500 dark:text-gray-400">{formatDuration(totalMins, lang)}</td>
                     <td className="py-2 text-right tabular-nums font-medium text-gray-900 dark:text-white">{formatCurrency(income)}</td>
                   </tr>
                 ))}
@@ -346,12 +346,6 @@ export default function FinanceDetail() {
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-
-function formatMins(mins: number): string {
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  return h > 0 ? `${h} jam${m > 0 ? ` ${m} mnt` : ''}` : `${m} mnt`;
-}
 
 function Section({
   title, total, children,

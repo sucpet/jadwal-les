@@ -404,7 +404,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'fd.sectionPostpaid': 'Postpaid — Per Session',
     'fd.sectionHonor': 'Pay per Student',
     'fd.adjMayShort': 'May adjustment (6.5h private + 0.5h semi)',
-    'fd.adjDur7': '7 h',
+    'fd.adjDur7': '7 hours',
     'fd.noIncome': 'No income this month.',
   },
 };

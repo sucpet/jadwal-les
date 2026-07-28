@@ -235,7 +235,7 @@ interface CycleEntry {
 
 export default function Hours() {
   const { data } = useApp();
-  const { t, locale } = useLang();
+  const { t, locale, lang } = useLang();
   const [cycleIndex, setCycleIndex] = useState(0); // 0 = siklus terbaru
 
   const xuYuanStudents = data.students.filter(s => s.group === 'xuyuan');
@@ -352,7 +352,7 @@ export default function Hours() {
           <div className={`px-5 py-4 ${cycle.isCurrent ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-800'}`}>
             <div className="flex items-start justify-between">
               <div className={`text-sm ${cycle.isCurrent ? 'text-indigo-200' : 'text-gray-500 dark:text-gray-400'}`}>
-                {t('hours.sessionsDur', { n: cycle.totalSessions, dur: formatDuration(cycle.totalMinutes + (cycle.key === ADJ_CYCLE_KEY ? ADJ_MINUTES : 0)) })}
+                {t('hours.sessionsDur', { n: cycle.totalSessions, dur: formatDuration(cycle.totalMinutes + (cycle.key === ADJ_CYCLE_KEY ? ADJ_MINUTES : 0), lang) })}
               </div>
               {cycle.studentGroups.length > 0 && (
                 <button
@@ -380,7 +380,7 @@ export default function Hours() {
                     {student?.xuYuanType === 'semi-group' && (
                       <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded">semi</span>
                     )}
-                    <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">{t('hours.sessionsDur', { n: rows.length, dur: formatDuration(stuMins) })}</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">{t('hours.sessionsDur', { n: rows.length, dur: formatDuration(stuMins, lang) })}</span>
                   </div>
                   {/* Session list */}
                   <div className="space-y-1 pl-2 border-l-2 border-gray-100 dark:border-gray-700">
@@ -388,7 +388,7 @@ export default function Hours() {
                       <div key={s.id} className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                         <span className="w-16 flex-shrink-0 tabular-nums">{format(parseISO(s.date), 'd MMM', { locale })}</span>
                         <span className="w-24 flex-shrink-0 tabular-nums">{s.startTime}–{s.endTime}</span>
-                        <span className="flex-1 text-gray-400 dark:text-gray-500 tabular-nums">{formatDuration(sMins)}</span>
+                        <span className="flex-1 text-gray-400 dark:text-gray-500 tabular-nums">{formatDuration(sMins, lang)}</span>
                         {(s.worksheetPages ?? 0) > 0 && (
                           <span className="flex items-center gap-0.5 text-amber-600 dark:text-amber-400">
                             <FileText size={11} /> {t('ws.pagesUnit', { n: s.worksheetPages ?? 0 })}
@@ -412,7 +412,7 @@ export default function Hours() {
             <div className="px-5 py-3 bg-amber-50 dark:bg-amber-900/10 border-t border-amber-100 dark:border-amber-800/30">
               <div className="flex items-center gap-2 text-xs text-amber-700 dark:text-amber-400">
                 <span className="flex-1 italic">{t('hours.adjMay')}</span>
-                <span className="tabular-nums font-medium">{formatDuration(ADJ_MINUTES)}</span>
+                <span className="tabular-nums font-medium">{formatDuration(ADJ_MINUTES, lang)}</span>
               </div>
             </div>
           )}

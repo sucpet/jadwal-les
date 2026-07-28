@@ -24,12 +24,14 @@ export function durationMinutes(s: LessonSession): number {
   return (eh * 60 + em) - (sh * 60 + sm);
 }
 
-export function formatDuration(minutes: number): string {
+export function formatDuration(minutes: number, lang: 'id' | 'en' = 'id'): string {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  if (h === 0) return `${m} mnt`;
-  if (m === 0) return `${h} jam`;
-  return `${h} jam ${m} mnt`;
+  const hUnit = lang === 'en' ? (h === 1 ? 'hour' : 'hours') : 'jam';
+  const mUnit = lang === 'en' ? (m === 1 ? 'minute' : 'minutes') : 'menit';
+  if (h === 0) return `${m} ${mUnit}`;
+  if (m === 0) return `${h} ${hUnit}`;
+  return `${h} ${hUnit} ${m} ${mUnit}`;
 }
 
 export function formatRp(n: number): string {
