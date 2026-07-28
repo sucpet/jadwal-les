@@ -1,14 +1,15 @@
 import { format, addDays, parseISO, isSameDay, isBefore, differenceInDays } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
+import type { Locale } from 'date-fns';
 import type { LessonSession, SessionPackage, Student, StudentGroup } from '../types';
 
 export function generateId(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
-export function formatDate(date: string | Date, fmt = 'd MMM yyyy'): string {
+export function formatDate(date: string | Date, fmt = 'd MMM yyyy', locale: Locale = localeId): string {
   const d = typeof date === 'string' ? parseISO(date) : date;
-  return format(d, fmt, { locale: localeId });
+  return format(d, fmt, { locale });
 }
 
 export function formatCurrency(amount: number): string {

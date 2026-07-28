@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Plus, Pencil, Trash2, X, Check, ChevronDown, ChevronUp, Package, AlertTriangle, Clock, CalendarDays, CalendarClock, StickyNote, PowerOff, RotateCcw, Search } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
-import { id as localeId } from 'date-fns/locale';
 import { useApp } from '../store/AppContext';
+import { useLang } from '../store/LanguageContext';
 import { formatCurrency, getPackageStatus, formatDate } from '../utils/helpers';
 import { groupByMonth, groupByXuYuanCycle, totalDurationLabel, getPackageAttributedSessions } from '../utils/student-groups';
 import type { BillingType, Student, StudentGroup, SessionPackage, PackagePricingType, LessonSession } from '../types';
@@ -11,7 +11,8 @@ import { STUDENT_GROUPS } from '../types';
 
 // Reusable date chips row
 function SessionDateChips({ sessions }: { sessions: LessonSession[] }) {
-  if (sessions.length === 0) return <span className="text-xs text-gray-400 italic">Belum ada sesi</span>;
+  const { t, locale } = useLang();
+  if (sessions.length === 0) return <span className="text-xs text-gray-400 italic">{t('stu.noSessionChips')}</span>;
   return (
     <div className="flex flex-wrap gap-1">
       {sessions.map(s => (
@@ -20,7 +21,7 @@ function SessionDateChips({ sessions }: { sessions: LessonSession[] }) {
             ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-500 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
             : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
         }`}>
-          {format(parseISO(s.date), 'd MMM', { locale: localeId })}
+          {format(parseISO(s.date), 'd MMM', { locale })}
         </span>
       ))}
     </div>
@@ -39,6 +40,7 @@ interface StudentFormProps {
 }
 
 function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) {
+  const { t, locale } = useLang();
   const isNew = !initial;
 
   const [form, setForm] = useState({
@@ -121,7 +123,7 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
 
   return (
     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 space-y-4">
-      <h3 className="font-semibold text-gray-900 dark:text-white">{initial ? 'Edit Murid' : 'Tambah Murid Baru'}</h3>
+      <h3 className="font-semibold text-gray-900 dark:text-white">{initial ? t('stu.editTitle') : t('stu.addTitle')}</h3>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
@@ -132,18 +134,18 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nama Murid</label>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('stu.studentName')}</label>
           <input autoFocus type="text" value={form.name}
             onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-            placeholder="Nama murid" className={`input w-full ${showErrors && !form.name.trim() ? 'input-error' : ''}`} />
+            placeholder={t('stu.studentNamePh')} className={`input w-full ${showErrors && !form.name.trim() ? 'input-error' : ''}`} />
           {showErrors && !form.name.trim() && (
-            <p className="text-xs text-red-500 mt-1">Nama murid wajib diisi</p>
+            <p className="text-xs text-red-500 mt-1">{t('stu.nameRequired')}</p>
           )}
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Kelompok</label>
+        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">{t('stu.group')}</label>
         <div className="flex gap-2">
           {STUDENT_GROUPS.map(({ value, label }) => (
             <button key={value} type="button"
@@ -167,7 +169,7 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
 
       {isXuYuan && (
         <div>
-          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Tipe Sesi</label>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('stu.sessionType')}</label>
           <div className="flex gap-2">
             {(['private', 'semi-group'] as const).map(t => (
               <button
@@ -185,9 +187,9 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
 
       {!isXuYuan && (
         <div>
-          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Sistem Pembayaran</label>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('stu.billingSystem')}</label>
           <div className="grid grid-cols-2 gap-2">
-            {([['per-session', 'Postpaid', 'Bayar tiap sesi selesai'], ['package', 'Prepaid', 'Beli sesi di awal (paket)']] as [BillingType, string, string][]).map(([val, label, desc]) => (
+            {([['per-session', t('stu.postpaid'), t('stu.postpaidDesc')], ['package', t('stu.prepaid'), t('stu.prepaidDesc')]] as [BillingType, string, string][]).map(([val, label, desc]) => (
               <button key={val} type="button"
                 onClick={() => setForm(f => ({ ...f, billingType: val }))}
                 className={`py-2.5 px-3 rounded-lg border text-left transition-colors ${
@@ -208,7 +210,7 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
       {/* Postpaid: isi rate manual */}
       {!isXuYuan && !isPrepaid && (
         <div>
-          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Biaya / Sesi (Rp)</label>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('stu.rate')}</label>
           <input type="number" min="0" onKeyDown={e => (e.key === '-' || e.key === 'e') && e.preventDefault()} value={form.ratePerSession}
             onChange={e => {
               const v = e.target.value;
@@ -222,10 +224,10 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
             }}
             placeholder="150000" className={`input w-full ${showErrors && !form.ratePerSession ? 'input-error' : ''}`} />
           {showErrors && !form.ratePerSession && (
-            <p className="text-xs text-red-500 mt-1">Biaya per sesi wajib diisi</p>
+            <p className="text-xs text-red-500 mt-1">{t('stu.rateRequired')}</p>
           )}
           {pendingCancelledNote && (
-            <p className="text-xs text-amber-600 mt-1">Perubahan harga terjadwal dibatalkan karena harga diubah langsung.</p>
+            <p className="text-xs text-amber-600 mt-1">{t('stu.pendingCancelled')}</p>
           )}
         </div>
       )}
@@ -234,36 +236,36 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
       {isPostpaidEdit && (
         <div className="border border-blue-200 dark:border-blue-800 rounded-xl p-4 space-y-3 bg-blue-50/60 dark:bg-blue-900/20">
           <div className="text-xs font-semibold text-blue-700 dark:text-blue-300 flex items-center gap-1.5 uppercase tracking-wide">
-            <CalendarClock size={13} /> Jadwalkan Perubahan Harga (opsional)
+            <CalendarClock size={13} /> {t('stu.scheduleChange')}
           </div>
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            Harga baru berlaku otomatis mulai tanggal yang dipilih. Sesi yang sudah selesai tidak terpengaruh.
+            {t('stu.scheduleChangeDesc')}
           </p>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Harga Baru / Sesi (Rp)</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('stu.newRate')}</label>
               <input type="number" min="0" onKeyDown={e => (e.key === '-' || e.key === 'e') && e.preventDefault()} value={pendingRate}
                 onChange={e => { setPendingRate(e.target.value); setPendingCancelledNote(false); }}
                 placeholder="175000" className={`input w-full ${showErrors && pendingInvalid ? 'input-error' : ''}`} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Mulai Berlaku</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('stu.effectiveDate')}</label>
               <input type="date" value={pendingDate}
                 onChange={e => { setPendingDate(e.target.value); setPendingCancelledNote(false); }}
                 className={`input w-full ${showErrors && pendingInvalid ? 'input-error' : ''}`} />
             </div>
           </div>
           {showErrors && pendingInvalid && (
-            <p className="text-xs text-red-500">Isi harga baru dan tanggal mulai, atau kosongkan keduanya.</p>
+            <p className="text-xs text-red-500">{t('stu.pendingInvalid')}</p>
           )}
           {hasPending && pendingRateNum > 0 && (
             <div className="bg-blue-100 dark:bg-blue-900/40 rounded-lg px-3 py-2 flex items-center justify-between gap-2">
               <span className="text-xs text-blue-800 dark:text-blue-200">
-                Mulai {formatDate(pendingDate, 'd MMM yyyy')}: <span className="font-semibold">{formatCurrency(pendingRateNum)}</span>/sesi
+                {t('stu.from')} {formatDate(pendingDate, 'd MMM yyyy', locale)}: <span className="font-semibold">{formatCurrency(pendingRateNum)}</span>{t('stu.perSesi')}
               </span>
               <button type="button" onClick={() => { setPendingRate(''); setPendingDate(''); }}
                 className="text-xs text-red-500 hover:text-red-600 flex items-center gap-1 flex-shrink-0">
-                <X size={12} /> Hapus
+                <X size={12} /> {t('common.delete')}
               </button>
             </div>
           )}
@@ -274,21 +276,21 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
       {isPrepaid && isNew && (
         <div className="border border-purple-200 dark:border-purple-800 rounded-xl p-4 space-y-3 bg-purple-50/60 dark:bg-purple-900/20">
           <div className="text-xs font-semibold text-purple-700 dark:text-purple-300 flex items-center gap-1.5 uppercase tracking-wide">
-            <Package size={13} /> Paket Pertama
+            <Package size={13} /> {t('stu.firstPackage')}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Jumlah Pertemuan</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('stu.numSessions')}</label>
               <input type="number" min="0" onKeyDown={e => (e.key === '-' || e.key === 'e') && e.preventDefault()} value={pkg.totalSessions}
                 onChange={e => setPkg(p => ({ ...p, totalSessions: e.target.value }))}
                 placeholder="8" className={`input w-full ${showErrors && !pkg.totalSessions ? 'input-error' : ''}`} />
               {showErrors && !pkg.totalSessions && (
-                <p className="text-xs text-red-500 mt-1">Jumlah pertemuan wajib diisi</p>
+                <p className="text-xs text-red-500 mt-1">{t('stu.numSessionsRequired')}</p>
               )}
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Tanggal Mulai</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('stu.startDate')}</label>
               <input type="date" value={pkg.startDate}
                 onChange={e => setPkg(p => ({ ...p, startDate: e.target.value }))}
                 className="input w-full" />
@@ -296,11 +298,11 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Cara Hitung Harga</label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">{t('stu.pricingMethod')}</label>
             <div className="grid grid-cols-2 gap-2">
               {([
-                ['per-session', 'Per Pertemuan', 'Harga × jumlah sesi'],
-                ['per-package', 'Per Paket', 'Harga sudah total'],
+                ['per-session', t('stu.perSessionLabel'), t('stu.perSessionDesc')],
+                ['per-package', t('stu.perPackageLabel'), t('stu.perPackageDesc')],
               ] as [PackagePricingType, string, string][]).map(([val, label, desc]) => (
                 <button key={val} type="button"
                   onClick={() => setPricingType(val)}
@@ -318,22 +320,22 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
 
           {pricingType === 'per-session' ? (
             <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Harga / Pertemuan (Rp)</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('stu.pricePerSession')}</label>
               <input type="number" min="0" onKeyDown={e => (e.key === '-' || e.key === 'e') && e.preventDefault()} value={pkg.pricePerSession}
                 onChange={e => setPkg(p => ({ ...p, pricePerSession: e.target.value }))}
                 placeholder="145000" className={`input w-full ${showErrors && !pkg.pricePerSession ? 'input-error' : ''}`} />
               {showErrors && !pkg.pricePerSession && (
-                <p className="text-xs text-red-500 mt-1">Harga per pertemuan wajib diisi</p>
+                <p className="text-xs text-red-500 mt-1">{t('stu.priceRequired')}</p>
               )}
             </div>
           ) : (
             <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Total Harga Paket (Rp)</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('stu.packageTotal')}</label>
               <input type="number" min="0" onKeyDown={e => (e.key === '-' || e.key === 'e') && e.preventDefault()} value={pkg.packagePrice}
                 onChange={e => setPkg(p => ({ ...p, packagePrice: e.target.value }))}
                 placeholder="1160000" className={`input w-full ${showErrors && !pkg.packagePrice ? 'input-error' : ''}`} />
               {showErrors && !pkg.packagePrice && (
-                <p className="text-xs text-red-500 mt-1">Total harga paket wajib diisi</p>
+                <p className="text-xs text-red-500 mt-1">{t('stu.packageTotalRequired')}</p>
               )}
             </div>
           )}
@@ -343,19 +345,19 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
               {pricingType === 'per-session' ? (
                 <>
                   <div className="text-xs text-purple-700 dark:text-purple-300">
-                    {pkgSessions} pertemuan × {formatCurrency(Number(pkg.pricePerSession))}
+                    {t('stu.meetingsTimes', { n: pkgSessions, price: formatCurrency(Number(pkg.pricePerSession)) })}
                   </div>
                   <div className="text-sm font-semibold text-purple-900 dark:text-purple-100">
-                    Total: {formatCurrency(effectiveTotal)}
+                    {t('stu.totalColon', { x: formatCurrency(effectiveTotal) })}
                   </div>
                 </>
               ) : (
                 <>
                   <div className="text-xs text-purple-700 dark:text-purple-300">
-                    {formatCurrency(effectiveTotal)} ÷ {pkgSessions} pertemuan
+                    {t('stu.divideMeetings', { price: formatCurrency(effectiveTotal), n: pkgSessions })}
                   </div>
                   <div className="text-sm font-semibold text-purple-900 dark:text-purple-100">
-                    = {formatCurrency(effectivePerSession)} / pertemuan
+                    {t('stu.perMeetingResult', { price: formatCurrency(effectivePerSession) })}
                   </div>
                 </>
               )}
@@ -363,10 +365,10 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
           )}
 
           <div>
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Catatan Paket (opsional)</label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('stu.pkgNotes')}</label>
             <input type="text" value={pkg.notes}
               onChange={e => setPkg(p => ({ ...p, notes: e.target.value }))}
-              placeholder="Contoh: Paket Juli 2026" className="input w-full" />
+              placeholder={t('stu.pkgNotesPh')} className="input w-full" />
           </div>
         </div>
       )}
@@ -374,29 +376,29 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
       {/* Prepaid edit: rate hanya display info */}
       {!isXuYuan && isPrepaid && !isNew && (
         <div>
-          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Biaya / Sesi (Rp)</label>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('stu.rate')}</label>
           <input type="number" min="0" onKeyDown={e => (e.key === '-' || e.key === 'e') && e.preventDefault()} value={form.ratePerSession}
             onChange={e => setForm(f => ({ ...f, ratePerSession: e.target.value }))}
             placeholder="145000" className="input w-full" />
-          <p className="text-xs text-gray-400 mt-1">Paket dikelola lewat kartu murid.</p>
+          <p className="text-xs text-gray-400 mt-1">{t('stu.pkgManaged')}</p>
         </div>
       )}
 
       <div>
-        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Catatan (opsional)</label>
+        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('stu.notes')}</label>
         <input type="text" value={form.notes}
           onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-          placeholder="Info tambahan" className="input w-full" />
+          placeholder={t('stu.notesPh')} className="input w-full" />
       </div>
 
       <div className="flex gap-2 pt-1">
         <button onClick={handleSave}
           className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-indigo-700">
-          <Check size={15} /> Simpan
+          <Check size={15} /> {t('common.save')}
         </button>
         <button onClick={onCancel}
           className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
-          <X size={15} /> Batal
+          <X size={15} /> {t('common.cancel')}
         </button>
       </div>
     </div>
@@ -416,6 +418,7 @@ interface PackageFormProps {
 }
 
 function PackageForm({ studentId, teacherId, defaultRate, existingPackages, initial, onSave, onCancel }: PackageFormProps) {
+  const { t } = useLang();
   const lastPkg = [...existingPackages]
     .filter(p => !initial || p.id !== initial.id)
     .sort((a, b) => b.startDate.localeCompare(a.startDate))[0];
@@ -472,21 +475,21 @@ function PackageForm({ studentId, teacherId, defaultRate, existingPackages, init
   return (
     <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-xl p-4 space-y-3">
       <div className="text-sm font-semibold text-purple-800 dark:text-purple-300 flex items-center gap-1.5">
-        <Package size={14} /> {initial ? 'Edit Paket' : 'Tambah Paket Baru'}
+        <Package size={14} /> {initial ? t('stu.editPkg') : t('stu.addPkg')}
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Jumlah Pertemuan</label>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('stu.numSessions')}</label>
           <input type="number" min="0" onKeyDown={e => (e.key === '-' || e.key === 'e') && e.preventDefault()} value={form.totalSessions}
             onChange={e => setForm(f => ({ ...f, totalSessions: e.target.value }))}
             placeholder="8" className={`input w-full ${showErrors && !form.totalSessions ? 'input-error' : ''}`} />
           {showErrors && !form.totalSessions && (
-            <p className="text-xs text-red-500 mt-1">Jumlah pertemuan wajib diisi</p>
+            <p className="text-xs text-red-500 mt-1">{t('stu.numSessionsRequired')}</p>
           )}
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Tanggal Mulai</label>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('stu.startDate')}</label>
           <input type="date" value={form.startDate}
             onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))}
             className="input w-full" />
@@ -495,11 +498,11 @@ function PackageForm({ studentId, teacherId, defaultRate, existingPackages, init
 
       {/* Pricing type toggle */}
       <div>
-        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Cara Hitung Harga</label>
+        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">{t('stu.pricingMethod')}</label>
         <div className="grid grid-cols-2 gap-2">
           {([
-            ['per-session', 'Per Pertemuan', 'Harga × jumlah sesi'],
-            ['per-package', 'Per Paket', 'Harga sudah total'],
+            ['per-session', t('stu.perSessionLabel'), t('stu.perSessionDesc')],
+            ['per-package', t('stu.perPackageLabel'), t('stu.perPackageDesc')],
           ] as [PackagePricingType, string, string][]).map(([val, label, desc]) => (
             <button key={val} type="button"
               onClick={() => setPricingType(val)}
@@ -518,22 +521,22 @@ function PackageForm({ studentId, teacherId, defaultRate, existingPackages, init
       {/* Price input — berubah tergantung pricingType */}
       {pricingType === 'per-session' ? (
         <div>
-          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Harga / Pertemuan (Rp)</label>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('stu.pricePerSession')}</label>
           <input type="number" min="0" onKeyDown={e => (e.key === '-' || e.key === 'e') && e.preventDefault()} value={form.pricePerSession}
             onChange={e => setForm(f => ({ ...f, pricePerSession: e.target.value }))}
             placeholder="145000" className={`input w-full ${showErrors && !form.pricePerSession ? 'input-error' : ''}`} />
           {showErrors && !form.pricePerSession && (
-            <p className="text-xs text-red-500 mt-1">Harga per pertemuan wajib diisi</p>
+            <p className="text-xs text-red-500 mt-1">{t('stu.priceRequired')}</p>
           )}
         </div>
       ) : (
         <div>
-          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Total Harga Paket (Rp)</label>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('stu.packageTotal')}</label>
           <input type="number" min="0" onKeyDown={e => (e.key === '-' || e.key === 'e') && e.preventDefault()} value={form.packagePrice}
             onChange={e => setForm(f => ({ ...f, packagePrice: e.target.value }))}
             placeholder="1160000" className={`input w-full ${showErrors && !form.packagePrice ? 'input-error' : ''}`} />
           {showErrors && !form.packagePrice && (
-            <p className="text-xs text-red-500 mt-1">Total harga paket wajib diisi</p>
+            <p className="text-xs text-red-500 mt-1">{t('stu.packageTotalRequired')}</p>
           )}
         </div>
       )}
@@ -544,19 +547,19 @@ function PackageForm({ studentId, teacherId, defaultRate, existingPackages, init
           {pricingType === 'per-session' ? (
             <>
               <div className="text-xs text-purple-700 dark:text-purple-300">
-                {sessions} pertemuan × {formatCurrency(Number(form.pricePerSession))}
+                {t('stu.meetingsTimes', { n: sessions, price: formatCurrency(Number(form.pricePerSession)) })}
               </div>
               <div className="text-sm font-semibold text-purple-900 dark:text-purple-100">
-                Total: {formatCurrency(effectiveTotal)}
+                {t('stu.totalColon', { x: formatCurrency(effectiveTotal) })}
               </div>
             </>
           ) : (
             <>
               <div className="text-xs text-purple-700 dark:text-purple-300">
-                {formatCurrency(effectiveTotal)} ÷ {sessions} pertemuan
+                {t('stu.divideMeetings', { price: formatCurrency(effectiveTotal), n: sessions })}
               </div>
               <div className="text-sm font-semibold text-purple-900 dark:text-purple-100">
-                = {formatCurrency(effectivePerSession)} / pertemuan
+                {t('stu.perMeetingResult', { price: formatCurrency(effectivePerSession) })}
               </div>
             </>
           )}
@@ -564,20 +567,20 @@ function PackageForm({ studentId, teacherId, defaultRate, existingPackages, init
       )}
 
       <div>
-        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Catatan (opsional)</label>
+        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('stu.notes')}</label>
         <input type="text" value={form.notes}
           onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-          placeholder="Contoh: Paket Juli 2026" className="input w-full" />
+          placeholder={t('stu.pkgNotesPh')} className="input w-full" />
       </div>
 
       <div className="flex gap-2">
         <button onClick={handleSave}
           className="flex items-center gap-1.5 bg-purple-600 text-white text-sm px-3 py-1.5 rounded-lg hover:bg-purple-700">
-          <Check size={14} /> Simpan Paket
+          <Check size={14} /> {t('common.save')}
         </button>
         <button onClick={onCancel}
           className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600">
-          <X size={14} /> Batal
+          <X size={14} /> {t('common.cancel')}
         </button>
       </div>
     </div>
@@ -601,6 +604,7 @@ function PackageCard({
   onEdit: (updates: Omit<SessionPackage, 'id' | 'createdAt'>) => void;
   onDelete: () => void;
 }) {
+  const { t, locale } = useLang();
   const { pkg, usedSessions, scheduledSessions, remainingSessions, estimatedEndDate, isExpired, isExpiringSoon, isCurrent } = status;
   const [editing, setEditing] = useState(false);
 
@@ -628,20 +632,20 @@ function PackageCard({
         <div>
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-              Mulai {formatDate(pkg.startDate, 'd MMM yyyy')}
+              {t('stu.pkgStart', { date: formatDate(pkg.startDate, 'd MMM yyyy', locale) })}
             </span>
             {isCurrent && !isExpired && (
-              <span className="text-xs bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded-full font-medium">Aktif</span>
+              <span className="text-xs bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded-full font-medium">{t('stu.active')}</span>
             )}
             {isExpired && isCurrent && (
-              <span className="text-xs bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded-full font-medium">Selesai</span>
+              <span className="text-xs bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded-full font-medium">{t('status.completed')}</span>
             )}
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            {pkg.totalSessions} pertemuan
+            {t('stu.meetings', { n: pkg.totalSessions })}
             {pkg.pricingType === 'per-package'
-              ? <> · <span className="font-medium">{formatCurrency(pkg.packagePrice ?? pkg.pricePerSession * pkg.totalSessions)}</span> / paket <span className="text-gray-400">({formatCurrency(pkg.pricePerSession)}/pertemuan)</span></>
-              : <> · {formatCurrency(pkg.pricePerSession)}/pertemuan · Total {formatCurrency(pkg.pricePerSession * pkg.totalSessions)}</>
+              ? <> · <span className="font-medium">{formatCurrency(pkg.packagePrice ?? pkg.pricePerSession * pkg.totalSessions)}</span> {t('stu.perPackageUnit')} <span className="text-gray-400">({formatCurrency(pkg.pricePerSession)}{t('stu.perMeetingUnit')})</span></>
+              : <> · {formatCurrency(pkg.pricePerSession)}{t('stu.perMeetingUnit')} · {t('stu.totalWord')} {formatCurrency(pkg.pricePerSession * pkg.totalSessions)}</>
             }
           </div>
         </div>
@@ -665,18 +669,18 @@ function PackageCard({
               <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{
                 background: isExpired ? '#10b981' : isExpiringSoon ? '#f59e0b' : teacherColor,
               }} />
-              {usedSessions} selesai
+              {t('stu.doneN', { n: usedSessions })}
             </span>
             {scheduledSessions > 0 && (
               <span className="flex items-center gap-1 text-blue-500">
                 <span className="w-2 h-2 rounded-sm flex-shrink-0 bg-blue-400" />
-                {scheduledSessions} terjadwal
+                {t('stu.scheduledN', { n: scheduledSessions })}
               </span>
             )}
             <span className="text-gray-400">/ {pkg.totalSessions}</span>
           </span>
           <span className={`font-medium ${isExpired ? 'text-green-700' : isExpiringSoon ? 'text-amber-600' : remainingSessions === 0 ? 'text-gray-500' : 'text-gray-700'}`}>
-            {isExpired ? 'Selesai' : remainingSessions === 0 ? 'Penuh' : `Sisa ${remainingSessions}`}
+            {isExpired ? t('status.completed') : remainingSessions === 0 ? t('stu.full') : t('stu.remainingN', { n: remainingSessions })}
           </span>
         </div>
         <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden flex">
@@ -694,7 +698,7 @@ function PackageCard({
 
       {estimatedEndDate && !isExpired && isCurrent && (
         <div className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
-          <Clock size={11} /> Estimasi habis: {formatDate(estimatedEndDate, 'd MMM yyyy')}
+          <Clock size={11} /> {t('stu.estEnd', { date: formatDate(estimatedEndDate, 'd MMM yyyy', locale) })}
         </div>
       )}
 
@@ -706,14 +710,14 @@ function PackageCard({
         <div className="pt-1 border-t border-gray-100 dark:border-gray-700 space-y-1.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
-              <CalendarDays size={11} /> Tanggal les ({attributedSessions.length})
+              <CalendarDays size={11} /> {t('stu.lessonDates', { n: attributedSessions.length })}
             </div>
             <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
               <span className="flex items-center gap-1">
-                <span className="px-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-[10px]">tgl</span> selesai
+                <span className="px-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-[10px]">{t('stu.dateAbbr')}</span> {t('stu.legendDone')}
               </span>
               <span className="flex items-center gap-1">
-                <span className="px-1 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-400 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-[10px]">tgl</span> terjadwal
+                <span className="px-1 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-400 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-[10px]">{t('stu.dateAbbr')}</span> {t('stu.legendScheduled')}
               </span>
             </div>
           </div>
@@ -728,6 +732,7 @@ function PackageCard({
 
 function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?: boolean; highlight?: boolean }) {
   const { data, updateStudent, deleteStudent, addPackage, updatePackage, deletePackage } = useApp();
+  const { t, locale, lang } = useLang();
   const [expanded, setExpanded] = useState(highlight ?? false);
   const [editing, setEditing] = useState(false);
   const [addingPackage, setAddingPackage] = useState(false);
@@ -764,7 +769,7 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
   };
 
   const handleDelete = () => {
-    const msg = `Hapus murid "${student.name}"? Semua jadwal dan paketnya ikut terhapus.`;
+    const msg = t('stu.deleteConfirm', { name: student.name });
     if (confirm(msg)) deleteStudent(student.id);
   };
 
@@ -777,7 +782,7 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
   };
 
   const handleDeletePkg = (pkgId: string) => {
-    if (confirm('Hapus paket ini?')) deletePackage(pkgId);
+    if (confirm(t('stu.deletePkgConfirm'))) deletePackage(pkgId);
   };
 
   if (editing) {
@@ -803,7 +808,7 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
             <span className="font-medium text-gray-900 dark:text-white">{student.name}</span>
             {!student.isActive ? (
               <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
-                Non-aktif
+                {t('stu.inactive')}
               </span>
             ) : (
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
@@ -811,18 +816,18 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
                   ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
                   : 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
               }`}>
-                {isPostpaid ? 'Postpaid' : 'Prepaid'}
+                {isPostpaid ? t('stu.postpaid') : t('stu.prepaid')}
               </span>
             )}
             {/* Alert untuk paket aktif — hanya saat masih aktif */}
             {student.isActive && currentStatus?.isCurrent && currentStatus?.isExpiringSoon && (
               <span className="flex items-center gap-0.5 text-xs text-amber-600 font-medium">
-                <AlertTriangle size={11} /> Paket hampir habis
+                <AlertTriangle size={11} /> {t('stu.pkgAlmostOut')}
               </span>
             )}
             {student.isActive && currentStatus?.isCurrent && currentStatus?.isExpired && (
               <span className="flex items-center gap-0.5 text-xs text-green-600">
-                Paket selesai
+                {t('stu.pkgFinished')}
               </span>
             )}
           </div>
@@ -831,20 +836,20 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
             {student.group !== 'xuyuan' && (
               <>
                 <span>·</span>
-                <span>{formatCurrency(student.ratePerSession)}/sesi</span>
+                <span>{formatCurrency(student.ratePerSession)}{t('stu.perSesi')}</span>
               </>
             )}
             {isPostpaid && student.pendingRate != null && student.pendingRateEffectiveDate && (
               <span className="flex items-center gap-1 text-blue-500">
                 <CalendarClock size={11} />
-                {formatCurrency(student.pendingRate)}/sesi mulai {formatDate(student.pendingRateEffectiveDate, 'd MMM')}
+                {t('stu.pendingBadge', { price: formatCurrency(student.pendingRate), date: formatDate(student.pendingRateEffectiveDate, 'd MMM', locale) })}
               </span>
             )}
             {!isPostpaid && currentStatus && !currentStatus.isExpired && (
               <>
                 <span>·</span>
                 <span className="text-gray-500">
-                  {currentStatus.usedSessions}/{currentStatus.pkg.totalSessions} sesi
+                  {t('stu.usedTotal', { used: currentStatus.usedSessions, total: currentStatus.pkg.totalSessions })}
                 </span>
               </>
             )}
@@ -868,7 +873,7 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
               onClick={handleToggleActive}
               className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition-colors font-medium"
             >
-              <RotateCcw size={12} /> Aktifkan
+              <RotateCcw size={12} /> {t('stu.activate')}
             </button>
           )}
           <button onClick={handleDelete}
@@ -892,10 +897,10 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
           {student.billingType === 'package' && (
             <>
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Riwayat Paket</span>
+                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('stu.pkgHistory')}</span>
                 <button onClick={() => setAddingPackage(true)}
                   className="flex items-center gap-1 text-xs text-purple-600 hover:text-purple-700 font-medium">
-                  <Plus size={13} /> Tambah Paket
+                  <Plus size={13} /> {t('stu.addPkgLink')}
                 </button>
               </div>
               {addingPackage && (
@@ -909,7 +914,7 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
                 />
               )}
               {studentPkgs.length === 0 && !addingPackage && (
-                <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">Belum ada paket. Tambahkan paket pertama.</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">{t('stu.noPkg')}</p>
               )}
               {studentPkgs.map(pkg => (
                 <PackageCard
@@ -929,16 +934,16 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
           {student.group === 'pribadi' && (
             <>
               <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
-                <CalendarDays size={13} /> Riwayat Les
+                <CalendarDays size={13} /> {t('stu.lessonHistory')}
               </span>
               {studentSessions.length === 0 ? (
-                <p className="text-sm text-gray-400 text-center py-4">Belum ada sesi tercatat.</p>
+                <p className="text-sm text-gray-400 text-center py-4">{t('stu.noSessionsRecorded')}</p>
               ) : (
-                groupByMonth(studentSessions).map(({ key, label, sessions }) => (
+                groupByMonth(studentSessions, locale).map(({ key, label, sessions }) => (
                   <div key={key}>
                     <div className="flex items-center gap-2 mb-1.5">
                       <span className="text-xs font-semibold text-gray-600 capitalize">{label}</span>
-                      <span className="text-xs text-gray-400">({sessions.length} sesi)</span>
+                      <span className="text-xs text-gray-400">({t('common.sessions_n', { n: sessions.length })})</span>
                     </div>
                     <SessionDateChips sessions={sessions} />
                   </div>
@@ -951,17 +956,17 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
           {student.group === 'xuyuan' && (
             <>
               <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
-                <CalendarDays size={13} /> Riwayat Les
+                <CalendarDays size={13} /> {t('stu.lessonHistory')}
               </span>
               {studentSessions.length === 0 ? (
-                <p className="text-sm text-gray-400 text-center py-4">Belum ada sesi tercatat.</p>
+                <p className="text-sm text-gray-400 text-center py-4">{t('stu.noSessionsRecorded')}</p>
               ) : (
-                groupByXuYuanCycle(studentSessions).map(({ key, label, sessions }) => (
+                groupByXuYuanCycle(studentSessions, locale).map(({ key, label, sessions }) => (
                   <div key={key} className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-semibold text-gray-600">{label}</span>
                       <span className="text-xs text-gray-400 tabular-nums">
-                        {sessions.length} sesi · {totalDurationLabel(sessions)}
+                        {t('hours.sessionsDur', { n: sessions.length, dur: totalDurationLabel(sessions, lang) })}
                       </span>
                     </div>
                     <SessionDateChips sessions={sessions} />
@@ -978,7 +983,7 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
                 onClick={handleToggleActive}
                 className="flex items-center gap-1.5 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20 px-2 py-1.5 rounded-lg transition-colors"
               >
-                <PowerOff size={13} /> Non-aktifkan murid ini
+                <PowerOff size={13} /> {t('stu.deactivateThis')}
               </button>
             </div>
           )}
@@ -993,6 +998,7 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
 
 export default function Students() {
   const { data, addStudent, addPackage } = useApp();
+  const { t } = useLang();
   const [searchParams] = useSearchParams();
   const highlightId = searchParams.get('student') ?? null;
   const [showForm, setShowForm] = useState(false);
@@ -1030,12 +1036,12 @@ export default function Students() {
     <div className="max-w-3xl mx-auto space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Murid</h1>
-          <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">{filteredStudents.length} murid aktif</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('stu.title')}</h1>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">{t('stu.activeCount', { n: filteredStudents.length })}</p>
         </div>
         <button onClick={() => setShowForm(true)}
           className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700">
-          <Plus size={16} /> Tambah Murid
+          <Plus size={16} /> {t('stu.addStudent')}
         </button>
       </div>
 
@@ -1046,7 +1052,7 @@ export default function Students() {
           type="text"
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
-          placeholder="Cari murid..."
+          placeholder={t('stu.searchPh')}
           className="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
       </div>
@@ -1056,7 +1062,7 @@ export default function Students() {
         <div className="flex gap-2 flex-wrap">
           <button onClick={() => setFilterTeacher('all')}
             className={`text-sm px-3 py-1.5 rounded-lg border ${filterTeacher === 'all' ? 'bg-indigo-600 text-white border-indigo-600' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400'}`}>
-            Semua
+            {t('stu.all')}
           </button>
           {data.teachers.map(t => (
             <button key={t.id} onClick={() => setFilterTeacher(t.id)}
@@ -1082,8 +1088,8 @@ export default function Students() {
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-10 text-center text-gray-400 dark:text-gray-500">
           <p className="text-sm">
             {data.teachers.length === 0
-              ? 'Tambahkan laoshi dulu sebelum menambahkan murid.'
-              : 'Belum ada murid aktif.'}
+              ? t('stu.needLaoshi')
+              : t('stu.noActive')}
           </p>
         </div>
       ) : (
@@ -1109,10 +1115,10 @@ export default function Students() {
                     {label}
                   </span>
                   <div className={`flex-1 h-px ${dividers[value]}`} />
-                  <span className="text-xs text-gray-400">{group.length} murid</span>
+                  <span className="text-xs text-gray-400">{t('stu.studentCount', { n: group.length })}</span>
                 </div>
                 {hasPrepaid && (
-                  <p className="text-xs text-gray-400 pl-1">Klik ▼ untuk kelola paket.</p>
+                  <p className="text-xs text-gray-400 pl-1">{t('stu.clickManage')}</p>
                 )}
                 {group.map(s => <StudentCard key={s.id} student={s} highlight={s.id === highlightId} />)}
               </section>
@@ -1130,7 +1136,7 @@ export default function Students() {
           >
             <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
             <span className="whitespace-nowrap">
-              {showInactive ? 'Sembunyikan non-aktif' : `${inactiveStudents.length} murid non-aktif`}
+              {showInactive ? t('stu.hideInactive') : t('stu.inactiveCount', { n: inactiveStudents.length })}
             </span>
             {showInactive ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />

@@ -1,9 +1,10 @@
 import { format, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
+import type { Locale } from 'date-fns';
 import type { LessonSession, SessionPackage } from '../types';
 import { xuYuanCycleStart, formatDuration } from './xuyuan';
 
-export function groupByMonth(sessions: LessonSession[]) {
+export function groupByMonth(sessions: LessonSession[], locale: Locale = localeId) {
   const map = new Map<string, LessonSession[]>();
   for (const s of sessions) {
     const key = s.date.slice(0, 7);
@@ -14,12 +15,12 @@ export function groupByMonth(sessions: LessonSession[]) {
     .sort((a, b) => b[0].localeCompare(a[0]))
     .map(([key, list]) => ({
       key,
-      label: format(parseISO(key + '-01'), 'MMMM yyyy', { locale: localeId }),
+      label: format(parseISO(key + '-01'), 'MMMM yyyy', { locale }),
       sessions: list.sort((a, b) => a.date.localeCompare(b.date)),
     }));
 }
 
-export function groupByXuYuanCycle(sessions: LessonSession[]) {
+export function groupByXuYuanCycle(sessions: LessonSession[], locale: Locale = localeId) {
   const map = new Map<string, LessonSession[]>();
   for (const s of sessions) {
     const key = xuYuanCycleStart(s.date);
@@ -33,7 +34,7 @@ export function groupByXuYuanCycle(sessions: LessonSession[]) {
       const end = new Date(start.getFullYear(), start.getMonth() + 1, 25);
       return {
         key,
-        label: `${format(start, 'd MMM', { locale: localeId })} – ${format(end, 'd MMM yyyy', { locale: localeId })}`,
+        label: `${format(start, 'd MMM', { locale })} – ${format(end, 'd MMM yyyy', { locale })}`,
         sessions: list.sort((a, b) => a.date.localeCompare(b.date)),
       };
     });
