@@ -666,7 +666,7 @@ export default function Schedule() {
                         pointerEvents: 'auto',
                         background: `${groupColor}80`,
                         color: '#fff',
-                        borderLeft: `3px solid ${color}`,
+                        borderLeft: `4px solid ${color}`,
                         opacity: isDragging ? 0.4 : 1,
                       }}
                       className="group relative rounded text-xs px-1 py-0.5 cursor-grab active:cursor-grabbing hover:opacity-80 overflow-hidden"
