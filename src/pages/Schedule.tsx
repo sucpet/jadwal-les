@@ -5,7 +5,7 @@ import { addWeeks, subWeeks, startOfWeek, addDays, isSameDay, parseISO, format, 
 import { id as localeId } from 'date-fns/locale';
 import { useApp } from '../store/AppContext';
 import type { LessonSession } from '../types';
-import { formatCurrency, getPackageStatus, effectiveRate } from '../utils/helpers';
+import { formatCurrency, getPackageStatus, effectiveRate, GROUP_COLORS } from '../utils/helpers';
 import { ROW_H, timeToPixels, computeDayLayout, addOneHour, shiftDateByWeeks, dayOfWeek, diffMinutes, addMinutes } from '../utils/calendar';
 import { getHoliday } from '../utils/holidays';
 
@@ -646,6 +646,7 @@ export default function Schedule() {
                   const student = data.students.find(st => st.id === s.studentId);
                   const teacher = data.teachers.find(t => t.id === s.teacherId);
                   const color = teacher?.color ?? '#6366f1';
+                  const groupColor = student ? GROUP_COLORS[student.group] : color;
                   const isDragging = draggingId === s.id;
                   return (
                     <div
@@ -658,7 +659,7 @@ export default function Schedule() {
                         left: `calc(${leftPct}% + 2px)`,
                         width: `calc(${widthPct}% - 4px)`,
                         pointerEvents: 'auto',
-                        background: `${color}80`,
+                        background: `${groupColor}80`,
                         color: '#fff',
                         borderLeft: `3px solid ${color}`,
                         opacity: isDragging ? 0.4 : 1,
