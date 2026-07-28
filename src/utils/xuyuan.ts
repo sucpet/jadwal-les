@@ -1,5 +1,6 @@
 import { format, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
+import type { Locale } from 'date-fns';
 import type { LessonSession } from '../types';
 
 export function xuYuanCycleStart(dateStr: string): string {
@@ -11,10 +12,10 @@ export function xuYuanCycleStart(dateStr: string): string {
   return format(start, 'yyyy-MM-dd');
 }
 
-export function xuYuanCycleLabel(startKey: string): string {
+export function xuYuanCycleLabel(startKey: string, locale: Locale = localeId): string {
   const start = parseISO(startKey);
   const end = new Date(start.getFullYear(), start.getMonth() + 1, 25);
-  return `${format(start, 'd MMM', { locale: localeId })} – ${format(end, 'd MMM yyyy', { locale: localeId })}`;
+  return `${format(start, 'd MMM', { locale })} – ${format(end, 'd MMM yyyy', { locale })}`;
 }
 
 export function durationMinutes(s: LessonSession): number {

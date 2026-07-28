@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
-import { id as localeId } from 'date-fns/locale';
+import type { Locale } from 'date-fns';
 import { FileText, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import XLSXStyle from 'xlsx-js-style';
 import { useApp } from '../store/AppContext';
+import { useLang } from '../store/LanguageContext';
 import type { LessonSession, Student } from '../types';
 import { xuYuanCycleStart as cycleStart, xuYuanCycleLabel as cycleLabel, durationMinutes, formatDuration } from '../utils/xuyuan';
+
+type TFunc = (key: string, vars?: Record<string, string | number>) => string;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const RATE_PRIVATE    = 100_000; // IDR/hour
@@ -32,7 +35,7 @@ function applyStyle(ws: XLSXStyle.WorkSheet, r: number, c: number, s: object) {
   (ws[addr] as { s?: object }).s = s;
 }
 
-function exportCycleToExcel(cycle: CycleEntry, worksheets: { studentId: string; date: string; pages: number }[]) {
+function exportCycleToExcel(cycle: CycleEntry, worksheets: { studentId: string; date: string; pages: number }[], t: TFunc, locale: Locale) {
   const COLS = 5;
 
   // ── Styles ──────────────────────────────────────────────────────────────────
@@ -92,14 +95,14 @@ function exportCycleToExcel(cycle: CycleEntry, worksheets: { studentId: string; 
   };
 
   // ── Title ───────────────────────────────────────────────────────────────────
-  rows.push([`Rekap XuYuan – ${cycle.label}`]);
+  rows.push([t('hours.xlsTitle', { label: cycle.label })]);
   styleRow(ri, Array(COLS).fill(sTitle));
   ri++;
 
   rows.push([]); ri++;
 
   // ── Header ──────────────────────────────────────────────────────────────────
-  rows.push(['Murid', 'Jumlah Halaman Worksheet', 'Tanggal', 'Durasi (jam)', 'Pendapatan (Rp)']);
+  rows.push([t('hours.colStudent'), t('hours.colPages'), t('hours.colDate'), t('hours.colDuration'), t('hours.colIncome')]);
   styleRow(ri, Array(COLS).fill(sHeader));
   ri++;
 
@@ -146,7 +149,7 @@ function exportCycleToExcel(cycle: CycleEntry, worksheets: { studentId: string; 
       rows.push([
         student?.name ?? '—',
         wsPages || '',
-        format(parseISO(date), 'd MMM yyyy', { locale: localeId }),
+        format(parseISO(date), 'd MMM yyyy', { locale }),
         minutes > 0 ? Math.round((minutes / 60) * 100) / 100 : '',
         earning > 0 ? earning : '',
       ]);
@@ -156,7 +159,7 @@ function exportCycleToExcel(cycle: CycleEntry, worksheets: { studentId: string; 
 
     // Subtotal per murid
     rows.push([
-      `Total ${student?.name ?? '—'}`,
+      t('hours.totalRow', { name: student?.name ?? '—' }),
       stuWsPages || '',
       '',
       stuMinutes > 0 ? Math.round((stuMinutes / 60) * 100) / 100 : '',
@@ -174,7 +177,7 @@ function exportCycleToExcel(cycle: CycleEntry, worksheets: { studentId: string; 
 
   // ── Grand total ─────────────────────────────────────────────────────────────
   rows.push([
-    'TOTAL KESELURUHAN',
+    t('hours.grandTotal'),
     grandTotalWsPages || '',
     '',
     grandTotalMinutes > 0 ? Math.round((grandTotalMinutes / 60) * 100) / 100 : '',
@@ -232,6 +235,7 @@ interface CycleEntry {
 
 export default function Hours() {
   const { data } = useApp();
+  const { t, locale } = useLang();
   const [cycleIndex, setCycleIndex] = useState(0); // 0 = siklus terbaru
 
   const xuYuanStudents = data.students.filter(s => s.group === 'xuyuan');
@@ -277,7 +281,7 @@ export default function Hours() {
 
       return {
         key,
-        label: cycleLabel(key),
+        label: cycleLabel(key, locale),
         isCurrent: key === thisCycle,
         totalSessions: sessions.length,
         totalMinutes: sessions.reduce((sum, s) => sum + durationMinutes(s), 0),
@@ -289,7 +293,7 @@ export default function Hours() {
   if (!cycleMap.has(thisCycle)) {
     cycles.unshift({
       key: thisCycle,
-      label: cycleLabel(thisCycle),
+      label: cycleLabel(thisCycle, locale),
       isCurrent: true,
       totalSessions: 0,
       totalMinutes: 0,
@@ -303,13 +307,13 @@ export default function Hours() {
   return (
     <div className="max-w-2xl mx-auto space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Rekap Jam Mengajar</h1>
-        <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">XuYuan · siklus 26–25</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('hours.title')}</h1>
+        <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">{t('hours.subtitle')}</p>
       </div>
 
       {cycles.length === 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-10 text-center text-gray-400 dark:text-gray-500 text-sm">
-          Belum ada sesi XuYuan yang selesai.
+          {t('hours.empty')}
         </div>
       )}
 
@@ -327,7 +331,7 @@ export default function Hours() {
             <span className="font-semibold text-gray-900 dark:text-white min-w-48 text-center">
               {cycle.label}
               {cycle.isCurrent && (
-                <span className="ml-2 text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-full">Berjalan</span>
+                <span className="ml-2 text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-full">{t('common.running')}</span>
               )}
             </span>
             <button
@@ -348,11 +352,11 @@ export default function Hours() {
           <div className={`px-5 py-4 ${cycle.isCurrent ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-800'}`}>
             <div className="flex items-start justify-between">
               <div className={`text-sm ${cycle.isCurrent ? 'text-indigo-200' : 'text-gray-500 dark:text-gray-400'}`}>
-                {cycle.totalSessions} sesi · {formatDuration(cycle.totalMinutes + (cycle.key === ADJ_CYCLE_KEY ? ADJ_MINUTES : 0))}
+                {t('hours.sessionsDur', { n: cycle.totalSessions, dur: formatDuration(cycle.totalMinutes + (cycle.key === ADJ_CYCLE_KEY ? ADJ_MINUTES : 0)) })}
               </div>
               {cycle.studentGroups.length > 0 && (
                 <button
-                  onClick={() => exportCycleToExcel(cycle, data.worksheets)}
+                  onClick={() => exportCycleToExcel(cycle, data.worksheets, t, locale)}
                   className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${
                     cycle.isCurrent
                       ? 'border-white/30 text-white hover:bg-white/10'
@@ -376,18 +380,18 @@ export default function Hours() {
                     {student?.xuYuanType === 'semi-group' && (
                       <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded">semi</span>
                     )}
-                    <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">{rows.length} sesi · {formatDuration(stuMins)}</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">{t('hours.sessionsDur', { n: rows.length, dur: formatDuration(stuMins) })}</span>
                   </div>
                   {/* Session list */}
                   <div className="space-y-1 pl-2 border-l-2 border-gray-100 dark:border-gray-700">
                     {rows.map(({ session: s, minutes: sMins }) => (
                       <div key={s.id} className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                        <span className="w-16 flex-shrink-0 tabular-nums">{format(parseISO(s.date), 'd MMM', { locale: localeId })}</span>
+                        <span className="w-16 flex-shrink-0 tabular-nums">{format(parseISO(s.date), 'd MMM', { locale })}</span>
                         <span className="w-24 flex-shrink-0 tabular-nums">{s.startTime}–{s.endTime}</span>
                         <span className="flex-1 text-gray-400 dark:text-gray-500 tabular-nums">{formatDuration(sMins)}</span>
                         {(s.worksheetPages ?? 0) > 0 && (
                           <span className="flex items-center gap-0.5 text-amber-600 dark:text-amber-400">
-                            <FileText size={11} /> {s.worksheetPages} hal
+                            <FileText size={11} /> {t('ws.pagesUnit', { n: s.worksheetPages ?? 0 })}
                           </span>
                         )}
                       </div>
@@ -400,14 +404,14 @@ export default function Hours() {
 
           {cycle.studentGroups.length === 0 && (
             <div className="px-5 py-4 bg-white dark:bg-gray-800 text-sm text-gray-400 dark:text-gray-500 text-center">
-              Belum ada sesi di periode ini.
+              {t('hours.emptyCycle')}
             </div>
           )}
 
           {cycle.key === ADJ_CYCLE_KEY && (
             <div className="px-5 py-3 bg-amber-50 dark:bg-amber-900/10 border-t border-amber-100 dark:border-amber-800/30">
               <div className="flex items-center gap-2 text-xs text-amber-700 dark:text-amber-400">
-                <span className="flex-1 italic">Penyesuaian Mei — 6,5 jam private + 0,5 jam semi yang tidak tercatat</span>
+                <span className="flex-1 italic">{t('hours.adjMay')}</span>
                 <span className="tabular-nums font-medium">{formatDuration(ADJ_MINUTES)}</span>
               </div>
             </div>

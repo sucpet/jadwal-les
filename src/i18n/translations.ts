@@ -157,6 +157,22 @@ export const translations: Record<Lang, Record<string, string>> = {
     'log.action.reschedule': 'Reschedule',
     'log.action.delete': 'Hapus',
     'log.action.restore': 'Restore',
+
+    // hours (Jam XuYuan)
+    'hours.title': 'Rekap Jam Mengajar',
+    'hours.subtitle': 'XuYuan · siklus 26–25',
+    'hours.empty': 'Belum ada sesi XuYuan yang selesai.',
+    'hours.emptyCycle': 'Belum ada sesi di periode ini.',
+    'hours.sessionsDur': '{n} sesi · {dur}',
+    'hours.adjMay': 'Penyesuaian Mei — 6,5 jam private + 0,5 jam semi yang tidak tercatat',
+    'hours.xlsTitle': 'Rekap XuYuan – {label}',
+    'hours.colStudent': 'Murid',
+    'hours.colPages': 'Jumlah Halaman Worksheet',
+    'hours.colDate': 'Tanggal',
+    'hours.colDuration': 'Durasi (jam)',
+    'hours.colIncome': 'Pendapatan (Rp)',
+    'hours.totalRow': 'Total {name}',
+    'hours.grandTotal': 'TOTAL KESELURUHAN',
   },
   en: {
     // common
@@ -312,5 +328,21 @@ export const translations: Record<Lang, Record<string, string>> = {
     'log.action.reschedule': 'Reschedule',
     'log.action.delete': 'Delete',
     'log.action.restore': 'Restore',
+
+    // hours (XuYuan Hours)
+    'hours.title': 'Teaching Hours Recap',
+    'hours.subtitle': 'XuYuan · cycle 26–25',
+    'hours.empty': 'No completed XuYuan sessions yet.',
+    'hours.emptyCycle': 'No sessions in this period.',
+    'hours.sessionsDur': '{n} sessions · {dur}',
+    'hours.adjMay': 'May adjustment — 6.5 h private + 0.5 h semi not recorded',
+    'hours.xlsTitle': 'XuYuan Recap – {label}',
+    'hours.colStudent': 'Student',
+    'hours.colPages': 'Worksheet Pages',
+    'hours.colDate': 'Date',
+    'hours.colDuration': 'Duration (hours)',
+    'hours.colIncome': 'Income (Rp)',
+    'hours.totalRow': 'Total {name}',
+    'hours.grandTotal': 'GRAND TOTAL',
   },
 };
