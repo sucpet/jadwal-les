@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { format, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
-import { RefreshCw, Trash2, Plus, CalendarClock, X, History } from 'lucide-react';
+import { RefreshCw, Trash2, Plus, CalendarClock, X, History, RotateCcw } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface LogRow {
   id: string;
-  action: 'create' | 'reschedule' | 'delete';
+  action: 'create' | 'reschedule' | 'delete' | 'restore';
   description: string;
   created_at: string;
 }
@@ -15,6 +15,7 @@ const ACTION_META: Record<LogRow['action'], { label: string; icon: typeof Plus; 
   create:     { label: 'Tambah',     icon: Plus,          cls: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' },
   reschedule: { label: 'Reschedule', icon: CalendarClock, cls: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' },
   delete:     { label: 'Hapus',      icon: X,             cls: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' },
+  restore:    { label: 'Restore',    icon: RotateCcw,     cls: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' },
 };
 
 export default function ActivityLog() {

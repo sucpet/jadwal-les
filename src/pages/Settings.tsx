@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Download, Trash2, AlertTriangle, CheckCircle2, Database, Moon, Sun, Cloud, RefreshCw, RotateCcw } from 'lucide-react';
+import { Download, Trash2, AlertTriangle, CheckCircle2, Moon, Sun, Cloud, RefreshCw, RotateCcw } from 'lucide-react';
 import { useApp } from '../store/AppContext';
+import { generateId } from '../utils/helpers';
 import { useTheme } from '../store/ThemeContext';
 import { supabase } from '../lib/supabase';
 
@@ -102,49 +103,17 @@ export default function Settings() {
       if (error || !blob) throw new Error('Gagal mengunduh file backup.');
       const json = JSON.parse(await blob.text());
       const res = await applyBackup(json);
+      await supabase.from('activity_log').insert({
+        id: generateId(),
+        action: 'restore',
+        description: `Pulihkan dari backup ${label} — ${res.teachers.length} laoshi, ${res.students.length} murid, ${res.packages.length} paket, ${res.sessions.length} sesi`,
+        created_at: new Date().toISOString(),
+      });
       setStatus({ type: 'success', msg: `Berhasil pulihkan: ${res.teachers.length} laoshi, ${res.students.length} murid, ${res.packages.length} paket, ${res.sessions.length} sesi. Halaman akan reload...` });
       setTimeout(() => window.location.reload(), 1500);
     } catch (err) {
       setRestoring(null);
       setStatus({ type: 'error', msg: `Gagal pulihkan: ${(err as Error).message}` });
-    }
-  };
-
-  const handleMigrateFromLocalStorage = async () => {
-    try {
-      const raw = localStorage.getItem('jadwal-les-data');
-      if (!raw) { setStatus({ type: 'error', msg: 'Tidak ada data di localStorage.' }); return; }
-      const d = JSON.parse(raw);
-      if (!d.teachers || !d.students || !d.packages || !d.sessions) {
-        setStatus({ type: 'error', msg: 'Format data tidak valid.' }); return;
-      }
-
-      setStatus({ type: 'success', msg: 'Mengupload data...' });
-
-      // Upload dalam urutan yang benar (foreign key: teachers → students → packages/sessions)
-      const teachers = d.teachers.map((t: any) => ({ id: t.id, name: t.name, color: t.color, created_at: t.createdAt }));
-      const students = d.students.map((s: any) => ({ id: s.id, teacher_id: s.teacherId, name: s.name, billing_type: s.billingType, rate_per_session: s.ratePerSession, group: s.group ?? 'xuyuan', notes: s.notes ?? null, created_at: s.createdAt }));
-      const packages = d.packages.map((p: any) => ({ id: p.id, student_id: p.studentId, teacher_id: p.teacherId, total_sessions: p.totalSessions, pricing_type: p.pricingType ?? 'per-session', price_per_session: p.pricePerSession, package_price: p.packagePrice ?? null, start_date: p.startDate, notes: p.notes ?? null, created_at: p.createdAt }));
-      const sessions = d.sessions.map((s: any) => ({ id: s.id, student_id: s.studentId, teacher_id: s.teacherId, date: s.date, start_time: s.startTime, end_time: s.endTime, status: s.status, notes: s.notes ?? null, created_at: s.createdAt }));
-
-      // Upsert semua (aman dijalankan berulang kali)
-      const { error: e1 } = await supabase.from('teachers').upsert(teachers);
-      if (e1) throw e1;
-      const { error: e2 } = await supabase.from('students').upsert(students);
-      if (e2) throw e2;
-      const { error: e3 } = await supabase.from('packages').upsert(packages);
-      if (e3) throw e3;
-
-      // Upload sessions dalam batch 100 supaya tidak timeout
-      for (let i = 0; i < sessions.length; i += 100) {
-        const { error } = await supabase.from('sessions').upsert(sessions.slice(i, i + 100));
-        if (error) throw error;
-      }
-
-      setStatus({ type: 'success', msg: `Migrasi berhasil! ${teachers.length} laoshi, ${students.length} murid, ${packages.length} paket, ${sessions.length} sesi. Halaman akan reload...` });
-      setTimeout(() => window.location.reload(), 2000);
-    } catch (err: any) {
-      setStatus({ type: 'error', msg: `Gagal migrasi: ${err.message ?? JSON.stringify(err)}` });
     }
   };
 
@@ -264,20 +233,6 @@ export default function Settings() {
         <p className="text-xs text-gray-400 dark:text-gray-500 pt-1">
           <strong>Pulihkan</strong> mengganti seluruh data saat ini dengan isi backup yang dipilih.
         </p>
-      </div>
-
-      {/* Migrasi localStorage → Supabase */}
-      <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-5">
-        <h2 className="font-semibold text-indigo-900 mb-1">Migrasi Data ke Supabase</h2>
-        <p className="text-sm text-indigo-700 mb-4">
-          Upload data lama dari browser ini ke Supabase agar bisa diakses dari mana saja.
-        </p>
-        <button
-          onClick={handleMigrateFromLocalStorage}
-          className="flex items-center gap-2 bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-indigo-700"
-        >
-          <Database size={16} /> Upload ke Supabase
-        </button>
       </div>
 
       {/* Danger zone */}
