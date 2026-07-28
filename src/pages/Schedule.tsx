@@ -658,14 +658,23 @@ export default function Schedule() {
                         borderLeft: `3px solid ${color}`,
                         opacity: isDragging ? 0.4 : 1,
                       }}
-                      className="rounded text-xs px-1 py-0.5 cursor-grab active:cursor-grabbing hover:opacity-80 overflow-hidden"
+                      className="group relative rounded text-xs px-1 py-0.5 cursor-grab active:cursor-grabbing hover:opacity-80 overflow-hidden"
                       onClick={e => { e.stopPropagation(); openEdit(s); }}
                       onDragStart={e => { setDraggingId(s.id); e.dataTransfer.effectAllowed = 'move'; }}
                       onDragEnd={() => { setDraggingId(null); setDragOverCell(null); }}
                       title={`${student?.name} (${s.startTime}–${s.endTime}) — seret untuk jadwal ulang`}
                     >
-                      <div className="font-medium truncate">{student?.name}</div>
+                      <div className="font-medium truncate pr-4">{student?.name}</div>
                       <div className="opacity-60 truncate">{s.startTime}–{s.endTime}</div>
+                      <button
+                        draggable={false}
+                        onDragStart={e => e.preventDefault()}
+                        onClick={e => { e.stopPropagation(); openQuick(s); }}
+                        title="Jadwal ulang"
+                        className="absolute top-0.5 right-0.5 p-0.5 rounded bg-black/20 hover:bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <CalendarClock size={12} className="text-white" />
+                      </button>
                     </div>
                   );
                 })}
