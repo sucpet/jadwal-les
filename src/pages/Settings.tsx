@@ -1,13 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Download, Trash2, AlertTriangle, CheckCircle2, Moon, Sun, Cloud, RefreshCw, RotateCcw } from 'lucide-react';
+import { Download, Trash2, AlertTriangle, CheckCircle2, Moon, Sun, Cloud, RefreshCw, RotateCcw, Languages } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { generateId } from '../utils/helpers';
 import { useTheme } from '../store/ThemeContext';
+import { useLang } from '../store/LanguageContext';
 import { supabase } from '../lib/supabase';
 
 export default function Settings() {
   const { data } = useApp();
   const { isDark, toggle } = useTheme();
+  const { t, lang, setLang } = useLang();
   const [status, setStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
   const [backupFiles, setBackupFiles] = useState<Array<{ name: string }>>([]);
@@ -40,15 +42,15 @@ export default function Settings() {
       .from('backups')
       .upload(`backup_${dateStr}_${timeStr}.json`, blob);
     setManualBacking(false);
-    if (error) { setStatus({ type: 'error', msg: `Gagal backup: ${error.message}` }); return; }
+    if (error) { setStatus({ type: 'error', msg: t('set.backupFail', { msg: error.message }) }); return; }
     localStorage.setItem('jadwal-les-last-backup', dateStr);
-    setStatus({ type: 'success', msg: 'Backup berhasil disimpan ke cloud.' });
+    setStatus({ type: 'success', msg: t('set.backupOk') });
     loadBackupFiles();
   };
 
   const handleDownloadBackup = async (filename: string) => {
     const { data: blob, error } = await supabase.storage.from('backups').download(filename);
-    if (error || !blob) { setStatus({ type: 'error', msg: 'Gagal download backup.' }); return; }
+    if (error || !blob) { setStatus({ type: 'error', msg: t('set.downloadFail') }); return; }
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = filename; a.click();
@@ -59,7 +61,7 @@ export default function Settings() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const applyBackup = async (json: any) => {
     if (!Array.isArray(json.teachers) || !Array.isArray(json.students) || !Array.isArray(json.sessions) || !Array.isArray(json.packages)) {
-      throw new Error('Format backup tidak valid (teachers/students/sessions/packages harus ada).');
+      throw new Error(t('set.invalidBackup'));
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const teachers   = json.teachers.map((t: any)  => ({ id: t.id, name: t.name, color: t.color, honor_per_session: t.honorPerSession ?? 100000, is_owner: t.isOwner ?? false, created_at: t.createdAt }));
@@ -95,12 +97,12 @@ export default function Settings() {
 
   const handleRestore = async (filename: string) => {
     const label = filename.replace('backup_', '').replace('.json', '');
-    if (!confirm(`Pulihkan data dari backup "${label}"?\n\nSEMUA data saat ini akan diganti dengan isi backup ini. Tidak bisa dibatalkan.`)) return;
+    if (!confirm(t('set.restoreConfirm', { label }))) return;
     setRestoring(filename);
-    setStatus({ type: 'success', msg: 'Memulihkan data dari backup...' });
+    setStatus({ type: 'success', msg: t('set.restoringMsg') });
     try {
       const { data: blob, error } = await supabase.storage.from('backups').download(filename);
-      if (error || !blob) throw new Error('Gagal mengunduh file backup.');
+      if (error || !blob) throw new Error(t('set.downloadFail2'));
       const json = JSON.parse(await blob.text());
       const res = await applyBackup(json);
       await supabase.from('activity_log').insert({
@@ -109,17 +111,17 @@ export default function Settings() {
         description: `Pulihkan dari backup ${label} — ${res.teachers.length} laoshi, ${res.students.length} murid, ${res.packages.length} paket, ${res.sessions.length} sesi`,
         created_at: new Date().toISOString(),
       });
-      setStatus({ type: 'success', msg: `Berhasil pulihkan: ${res.teachers.length} laoshi, ${res.students.length} murid, ${res.packages.length} paket, ${res.sessions.length} sesi. Halaman akan reload...` });
+      setStatus({ type: 'success', msg: t('set.restoreOk', { t: res.teachers.length, s: res.students.length, p: res.packages.length, se: res.sessions.length }) });
       setTimeout(() => window.location.reload(), 1500);
     } catch (err) {
       setRestoring(null);
-      setStatus({ type: 'error', msg: `Gagal pulihkan: ${(err as Error).message}` });
+      setStatus({ type: 'error', msg: t('set.restoreFail', { msg: (err as Error).message }) });
     }
   };
 
   const handleClearData = async () => {
-    if (!confirm('Yakin hapus SEMUA data? Ini tidak bisa dibatalkan.')) return;
-    if (!confirm('Benar-benar yakin? Semua laoshi, murid, dan jadwal akan dihapus.')) return;
+    if (!confirm(t('set.clearConfirm1'))) return;
+    if (!confirm(t('set.clearConfirm2'))) return;
     // Delete in reverse FK order
     await supabase.from('worksheets').delete().not('id', 'is', null);
     await supabase.from('sessions').delete().not('id', 'is', null);
@@ -133,7 +135,7 @@ export default function Settings() {
 
   return (
     <div className="max-w-xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Pengaturan</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('set.title')}</h1>
 
       {status && (
         <div className={`flex items-start gap-3 p-4 rounded-xl border ${
@@ -148,22 +150,22 @@ export default function Settings() {
 
       {/* Stats */}
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
-        <h2 className="font-semibold text-gray-900 dark:text-white mb-3">Ringkasan Data</h2>
+        <h2 className="font-semibold text-gray-900 dark:text-white mb-3">{t('set.summary')}</h2>
         <div className="grid grid-cols-2 gap-3 text-sm">
-          <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Laoshi</span><span className="font-medium dark:text-gray-200">{data.teachers.length}</span></div>
-          <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Murid</span><span className="font-medium dark:text-gray-200">{data.students.length}</span></div>
-          <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Paket aktif</span><span className="font-medium dark:text-gray-200">{data.packages.length}</span></div>
-          <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Total sesi</span><span className="font-medium dark:text-gray-200">{data.sessions.length}</span></div>
+          <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">{t('set.laoshi')}</span><span className="font-medium dark:text-gray-200">{data.teachers.length}</span></div>
+          <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">{t('set.students')}</span><span className="font-medium dark:text-gray-200">{data.students.length}</span></div>
+          <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">{t('set.activePackages')}</span><span className="font-medium dark:text-gray-200">{data.packages.length}</span></div>
+          <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">{t('set.totalSessions')}</span><span className="font-medium dark:text-gray-200">{data.sessions.length}</span></div>
         </div>
       </div>
 
       {/* Tampilan */}
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
-        <h2 className="font-semibold text-gray-900 dark:text-white mb-3">Tampilan</h2>
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 space-y-4">
+        <h2 className="font-semibold text-gray-900 dark:text-white">{t('set.display')}</h2>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
             {isDark ? <Moon size={16} /> : <Sun size={16} />}
-            <span>{isDark ? 'Mode Gelap' : 'Mode Terang'}</span>
+            <span>{isDark ? t('set.darkMode') : t('set.lightMode')}</span>
           </div>
           <button
             onClick={toggle}
@@ -172,6 +174,27 @@ export default function Settings() {
             <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${isDark ? 'translate-x-5' : 'translate-x-0'}`} />
           </button>
         </div>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+            <Languages size={16} />
+            <span>{t('set.language')}</span>
+          </div>
+          <div className="flex items-center gap-0.5 bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5">
+            {(['id', 'en'] as const).map(l => (
+              <button
+                key={l}
+                onClick={() => setLang(l)}
+                className={`text-xs font-medium px-3 py-1 rounded transition-colors ${
+                  lang === l
+                    ? 'bg-white dark:bg-gray-600 text-gray-800 dark:text-white shadow-sm'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                }`}
+              >
+                {l === 'id' ? 'Indonesia' : 'English'}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Backup cloud */}
@@ -179,10 +202,10 @@ export default function Settings() {
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-              <Cloud size={16} /> Backup Otomatis
+              <Cloud size={16} /> {t('set.autoBackup')}
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-              {lastBackupDate ? `Terakhir: ${lastBackupDate}` : 'Belum pernah backup hari ini'}
+              {lastBackupDate ? t('set.lastBackup', { date: lastBackupDate }) : t('set.neverBackup')}
             </p>
           </div>
           <button
@@ -190,22 +213,22 @@ export default function Settings() {
             disabled={manualBacking}
             className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex-shrink-0"
           >
-            <Cloud size={15} /> {manualBacking ? 'Menyimpan...' : 'Backup Sekarang'}
+            <Cloud size={15} /> {manualBacking ? t('set.saving') : t('set.backupNow')}
           </button>
         </div>
 
         {backupSetupNeeded ? (
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 text-sm text-amber-800 dark:text-amber-300 space-y-1">
-            <p className="font-medium">Bucket belum dibuat.</p>
-            <p>Buka Supabase Dashboard → Storage → New bucket → nama: <code className="bg-amber-100 dark:bg-amber-800/40 px-1 rounded">backups</code> → Save. Lalu tambahkan policy INSERT &amp; SELECT untuk user.</p>
+            <p className="font-medium">{t('set.bucketTitle')}</p>
+            <p>{t('set.bucketDesc')}</p>
             <button onClick={loadBackupFiles} className="flex items-center gap-1 text-xs mt-2 text-amber-700 dark:text-amber-400 hover:underline">
-              <RefreshCw size={12} /> Coba lagi
+              <RefreshCw size={12} /> {t('set.tryAgain')}
             </button>
           </div>
         ) : backupLoading ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">Memuat daftar backup...</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500">{t('set.loadingBackups')}</p>
         ) : backupFiles.length === 0 ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-1">Belum ada backup tersimpan.</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-1">{t('set.noBackups')}</p>
         ) : (
           <div className="divide-y divide-gray-100 dark:divide-gray-700">
             {backupFiles.map(f => (
@@ -216,14 +239,14 @@ export default function Settings() {
                     onClick={() => handleDownloadBackup(f.name)}
                     className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:underline"
                   >
-                    <Download size={13} /> Download
+                    <Download size={13} /> {t('set.download')}
                   </button>
                   <button
                     onClick={() => handleRestore(f.name)}
                     disabled={restoring !== null}
                     className="flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <RotateCcw size={13} /> {restoring === f.name ? 'Memulihkan…' : 'Pulihkan'}
+                    <RotateCcw size={13} /> {restoring === f.name ? t('set.restoring') : t('set.restore')}
                   </button>
                 </div>
               </div>
@@ -231,19 +254,19 @@ export default function Settings() {
           </div>
         )}
         <p className="text-xs text-gray-400 dark:text-gray-500 pt-1">
-          <strong>Pulihkan</strong> mengganti seluruh data saat ini dengan isi backup yang dipilih.
+          <strong>{t('set.restore')}</strong> {t('set.restoreHintRest')}
         </p>
       </div>
 
       {/* Danger zone */}
       <div className="bg-white dark:bg-gray-800 border border-red-200 dark:border-red-900 rounded-xl p-5">
-        <h2 className="font-semibold text-red-700 dark:text-red-400 mb-1">Zona Berbahaya</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Hapus semua data. Tidak bisa dibatalkan.</p>
+        <h2 className="font-semibold text-red-700 dark:text-red-400 mb-1">{t('set.dangerZone')}</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t('set.dangerDesc')}</p>
         <button
           onClick={handleClearData}
           className="flex items-center gap-2 bg-red-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-red-700"
         >
-          <Trash2 size={16} /> Hapus Semua Data
+          <Trash2 size={16} /> {t('set.deleteAll')}
         </button>
       </div>
     </div>

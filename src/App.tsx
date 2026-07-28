@@ -4,6 +4,7 @@ import type { Session } from '@supabase/supabase-js';
 import { supabase } from './lib/supabase';
 import { AppProvider } from './store/AppContext';
 import { ThemeProvider } from './store/ThemeContext';
+import { LanguageProvider } from './store/LanguageContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -34,6 +35,7 @@ export default function App() {
 
   return (
     <ThemeProvider>
+      <LanguageProvider>
       {authLoading ? (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
           <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
@@ -60,6 +62,7 @@ export default function App() {
           </BrowserRouter>
         </AppProvider>
       )}
+      </LanguageProvider>
     </ThemeProvider>
   );
 }

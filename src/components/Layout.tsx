@@ -2,20 +2,20 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Users, BookOpen, GraduationCap, Settings, Timer, LogOut, FileText, Wallet, History, MoreHorizontal } from 'lucide-react';
 import { format } from 'date-fns';
-import { id as localeId } from 'date-fns/locale';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../store/AppContext';
+import { useLang } from '../store/LanguageContext';
 
 const navItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/teachers', icon: GraduationCap, label: 'Laoshi' },
-  { to: '/students', icon: Users, label: 'Murid' },
-  { to: '/schedule', icon: BookOpen, label: 'Jadwal' },
-  { to: '/worksheet', icon: FileText, label: 'Worksheet' },
-  { to: '/hours', icon: Timer, label: 'Jam XuYuan' },
-  { to: '/finance', icon: Wallet, label: 'Keuangan' },
-  { to: '/log', icon: History, label: 'Log Aktivitas' },
-  { to: '/settings', icon: Settings, label: 'Pengaturan' },
+  { to: '/', icon: LayoutDashboard, key: 'nav.dashboard' },
+  { to: '/teachers', icon: GraduationCap, key: 'nav.teachers' },
+  { to: '/students', icon: Users, key: 'nav.students' },
+  { to: '/schedule', icon: BookOpen, key: 'nav.schedule' },
+  { to: '/worksheet', icon: FileText, key: 'nav.worksheet' },
+  { to: '/hours', icon: Timer, key: 'nav.hours' },
+  { to: '/finance', icon: Wallet, key: 'nav.finance' },
+  { to: '/log', icon: History, key: 'nav.log' },
+  { to: '/settings', icon: Settings, key: 'nav.settings' },
 ];
 
 // 4 items shown in bottom nav; the rest in "Lainnya" sheet
@@ -24,6 +24,7 @@ const mainNavItems = navItems.filter(n => MAIN_ROUTES.has(n.to));
 const moreNavItems = navItems.filter(n => !MAIN_ROUTES.has(n.to));
 
 function LiveClock() {
+  const { locale } = useLang();
   const [now, setNow] = useState(new Date());
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -32,7 +33,7 @@ function LiveClock() {
   return (
     <div className="text-right leading-tight">
       <div className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-        {format(now, 'EEEE, d MMMM yyyy', { locale: localeId })}
+        {format(now, 'EEEE, d MMMM yyyy', { locale })}
       </div>
       <div className="text-sm font-semibold text-gray-800 dark:text-gray-100 tabular-nums">
         {format(now, 'HH:mm:ss')}
@@ -47,6 +48,7 @@ const IDLE_EVENTS = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'
 export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { loading } = useApp();
+  const { t } = useLang();
   const idleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [showMore, setShowMore] = useState(false);
 
@@ -74,7 +76,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center gap-3">
         <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-        <span className="text-sm text-gray-500 dark:text-gray-400">Memuat data...</span>
+        <span className="text-sm text-gray-500 dark:text-gray-400">{t('common.loading')}</span>
       </div>
     );
   }
@@ -92,7 +94,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <button
             onClick={() => supabase.auth.signOut()}
             className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-            title="Keluar"
+            title={t('common.logout')}
           >
             <LogOut size={16} />
           </button>
@@ -103,7 +105,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {/* Sidebar */}
         <nav className="w-52 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-3 flex-shrink-0 hidden md:block">
           <div className="space-y-1">
-            {navItems.map(({ to, icon: Icon, label }) => {
+            {navItems.map(({ to, icon: Icon, key }) => {
               const active = to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
               return (
                 <Link
@@ -116,7 +118,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   }`}
                 >
                   <Icon size={16} />
-                  {label}
+                  {t(key)}
                 </Link>
               );
             })}
@@ -129,7 +131,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Bottom nav mobile — 4 main items + "Lainnya" */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex">
-        {mainNavItems.map(({ to, icon: Icon, label }) => {
+        {mainNavItems.map(({ to, icon: Icon, key }) => {
           const active = to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
           return (
             <Link
@@ -140,7 +142,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               }`}
             >
               <Icon size={20} />
-              {label}
+              {t(key)}
             </Link>
           );
         })}
@@ -151,7 +153,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           }`}
         >
           <MoreHorizontal size={20} />
-          Lainnya
+          {t('common.more')}
         </button>
       </nav>
 
@@ -163,7 +165,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             onClick={e => e.stopPropagation()}
           >
             <div className="grid grid-cols-4 py-1">
-              {moreNavItems.map(({ to, icon: Icon, label }) => {
+              {moreNavItems.map(({ to, icon: Icon, key }) => {
                 const active = to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
                 return (
                   <Link
@@ -175,7 +177,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     }`}
                   >
                     <Icon size={20} />
-                    {label}
+                    {t(key)}
                   </Link>
                 );
               })}

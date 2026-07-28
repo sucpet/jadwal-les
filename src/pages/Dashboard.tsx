@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { format, parseISO, differenceInDays, addDays } from 'date-fns';
-import { id as localeId } from 'date-fns/locale';
 import { Clock, AlertTriangle, CheckCircle2, Calendar, UserX, CalendarClock, ChevronLeft, ChevronRight, CalendarX } from 'lucide-react';
 import { useApp } from '../store/AppContext';
+import { useLang } from '../store/LanguageContext';
 import { getTodaySessions, getPackageStatus } from '../utils/helpers';
 import { getHoliday } from '../utils/holidays';
 import { Link } from 'react-router-dom';
 
 export default function Dashboard() {
   const { data } = useApp();
+  const { t, locale } = useLang();
   const today = new Date();
   const todayStr    = format(today, 'yyyy-MM-dd');
   const todaySessions = getTodaySessions(data.sessions);
@@ -116,7 +117,7 @@ export default function Dashboard() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1">
-          {format(today, "EEEE, d MMMM yyyy", { locale: localeId })}
+          {format(today, "EEEE, d MMMM yyyy", { locale })}
         </p>
       </div>
 
@@ -131,13 +132,12 @@ export default function Dashboard() {
             <div key={h.date} className="flex items-start gap-3 p-3 rounded-lg border bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 text-orange-800 dark:text-orange-300">
               <CalendarX size={16} className="mt-0.5 flex-shrink-0" />
               <div className="text-sm flex-1">
-                <span className="font-medium">{h.count} sesi</span>
-                {' '}terjadwal pada{' '}
+                {t('dash.holidayPrefix', { count: h.count })}{' '}
                 <span className="font-medium">{h.name}</span>
-                {h.tentative && <span className="text-xs opacity-75"> (tanggal tentatif)</span>}
-                {' '}— {format(parseISO(h.date), 'd MMMM yyyy', { locale: localeId })}.{' '}
+                {h.tentative && <span className="text-xs opacity-75"> {t('common.tentativeDate')}</span>}
+                {' '}— {format(parseISO(h.date), 'd MMMM yyyy', { locale })}.{' '}
                 <Link to={`/schedule?date=${h.date}`} className="underline text-xs opacity-75 hover:opacity-100">
-                  Cek jadwal →
+                  {t('dash.checkSchedule')}
                 </Link>
               </div>
             </div>
@@ -149,9 +149,9 @@ export default function Dashboard() {
               <CalendarClock size={16} className="mt-0.5 flex-shrink-0" />
               <div className="text-sm flex-1">
                 <span className="font-medium">{student.name}</span>
-                {' '}— paket aktif tapi belum ada sesi yang dijadwalkan.{' '}
+                {' '}{t('dash.pkgNoSchedule')}{' '}
                 <Link to="/schedule" className="underline text-xs opacity-75 hover:opacity-100">
-                  Jadwalkan →
+                  {t('dash.scheduleVerb')}
                 </Link>
               </div>
             </div>
@@ -163,9 +163,9 @@ export default function Dashboard() {
               <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
               <div className="text-sm flex-1">
                 <span className="font-medium">{student.name}</span>
-                {' '}— murid paket tapi belum ada paket yang dibuat.{' '}
+                {' '}{t('dash.noPackage')}{' '}
                 <Link to={`/students?student=${student.id}`} className="underline text-xs opacity-75 hover:opacity-100">
-                  Buat paket →
+                  {t('dash.createPackage')}
                 </Link>
               </div>
             </div>
@@ -177,9 +177,9 @@ export default function Dashboard() {
               <UserX size={16} className="mt-0.5 flex-shrink-0 text-gray-400" />
               <div className="text-sm flex-1">
                 <span className="font-medium">{student.name}</span>
-                {' '}— belum ada sesi terjadwal sejak lebih dari 3 minggu.{' '}
+                {' '}{t('dash.churn')}{' '}
                 <Link to="/schedule" className="underline text-xs opacity-75 hover:opacity-100">
-                  Jadwalkan →
+                  {t('dash.scheduleVerb')}
                 </Link>
               </div>
             </div>
@@ -201,13 +201,11 @@ export default function Dashboard() {
                 <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
                 <div className="text-sm flex-1">
                   <span className="font-medium">{student?.name}</span>
-                  {isExpired
-                    ? ' — paket habis! '
-                    : ' — paket hampir habis, tinggal 1 sesi. '}
+                  {isExpired ? t('dash.pkgExpired') : t('dash.pkgSoon')}
                   {teacher && <span className="text-xs opacity-75">({teacher.name})</span>}
                   {' '}
                   <Link to={`/students?student=${pkg.studentId}`} className="underline text-xs opacity-75 hover:opacity-100">
-                    Perbarui paket →
+                    {t('dash.renewPackage')}
                   </Link>
                 </div>
               </div>
@@ -220,9 +218,9 @@ export default function Dashboard() {
               <Clock size={16} className="mt-0.5 flex-shrink-0 text-gray-400" />
               <div className="text-sm flex-1">
                 <span className="font-medium">{teacher.name}</span>
-                {' '}— tidak ada jadwal dalam 7 hari ke depan.{' '}
+                {' '}{t('dash.teacherNoSchedule')}{' '}
                 <Link to={`/schedule?teacher=${teacher.id}`} className="underline text-xs opacity-75 hover:opacity-100">
-                  Lihat jadwal →
+                  {t('dash.viewSchedule')}
                 </Link>
               </div>
             </div>
@@ -237,20 +235,20 @@ export default function Dashboard() {
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
             <Calendar size={18} />
-            Jadwal Hari Ini
+            {t('dash.todaySchedule')}
             {todaySessions.length > 0 && (
-              <span className="text-xs font-normal text-gray-400 dark:text-gray-500">({todaySessions.length} sesi)</span>
+              <span className="text-xs font-normal text-gray-400 dark:text-gray-500">({t('common.sessions_n', { n: todaySessions.length })})</span>
             )}
           </h2>
           <Link to="/schedule" className="text-sm text-indigo-600 hover:underline">
-            Lihat semua →
+            {t('dash.seeAll')}
           </Link>
         </div>
 
         {todaySessions.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center text-gray-400 dark:text-gray-500">
             <Calendar size={32} className="mx-auto mb-2 opacity-40" />
-            <p className="text-sm">Tidak ada jadwal hari ini</p>
+            <p className="text-sm">{t('dash.noToday')}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -280,7 +278,7 @@ export default function Dashboard() {
                       <div className="flex-1">
                         <span className="font-medium text-gray-900 dark:text-white">{student?.name ?? '—'}</span>
                         {student?.billingType === 'package' && (
-                          <span className="ml-2 text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded">paket</span>
+                          <span className="ml-2 text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded">{t('common.package')}</span>
                         )}
                       </div>
                       <div className={`text-xs px-2 py-0.5 rounded-full ${
@@ -288,7 +286,7 @@ export default function Dashboard() {
                           ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
                           : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
                       }`}>
-                        {session.status === 'completed' ? 'Selesai' : 'Terjadwal'}
+                        {session.status === 'completed' ? t('status.completed') : t('status.scheduled')}
                       </div>
                     </div>
                   ))}
@@ -313,14 +311,14 @@ export default function Dashboard() {
           <div>
             <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-3">
               <CalendarClock size={18} />
-              7 Hari ke Depan
-              <span className="text-xs font-normal text-gray-400 dark:text-gray-500">({upcomingSessions.length} sesi)</span>
+              {t('dash.next7')}
+              <span className="text-xs font-normal text-gray-400 dark:text-gray-500">({t('common.sessions_n', { n: upcomingSessions.length })})</span>
             </h2>
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
               {groupedByDate.map(({ date, sessions }, groupIdx) => (
                 <div key={date} className={groupIdx > 0 ? 'border-t border-gray-200 dark:border-gray-700' : ''}>
                   <div className="px-4 py-1.5 bg-gray-50 dark:bg-gray-700/50 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                    {format(parseISO(date), 'EEEE, d MMMM', { locale: localeId })}
+                    {format(parseISO(date), 'EEEE, d MMMM', { locale })}
                   </div>
                   {sessions.map(s => {
                     const student = data.students.find(st => st.id === s.studentId);
@@ -347,7 +345,7 @@ export default function Dashboard() {
                     disabled={upcomingPage === 0}
                     className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
                   >
-                    <ChevronLeft size={13} /> Sebelumnya
+                    <ChevronLeft size={13} /> {t('dash.prev')}
                   </button>
                   <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">
                     {upcomingPage + 1} / {pageCount}
@@ -357,7 +355,7 @@ export default function Dashboard() {
                     disabled={upcomingPage === pageCount - 1}
                     className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
                   >
-                    Berikutnya <ChevronRight size={13} />
+                    {t('dash.next')} <ChevronRight size={13} />
                   </button>
                 </div>
               )}
@@ -368,15 +366,15 @@ export default function Dashboard() {
 
       {/* Quick stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard label="Total Laoshi" value={data.teachers.length} />
-        <StatCard label="Total Murid" value={data.students.length} />
-        <StatCard label="Sesi Bulan Ini" value={getThisMonthSessions(data.sessions)} />
-        <StatCard label="Murid Paket" value={data.students.filter(s => s.billingType === 'package').length} />
+        <StatCard label={t('dash.statTeachers')} value={data.teachers.length} />
+        <StatCard label={t('dash.statStudents')} value={data.students.length} />
+        <StatCard label={t('dash.statMonth')} value={getThisMonthSessions(data.sessions)} />
+        <StatCard label={t('dash.statPkgStudents')} value={data.students.filter(s => s.billingType === 'package').length} />
       </div>
       {/* Per-teacher summary */}
       {data.teachers.length > 0 && (
         <div>
-          <h2 className="font-semibold text-gray-900 dark:text-white mb-3">Ringkasan Per Laoshi</h2>
+          <h2 className="font-semibold text-gray-900 dark:text-white mb-3">{t('dash.perTeacher')}</h2>
           <div className="grid gap-3 md:grid-cols-2">
             {data.teachers.map(teacher => {
               const teacherStudents = data.students.filter(s => s.teacherId === teacher.id);
@@ -394,9 +392,9 @@ export default function Dashboard() {
                     <span className="font-medium text-gray-900 dark:text-white">{teacher.name}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="text-gray-500 dark:text-gray-400">Murid</div>
+                    <div className="text-gray-500 dark:text-gray-400">{t('dash.students')}</div>
                     <div className="text-right font-medium dark:text-gray-200">{teacherStudents.length}</div>
-                    <div className="text-gray-500 dark:text-gray-400">Sesi bulan ini</div>
+                    <div className="text-gray-500 dark:text-gray-400">{t('dash.monthSessions')}</div>
                     <div className="text-right font-medium dark:text-gray-200">{thisMonthSessions}</div>
                   </div>
                 </Link>
@@ -409,13 +407,13 @@ export default function Dashboard() {
       {data.teachers.length === 0 && (
         <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-6 text-center">
           <GraduationCapIcon />
-          <p className="text-indigo-800 font-medium mb-1">Belum ada laoshi</p>
-          <p className="text-indigo-600 text-sm mb-3">Mulai dengan menambahkan laoshi terlebih dahulu</p>
+          <p className="text-indigo-800 font-medium mb-1">{t('dash.noTeachers')}</p>
+          <p className="text-indigo-600 text-sm mb-3">{t('dash.noTeachersDesc')}</p>
           <Link
             to="/teachers"
             className="inline-block bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-indigo-700"
           >
-            Tambah Laoshi
+            {t('dash.addTeacher')}
           </Link>
         </div>
       )}
