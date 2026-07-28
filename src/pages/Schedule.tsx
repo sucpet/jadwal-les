@@ -152,16 +152,17 @@ export default function Schedule() {
     updateSession(session.id, { date, startTime, endTime, status: resolveStatus(date, endTime) });
   };
 
-  // Feature A — geser satu sesi N minggu, jam tetap (lewat modal konfirmasi)
-  const [confirmShift, setConfirmShift] = useState<{ session: LessonSession; weeks: number } | null>(null);
+  // Konfirmasi pindah sesi — dipakai oleh +1mgg (A) dan drag & drop (C)
+  const [pendingMove, setPendingMove] = useState<{ session: LessonSession; date: string; startTime: string; endTime: string } | null>(null);
+  // Feature A — geser satu sesi N minggu, jam tetap
   const shiftSessionWeeks = (session: LessonSession, weeks: number) => {
-    setConfirmShift({ session, weeks });
+    setPendingMove({ session, date: shiftDateByWeeks(session.date, weeks), startTime: session.startTime, endTime: session.endTime });
   };
-  const applyShift = () => {
-    if (!confirmShift) return;
-    const { session, weeks } = confirmShift;
-    rescheduleTo(session, shiftDateByWeeks(session.date, weeks), session.startTime, session.endTime);
-    setConfirmShift(null);
+  const applyMove = () => {
+    if (!pendingMove) return;
+    const { session, date, startTime, endTime } = pendingMove;
+    rescheduleTo(session, date, startTime, endTime);
+    setPendingMove(null);
   };
 
   // Feature B — mini-popover jadwal ulang
@@ -189,7 +190,7 @@ export default function Schedule() {
     setDragOverCell(null);
     if (!s) return;
     if (s.date === dayStr && s.startTime === time) return;
-    rescheduleTo(s, dayStr, time, addMinutes(time, diffMinutes(s.startTime, s.endTime)));
+    setPendingMove({ session: s, date: dayStr, startTime: time, endTime: addMinutes(time, diffMinutes(s.startTime, s.endTime)) });
   };
 
   const exitBulkMode = () => {
@@ -935,32 +936,32 @@ export default function Schedule() {
         </div>
       )}
 
-      {/* Confirm +1 minggu shift */}
-      {confirmShift && (() => {
-        const { session, weeks } = confirmShift;
+      {/* Confirm reschedule (+1mgg / drag & drop) */}
+      {pendingMove && (() => {
+        const { session, date, startTime, endTime } = pendingMove;
         const student = data.students.find(s => s.id === session.studentId);
-        const newDate = shiftDateByWeeks(session.date, weeks);
+        const sameDay = session.date === date;
         return (
-          <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4" onClick={() => setConfirmShift(null)}>
+          <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4" onClick={() => setPendingMove(null)}>
             <div className="bg-white dark:bg-gray-800 w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl shadow-xl p-5 space-y-4" onClick={e => e.stopPropagation()}>
               <div className="flex items-center gap-2">
                 <CalendarClock size={18} className="text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
-                <h3 className="font-semibold text-gray-900 dark:text-white">Geser {weeks > 0 ? `+${weeks}` : weeks} minggu?</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-white">Jadwal ulang sesi?</h3>
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
-                <div className="font-medium text-gray-900 dark:text-white">{student?.name ?? '—'} · {session.startTime}–{session.endTime}</div>
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-500 dark:text-gray-400">{format(parseISO(session.date), 'EEE, d MMM', { locale: localeId })}</span>
+                <div className="font-medium text-gray-900 dark:text-white">{student?.name ?? '—'}</div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-gray-500 dark:text-gray-400">{format(parseISO(session.date), 'EEE, d MMM', { locale: localeId })} {session.startTime}</span>
                   <span className="text-gray-400">→</span>
-                  <span className="font-medium text-indigo-700 dark:text-indigo-300">{format(parseISO(newDate), 'EEE, d MMM yyyy', { locale: localeId })}</span>
+                  <span className="font-medium text-indigo-700 dark:text-indigo-300">{format(parseISO(date), 'EEE, d MMM yyyy', { locale: localeId })} {startTime}{sameDay && startTime !== session.startTime ? `–${endTime}` : ''}</span>
                 </div>
               </div>
               <div className="flex gap-2 pt-1">
-                <button onClick={() => setConfirmShift(null)} className="flex-1 text-sm px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">
+                <button onClick={() => setPendingMove(null)} className="flex-1 text-sm px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">
                   Batal
                 </button>
-                <button onClick={applyShift} className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700">
-                  <Check size={15} /> Ya, Geser
+                <button onClick={applyMove} className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700">
+                  <Check size={15} /> Ya, Jadwal Ulang
                 </button>
               </div>
             </div>
