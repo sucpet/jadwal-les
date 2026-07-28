@@ -126,6 +126,37 @@ export const translations: Record<Lang, Record<string, string>> = {
     'teach.studentsSessions': '{students} murid · {sessions} sesi tercatat',
     'teach.deleteConfirm': 'Hapus laoshi "{name}"?',
     'teach.deleteConfirmCascade': 'Hapus laoshi "{name}"? Ini juga akan menghapus {count} murid dan semua jadwalnya.',
+
+    // shared
+    'common.student': 'Murid',
+    'common.selectStudent': 'Pilih murid',
+    'common.date': 'Tanggal',
+    'common.running': 'Berjalan',
+
+    // worksheet
+    'ws.subtitle': 'XuYuan · {price}/halaman',
+    'ws.addTitle': 'Tambah Worksheet',
+    'ws.pages': 'Jumlah Halaman',
+    'ws.minPage': 'Minimal 1 halaman',
+    'ws.studentRequired': 'Murid wajib dipilih',
+    'ws.perPage': '{n} hal × {price}',
+    'ws.deleteConfirm': 'Hapus entri worksheet ini?',
+    'ws.empty': 'Belum ada worksheet dicatat.',
+    'ws.cyclePages': '{pages} halaman · {entries} entri',
+    'ws.pagesUnit': '{n} hal',
+
+    // activity log
+    'log.title': 'Log Aktivitas',
+    'log.subtitle': 'Perubahan jadwal: tambah, reschedule, hapus',
+    'log.reload': 'Muat Ulang',
+    'log.clear': 'Bersihkan',
+    'log.loading': 'Memuat…',
+    'log.empty': 'Belum ada aktivitas tercatat.',
+    'log.clearConfirm': 'Hapus semua log aktivitas? Tindakan ini tidak bisa dibatalkan.',
+    'log.action.create': 'Tambah',
+    'log.action.reschedule': 'Reschedule',
+    'log.action.delete': 'Hapus',
+    'log.action.restore': 'Restore',
   },
   en: {
     // common
@@ -250,5 +281,36 @@ export const translations: Record<Lang, Record<string, string>> = {
     'teach.studentsSessions': '{students} students · {sessions} sessions recorded',
     'teach.deleteConfirm': 'Delete laoshi "{name}"?',
     'teach.deleteConfirmCascade': 'Delete laoshi "{name}"? This will also delete {count} students and all their sessions.',
+
+    // shared
+    'common.student': 'Student',
+    'common.selectStudent': 'Select student',
+    'common.date': 'Date',
+    'common.running': 'Current',
+
+    // worksheet
+    'ws.subtitle': 'XuYuan · {price}/page',
+    'ws.addTitle': 'Add Worksheet',
+    'ws.pages': 'Number of Pages',
+    'ws.minPage': 'At least 1 page',
+    'ws.studentRequired': 'Student is required',
+    'ws.perPage': '{n} pg × {price}',
+    'ws.deleteConfirm': 'Delete this worksheet entry?',
+    'ws.empty': 'No worksheets recorded yet.',
+    'ws.cyclePages': '{pages} pages · {entries} entries',
+    'ws.pagesUnit': '{n} pg',
+
+    // activity log
+    'log.title': 'Activity Log',
+    'log.subtitle': 'Schedule changes: create, reschedule, delete',
+    'log.reload': 'Reload',
+    'log.clear': 'Clear',
+    'log.loading': 'Loading…',
+    'log.empty': 'No activity recorded yet.',
+    'log.clearConfirm': 'Clear all activity logs? This cannot be undone.',
+    'log.action.create': 'Add',
+    'log.action.reschedule': 'Reschedule',
+    'log.action.delete': 'Delete',
+    'log.action.restore': 'Restore',
   },
 };

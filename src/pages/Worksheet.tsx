@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
-import { id as localeId } from 'date-fns/locale';
 import { Plus, Trash2, FileText, X, Check } from 'lucide-react';
 import { useApp } from '../store/AppContext';
+import { useLang } from '../store/LanguageContext';
 import { xuYuanCycleStart as cycleStart, xuYuanCycleLabel as cycleLabel, formatRp } from '../utils/xuyuan';
 
 const WORKSHEET_PRICE = 20_000;
 
 export default function WorksheetPage() {
   const { data, addWorksheet, deleteWorksheet } = useApp();
+  const { t, locale } = useLang();
 
   const xuYuanStudents = data.students.filter(s => s.group === 'xuyuan' && s.isActive);
   const today = new Date().toISOString().slice(0, 10);
@@ -33,7 +34,7 @@ export default function WorksheetPage() {
   };
 
   const remove = (id: string) => {
-    if (confirm('Hapus entri worksheet ini?')) deleteWorksheet(id);
+    if (confirm(t('ws.deleteConfirm'))) deleteWorksheet(id);
   };
 
   // Group by cycle
@@ -52,13 +53,13 @@ export default function WorksheetPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Worksheet</h1>
-          <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">XuYuan · {formatRp(WORKSHEET_PRICE)}/halaman</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">{t('ws.subtitle', { price: formatRp(WORKSHEET_PRICE) })}</p>
         </div>
         <button
           onClick={() => { setShowForm(true); setShowErrors(false); }}
           className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700"
         >
-          <Plus size={16} /> Tambah
+          <Plus size={16} /> {t('common.add')}
         </button>
       </div>
 
@@ -66,28 +67,28 @@ export default function WorksheetPage() {
       {showForm && (
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-gray-900 dark:text-white">Tambah Worksheet</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white">{t('ws.addTitle')}</h3>
             <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
               <X size={18} />
             </button>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Murid</label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('common.student')}</label>
             <select
               value={form.studentId}
               onChange={e => setForm(f => ({ ...f, studentId: e.target.value }))}
               className={`w-full border rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 ${showErrors && !form.studentId ? 'border-red-400' : 'border-gray-300 dark:border-gray-600'}`}
             >
-              <option value="">Pilih murid</option>
+              <option value="">{t('common.selectStudent')}</option>
               {[...xuYuanStudents].sort((a, b) => a.name.localeCompare(b.name, 'id')).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
-            {showErrors && !form.studentId && <p className="text-xs text-red-500 mt-1">Murid wajib dipilih</p>}
+            {showErrors && !form.studentId && <p className="text-xs text-red-500 mt-1">{t('ws.studentRequired')}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Tanggal</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('common.date')}</label>
               <input
                 type="date"
                 value={form.date}
@@ -96,7 +97,7 @@ export default function WorksheetPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Jumlah Halaman</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('ws.pages')}</label>
               <input
                 type="number"
                 min="1"
@@ -106,23 +107,23 @@ export default function WorksheetPage() {
                 placeholder="0"
                 className={`w-full border rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 ${showErrors && pagesNum < 1 ? 'border-red-400' : 'border-gray-300 dark:border-gray-600'}`}
               />
-              {showErrors && pagesNum < 1 && <p className="text-xs text-red-500 mt-1">Minimal 1 halaman</p>}
+              {showErrors && pagesNum < 1 && <p className="text-xs text-red-500 mt-1">{t('ws.minPage')}</p>}
             </div>
           </div>
 
           {pagesNum > 0 && (
             <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg px-4 py-2.5 flex items-center justify-between">
-              <span className="text-sm text-indigo-700 dark:text-indigo-300">{pagesNum} hal × {formatRp(WORKSHEET_PRICE)}</span>
+              <span className="text-sm text-indigo-700 dark:text-indigo-300">{t('ws.perPage', { n: pagesNum, price: formatRp(WORKSHEET_PRICE) })}</span>
               <span className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">{formatRp(cost)}</span>
             </div>
           )}
 
           <div className="flex gap-2 pt-1">
             <button onClick={save} className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-indigo-700">
-              <Check size={16} /> Simpan
+              <Check size={16} /> {t('common.save')}
             </button>
             <button onClick={() => setShowForm(false)} className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">
-              <X size={16} /> Batal
+              <X size={16} /> {t('common.cancel')}
             </button>
           </div>
         </div>
@@ -132,7 +133,7 @@ export default function WorksheetPage() {
       {data.worksheets.length === 0 && !showForm && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-10 text-center text-gray-400 dark:text-gray-500">
           <FileText size={32} className="mx-auto mb-2 opacity-40" />
-          <p className="text-sm">Belum ada worksheet dicatat.</p>
+          <p className="text-sm">{t('ws.empty')}</p>
         </div>
       )}
 
@@ -147,10 +148,10 @@ export default function WorksheetPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <span className={`font-semibold text-sm ${isCurrent ? 'text-white' : 'text-gray-900 dark:text-white'}`}>{cycleLabel(key)}</span>
-                  {isCurrent && <span className="text-xs bg-white/20 text-white px-2 py-0.5 rounded-full">Berjalan</span>}
+                  {isCurrent && <span className="text-xs bg-white/20 text-white px-2 py-0.5 rounded-full">{t('common.running')}</span>}
                 </div>
                 <div className={`text-xs mt-0.5 ${isCurrent ? 'text-indigo-200' : 'text-gray-500 dark:text-gray-400'}`}>
-                  {totalPages} halaman · {entries.length} entri
+                  {t('ws.cyclePages', { pages: totalPages, entries: entries.length })}
                 </div>
               </div>
               <div className={`text-xl font-bold tabular-nums ${isCurrent ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
@@ -164,14 +165,14 @@ export default function WorksheetPage() {
                 return (
                   <div key={w.id} className="px-4 py-3 bg-white dark:bg-gray-800 flex items-center gap-2">
                     <span className="text-xs text-gray-400 dark:text-gray-500 w-[4.5rem] flex-shrink-0 tabular-nums">
-                      {format(parseISO(w.date), 'd MMM yy', { locale: localeId })}
+                      {format(parseISO(w.date), 'd MMM yy', { locale })}
                     </span>
                     <span className="flex-1 text-sm font-medium text-gray-900 dark:text-white truncate min-w-0">
                       {student?.name ?? '—'}
                     </span>
                     <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
                       <FileText size={12} className="text-gray-400" />
-                      {w.pages} hal
+                      {t('ws.pagesUnit', { n: w.pages })}
                     </span>
                     <span className="text-sm font-semibold text-gray-900 dark:text-white tabular-nums flex-shrink-0">
                       {formatRp(w.pages * WORKSHEET_PRICE)}
