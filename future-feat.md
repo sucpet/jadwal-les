@@ -17,6 +17,7 @@ Berdasarkan analisis codebase + riset dari repo publik:
 - Perubahan harga terjadwal untuk murid postpaid (set harga baru + tanggal berlaku, auto-promote saat tanggal lewat)
 - Reschedule cepat satu sesi: tombol +1 minggu (dengan konfirmasi), mini-popover tanggal/jam, dan drag & drop di grid desktop
 - Log aktivitas perubahan sesi (tambah / reschedule / hapus) di halaman terpisah
+- Pilihan bahasa Indonesia / English (i18n penuh semua halaman, default English)
 
 ---
 
