@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { format, addMonths, subMonths } from 'date-fns';
-import { id as localeId } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react';
 import { useApp } from '../store/AppContext';
+import { useLang } from '../store/LanguageContext';
 import { formatCurrency, formatDate } from '../utils/helpers';
 import { durationMinutes } from '../utils/xuyuan';
 
@@ -17,6 +17,7 @@ const XUYUAN_ADJ_2026_06 = Math.round(6.5 * RATE_PRIVATE + 0.5 * RATE_SEMI_GROUP
 export default function FinanceDetail() {
   const { teacherId } = useParams<{ teacherId: string }>();
   const { data } = useApp();
+  const { t, locale } = useLang();
   const [month, setMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -28,9 +29,9 @@ export default function FinanceDetail() {
   if (!teacher) {
     return (
       <div className="max-w-2xl mx-auto">
-        <p className="text-gray-400 dark:text-gray-500">Laoshi tidak ditemukan.</p>
+        <p className="text-gray-400 dark:text-gray-500">{t('fd.notFound')}</p>
         <Link to="/finance" className="text-indigo-600 dark:text-indigo-400 text-sm hover:underline">
-          ← Kembali
+          {t('fd.back')}
         </Link>
       </div>
     );
@@ -140,7 +141,7 @@ export default function FinanceDetail() {
             <ChevronLeft size={16} />
           </button>
           <span className="font-semibold text-gray-900 dark:text-white capitalize min-w-36 text-center">
-            {format(month, 'MMMM yyyy', { locale: localeId })}
+            {format(month, 'MMMM yyyy', { locale })}
           </span>
           <button onClick={() => setMonth(m => addMonths(m, 1))} className="p-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
             <ChevronRight size={16} />
@@ -149,14 +150,14 @@ export default function FinanceDetail() {
 
         {/* XuYuan */}
         {xuyuanRows.length > 0 && (
-          <Section title="XuYuan — Jam Mengajar" total={totalXuYuan}>
+          <Section title={t('fin.sectionXuYuan')} total={totalXuYuan}>
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-xs text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-700">
-                  <th className="text-left pb-2 font-medium">Murid</th>
-                  <th className="text-right pb-2 font-medium">Sesi</th>
-                  <th className="text-right pb-2 font-medium">Durasi</th>
-                  <th className="text-right pb-2 font-medium">Pendapatan</th>
+                  <th className="text-left pb-2 font-medium">{t('fin.colStudent')}</th>
+                  <th className="text-right pb-2 font-medium">{t('fin.colSessions')}</th>
+                  <th className="text-right pb-2 font-medium">{t('fin.colDuration')}</th>
+                  <th className="text-right pb-2 font-medium">{t('fin.colIncome')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
@@ -170,9 +171,9 @@ export default function FinanceDetail() {
                 ))}
                 {xuyuanAdj > 0 && (
                   <tr>
-                    <td className="py-2 text-gray-400 dark:text-gray-500 italic">Penyesuaian Mei (6,5j private + 0,5j semi)</td>
+                    <td className="py-2 text-gray-400 dark:text-gray-500 italic">{t('fd.adjMayShort')}</td>
                     <td className="py-2 text-right text-gray-400 dark:text-gray-500">—</td>
-                    <td className="py-2 text-right text-gray-400 dark:text-gray-500">7 jam</td>
+                    <td className="py-2 text-right text-gray-400 dark:text-gray-500">{t('fd.adjDur7')}</td>
                     <td className="py-2 text-right tabular-nums font-medium text-gray-900 dark:text-white">{formatCurrency(xuyuanAdj)}</td>
                   </tr>
                 )}
@@ -183,13 +184,13 @@ export default function FinanceDetail() {
 
         {/* Worksheet */}
         {worksheetRows.length > 0 && (
-          <Section title="Worksheet XuYuan" total={totalWorksheet}>
+          <Section title={t('fin.rowWorksheet')} total={totalWorksheet}>
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-xs text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-700">
-                  <th className="text-left pb-2 font-medium">Murid</th>
-                  <th className="text-right pb-2 font-medium">Halaman</th>
-                  <th className="text-right pb-2 font-medium">Pendapatan</th>
+                  <th className="text-left pb-2 font-medium">{t('fin.colStudent')}</th>
+                  <th className="text-right pb-2 font-medium">{t('fin.colPages')}</th>
+                  <th className="text-right pb-2 font-medium">{t('fin.colIncome')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
@@ -207,13 +208,13 @@ export default function FinanceDetail() {
 
         {/* Prepaid packages */}
         {prepaidRows.length > 0 && (
-          <Section title="Prepaid — Paket Dimulai Bulan Ini" total={totalPrepaid}>
+          <Section title={t('fd.sectionPrepaid')} total={totalPrepaid}>
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-xs text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-700">
-                  <th className="text-left pb-2 font-medium">Murid</th>
-                  <th className="text-right pb-2 font-medium">Sesi</th>
-                  <th className="text-right pb-2 font-medium">Harga Paket</th>
+                  <th className="text-left pb-2 font-medium">{t('fin.colStudent')}</th>
+                  <th className="text-right pb-2 font-medium">{t('fin.colSessions')}</th>
+                  <th className="text-right pb-2 font-medium">{t('fin.colPackagePrice')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
@@ -234,13 +235,13 @@ export default function FinanceDetail() {
 
         {/* Postpaid */}
         {postpaidRows.length > 0 && (
-          <Section title="Postpaid — Per Sesi" total={totalPostpaid}>
+          <Section title={t('fd.sectionPostpaid')} total={totalPostpaid}>
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-xs text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-700">
-                  <th className="text-left pb-2 font-medium">Murid</th>
-                  <th className="text-right pb-2 font-medium">Sesi</th>
-                  <th className="text-right pb-2 font-medium">Pendapatan</th>
+                  <th className="text-left pb-2 font-medium">{t('fin.colStudent')}</th>
+                  <th className="text-right pb-2 font-medium">{t('fin.colSessions')}</th>
+                  <th className="text-right pb-2 font-medium">{t('fin.colIncome')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
@@ -258,7 +259,7 @@ export default function FinanceDetail() {
 
         {xuyuanRows.length === 0 && worksheetRows.length === 0 && prepaidRows.length === 0 && postpaidRows.length === 0 && (
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-10 text-center text-gray-400 dark:text-gray-500 text-sm">
-            Tidak ada pendapatan bulan ini.
+            {t('fd.noIncome')}
           </div>
         )}
 
@@ -266,7 +267,7 @@ export default function FinanceDetail() {
         {grandTotal > 0 && (
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 px-5 py-4 flex items-center justify-between">
             <span className="font-semibold text-gray-900 dark:text-white">
-              Total {format(month, 'MMMM', { locale: localeId })}
+              {t('fin.total', { month: format(month, 'MMMM', { locale }) })}
             </span>
             <span className="text-xl font-bold tabular-nums text-amber-600 dark:text-amber-400">
               {formatCurrency(grandTotal)}
@@ -307,24 +308,24 @@ export default function FinanceDetail() {
           <ChevronLeft size={16} />
         </button>
         <span className="font-semibold text-gray-900 dark:text-white capitalize min-w-36 text-center">
-          {format(month, 'MMMM yyyy', { locale: localeId })}
+          {format(month, 'MMMM yyyy', { locale })}
         </span>
         <button onClick={() => setMonth(m => addMonths(m, 1))} className="p-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
           <ChevronRight size={16} />
         </button>
       </div>
 
-      <Section title="Honor per Murid" total={totalHonor}>
+      <Section title={t('fd.sectionHonor')} total={totalHonor}>
         {studentRows.length === 0 ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500 py-2">Tidak ada sesi bulan ini.</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 py-2">{t('fin.noSessionMonth')}</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="text-xs text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-700">
-                <th className="text-left pb-2 font-medium">Murid</th>
-                <th className="text-right pb-2 font-medium">Sesi</th>
-                <th className="text-right pb-2 font-medium">Rate/sesi</th>
-                <th className="text-right pb-2 font-medium">Honor</th>
+                <th className="text-left pb-2 font-medium">{t('fin.colStudent')}</th>
+                <th className="text-right pb-2 font-medium">{t('fin.colSessions')}</th>
+                <th className="text-right pb-2 font-medium">{t('fin.colRate')}</th>
+                <th className="text-right pb-2 font-medium">{t('fin.colPay')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">

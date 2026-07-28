@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { format, addMonths, subMonths } from 'date-fns';
-import { id as localeId } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Pencil, Check, X, Crown, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../store/AppContext';
+import { useLang } from '../store/LanguageContext';
 import { formatCurrency } from '../utils/helpers';
 import { durationMinutes } from '../utils/xuyuan';
 
@@ -16,6 +16,7 @@ const XUYUAN_ADJ_2026_06 = Math.round(6.5 * RATE_PRIVATE + 0.5 * RATE_SEMI_GROUP
 
 export default function Finance() {
   const { data, updateTeacher } = useApp();
+  const { t, locale } = useLang();
   const [month, setMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -51,8 +52,8 @@ export default function Finance() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Keuangan</h1>
-        <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">Pendapatan owner & honor laoshi</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('fin.title')}</h1>
+        <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">{t('fin.subtitle')}</p>
       </div>
 
       {/* Month selector */}
@@ -64,7 +65,7 @@ export default function Finance() {
           <ChevronLeft size={16} />
         </button>
         <span className="font-semibold text-gray-900 dark:text-white capitalize min-w-36 text-center">
-          {format(month, 'MMMM yyyy', { locale: localeId })}
+          {format(month, 'MMMM yyyy', { locale })}
         </span>
         <button
           onClick={() => setMonth(m => addMonths(m, 1))}
@@ -142,8 +143,8 @@ export default function Finance() {
         const totalOwnerIncome = incomeXuYuan + incomeWorksheet + incomePribadi + incomeWenwen;
 
         const incomeRows = [
-          { label: 'XuYuan (jam mengajar)', value: incomeXuYuan },
-          { label: 'Worksheet XuYuan', value: incomeWorksheet },
+          { label: t('fin.rowXuYuan'), value: incomeXuYuan },
+          { label: t('fin.rowWorksheet'), value: incomeWorksheet },
           { label: 'Pribadi', value: incomePribadi },
           { label: 'WenWen_AiZhongWen', value: incomeWenwen },
         ];
@@ -160,7 +161,7 @@ export default function Finance() {
                 to={`/finance/${teacher.id}`}
                 className="ml-auto flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
               >
-                Detail <ArrowRight size={11} />
+                {t('fin.detail')} <ArrowRight size={11} />
               </Link>
             </div>
 
@@ -180,7 +181,7 @@ export default function Finance() {
 
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
               <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                Total {format(month, 'MMMM', { locale: localeId })}
+                {t('fin.total', { month: format(month, 'MMMM', { locale }) })}
               </span>
               <span className="text-lg font-bold tabular-nums text-amber-600 dark:text-amber-400">
                 {formatCurrency(totalOwnerIncome)}
@@ -217,13 +218,13 @@ export default function Finance() {
               <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: teacher.color }} />
               <span className="font-semibold text-gray-900 dark:text-white">{teacher.name}</span>
               {monthSessions.length === 0 && (
-                <span className="text-xs text-gray-400 dark:text-gray-500">Tidak ada sesi bulan ini</span>
+                <span className="text-xs text-gray-400 dark:text-gray-500">{t('fin.noSessionMonth')}</span>
               )}
               <Link
                 to={`/finance/${teacher.id}`}
                 className="ml-auto flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
               >
-                Detail <ArrowRight size={11} />
+                {t('fin.detail')} <ArrowRight size={11} />
               </Link>
             </div>
 
@@ -238,7 +239,7 @@ export default function Finance() {
                     <span className="text-sm text-gray-700 dark:text-gray-300">{student.name}</span>
                     <div className="flex items-center gap-3">
                       <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">
-                        {count} sesi
+                        {t('common.sessions_n', { n: count })}
                       </span>
                       <span className="text-sm font-semibold tabular-nums text-gray-900 dark:text-white">
                         {formatCurrency(count * teacher.honorPerSession)}
@@ -253,17 +254,17 @@ export default function Finance() {
             <div className="flex items-center gap-4 pt-3 border-t border-gray-100 dark:border-gray-700">
               <div className="flex-1">
                 <div className="text-xs text-gray-500 dark:text-gray-400">
-                  Total honor {format(month, 'MMMM', { locale: localeId })}
+                  {t('fin.totalHonorMonth', { month: format(month, 'MMMM', { locale }) })}
                 </div>
                 <div className="text-xl font-bold tabular-nums text-indigo-700 dark:text-indigo-300">
                   {formatCurrency(totalHonor)}
                 </div>
                 <div className="text-xs text-gray-400 dark:text-gray-500 tabular-nums mt-0.5">
-                  {monthSessions.length} sesi × {formatCurrency(teacher.honorPerSession)}
+                  {t('fin.sessionsTimes', { n: monthSessions.length, rate: formatCurrency(teacher.honorPerSession) })}
                 </div>
               </div>
               <div className="flex items-center gap-2 text-sm flex-shrink-0">
-                <span className="text-gray-500 dark:text-gray-400">Honor/sesi</span>
+                <span className="text-gray-500 dark:text-gray-400">{t('fin.payPerSession')}</span>
                 {isEditing ? (
                   <div className="flex items-center gap-1">
                     <span className="text-xs text-gray-400">Rp</span>
@@ -316,7 +317,7 @@ export default function Finance() {
       {nonOwners.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 px-5 py-4 flex items-center justify-between">
           <span className="font-semibold text-gray-900 dark:text-white">
-            Total Honor {format(month, 'MMMM', { locale: localeId })}
+            {t('fin.totalPayroll', { month: format(month, 'MMMM', { locale }) })}
           </span>
           <span className="text-xl font-bold tabular-nums text-gray-900 dark:text-white">
             {formatCurrency(totalPayroll)}
@@ -326,7 +327,7 @@ export default function Finance() {
 
       {data.teachers.length === 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-10 text-center text-gray-400 dark:text-gray-500">
-          <p className="text-sm">Belum ada laoshi terdaftar.</p>
+          <p className="text-sm">{t('fin.noTeachers')}</p>
         </div>
       )}
     </div>
