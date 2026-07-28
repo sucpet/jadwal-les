@@ -172,9 +172,6 @@ export default function Schedule() {
     setQuickTarget(s);
     setQuickForm({ date: s.date, startTime: s.startTime, endTime: s.endTime });
   };
-  const nudgeQuick = (days: number) => {
-    setQuickForm(f => ({ ...f, date: format(addDays(parseISO(f.date), days), 'yyyy-MM-dd') }));
-  };
   const saveQuick = () => {
     if (!quickTarget) return;
     rescheduleTo(quickTarget, quickForm.date, quickForm.startTime, quickForm.endTime);
@@ -990,12 +987,17 @@ export default function Schedule() {
                 </button>
               </div>
 
-              {/* Quick nudges */}
+              {/* Quick nudges — langsung minta konfirmasi (geser dari tanggal asli sesi) */}
               <div className="flex gap-2">
                 {([['−1 mgg', -7], ['+1 hari', 1], ['+1 mgg', 7]] as [string, number][]).map(([label, days]) => (
                   <button
                     key={label}
-                    onClick={() => nudgeQuick(days)}
+                    onClick={() => {
+                      const s = quickTarget;
+                      if (!s) return;
+                      setQuickTarget(null);
+                      setPendingMove({ session: s, date: format(addDays(parseISO(s.date), days), 'yyyy-MM-dd'), startTime: s.startTime, endTime: s.endTime });
+                    }}
                     className="flex-1 text-xs font-medium py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:border-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
                   >
                     {label}
