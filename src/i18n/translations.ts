@@ -95,6 +95,37 @@ export const translations: Record<Lang, Record<string, string>> = {
     'set.invalidBackup': 'Format backup tidak valid (teachers/students/sessions/packages harus ada).',
     'set.clearConfirm1': 'Yakin hapus SEMUA data? Ini tidak bisa dibatalkan.',
     'set.clearConfirm2': 'Benar-benar yakin? Semua laoshi, murid, dan jadwal akan dihapus.',
+
+    // common (shared)
+    'common.save': 'Simpan',
+    'common.cancel': 'Batal',
+    'common.add': 'Tambah',
+    'common.edit': 'Edit',
+    'common.delete': 'Hapus',
+    'common.search': 'Cari',
+    'common.optional': 'opsional',
+
+    // auth / login
+    'auth.tagline': 'Masuk untuk melanjutkan',
+    'auth.email': 'Email',
+    'auth.password': 'Password',
+    'auth.wrong': 'Email atau password salah',
+    'auth.signIn': 'Masuk',
+    'auth.signingIn': 'Masuk...',
+
+    // teachers
+    'teach.title': 'Laoshi',
+    'teach.add': 'Tambah Laoshi',
+    'teach.editTitle': 'Edit Laoshi',
+    'teach.addTitle': 'Tambah Laoshi Baru',
+    'teach.name': 'Nama Laoshi',
+    'teach.namePlaceholder': 'Contoh: WenWen',
+    'teach.nameRequired': 'Nama laoshi wajib diisi',
+    'teach.color': 'Warna',
+    'teach.empty': 'Belum ada laoshi. Tambahkan laoshi pertama.',
+    'teach.studentsSessions': '{students} murid · {sessions} sesi tercatat',
+    'teach.deleteConfirm': 'Hapus laoshi "{name}"?',
+    'teach.deleteConfirmCascade': 'Hapus laoshi "{name}"? Ini juga akan menghapus {count} murid dan semua jadwalnya.',
   },
   en: {
     // common
@@ -188,5 +219,36 @@ export const translations: Record<Lang, Record<string, string>> = {
     'set.invalidBackup': 'Invalid backup format (teachers/students/sessions/packages required).',
     'set.clearConfirm1': 'Delete ALL data? This cannot be undone.',
     'set.clearConfirm2': 'Really sure? All laoshi, students, and schedules will be deleted.',
+
+    // common (shared)
+    'common.save': 'Save',
+    'common.cancel': 'Cancel',
+    'common.add': 'Add',
+    'common.edit': 'Edit',
+    'common.delete': 'Delete',
+    'common.search': 'Search',
+    'common.optional': 'optional',
+
+    // auth / login
+    'auth.tagline': 'Sign in to continue',
+    'auth.email': 'Email',
+    'auth.password': 'Password',
+    'auth.wrong': 'Wrong email or password',
+    'auth.signIn': 'Sign in',
+    'auth.signingIn': 'Signing in...',
+
+    // teachers
+    'teach.title': 'Laoshi',
+    'teach.add': 'Add Laoshi',
+    'teach.editTitle': 'Edit Laoshi',
+    'teach.addTitle': 'Add New Laoshi',
+    'teach.name': 'Laoshi Name',
+    'teach.namePlaceholder': 'e.g. WenWen',
+    'teach.nameRequired': 'Laoshi name is required',
+    'teach.color': 'Color',
+    'teach.empty': 'No laoshi yet. Add your first laoshi.',
+    'teach.studentsSessions': '{students} students · {sessions} sessions recorded',
+    'teach.deleteConfirm': 'Delete laoshi "{name}"?',
+    'teach.deleteConfirmCascade': 'Delete laoshi "{name}"? This will also delete {count} students and all their sessions.',
   },
 };

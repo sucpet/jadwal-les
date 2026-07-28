@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { BookOpen } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useLang } from '../store/LanguageContext';
 
 export default function Login() {
+  const { t } = useLang();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -13,7 +15,7 @@ export default function Login() {
     setError('');
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) setError('Email atau password salah');
+    if (error) setError(t('auth.wrong'));
     setLoading(false);
   };
 
@@ -26,13 +28,13 @@ export default function Login() {
           </div>
           <div className="text-center">
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">Jadwal Les</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Masuk untuk melanjutkan</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{t('auth.tagline')}</p>
           </div>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('auth.email')}</label>
             <input
               type="email"
               value={email}
@@ -44,7 +46,7 @@ export default function Login() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('auth.password')}</label>
             <input
               type="password"
               value={password}
@@ -66,7 +68,7 @@ export default function Login() {
             disabled={loading}
             className="w-full bg-indigo-600 text-white text-sm font-medium py-2.5 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
           >
-            {loading ? 'Masuk...' : 'Masuk'}
+            {loading ? t('auth.signingIn') : t('auth.signIn')}
           </button>
         </form>
       </div>

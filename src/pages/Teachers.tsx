@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Plus, Pencil, Trash2, X, Check } from 'lucide-react';
 import { useApp } from '../store/AppContext';
+import { useLang } from '../store/LanguageContext';
 import { TEACHER_COLORS } from '../utils/helpers';
 
 export default function Teachers() {
   const { data, addTeacher, updateTeacher, deleteTeacher } = useApp();
+  const { t } = useLang();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [name, setName] = useState('');
@@ -43,44 +45,44 @@ export default function Teachers() {
     const teacher = data.teachers.find(t => t.id === id);
     const studentCount = data.students.filter(s => s.teacherId === id).length;
     const msg = studentCount > 0
-      ? `Hapus laoshi "${teacher?.name}"? Ini juga akan menghapus ${studentCount} murid dan semua jadwalnya.`
-      : `Hapus laoshi "${teacher?.name}"?`;
+      ? t('teach.deleteConfirmCascade', { name: teacher?.name ?? '', count: studentCount })
+      : t('teach.deleteConfirm', { name: teacher?.name ?? '' });
     if (confirm(msg)) deleteTeacher(id);
   };
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Laoshi</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('teach.title')}</h1>
         <button
           onClick={openAdd}
           className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700"
         >
-          <Plus size={16} /> Tambah Laoshi
+          <Plus size={16} /> {t('teach.add')}
         </button>
       </div>
 
       {/* Form */}
       {showForm && (
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 space-y-4">
-          <h3 className="font-semibold text-gray-900 dark:text-white">{editId ? 'Edit Laoshi' : 'Tambah Laoshi Baru'}</h3>
+          <h3 className="font-semibold text-gray-900 dark:text-white">{editId ? t('teach.editTitle') : t('teach.addTitle')}</h3>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nama Laoshi</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('teach.name')}</label>
             <input
               autoFocus
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && save()}
-              placeholder="Contoh: WenWen"
+              placeholder={t('teach.namePlaceholder')}
               className={`w-full border rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 ${showErrors && !name.trim() ? 'border-red-400 bg-red-50 dark:bg-red-900/20' : 'border-gray-300 dark:border-gray-600'}`}
             />
             {showErrors && !name.trim() && (
-              <p className="text-xs text-red-500 mt-1">Nama laoshi wajib diisi</p>
+              <p className="text-xs text-red-500 mt-1">{t('teach.nameRequired')}</p>
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Warna</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('teach.color')}</label>
             <div className="flex gap-2 flex-wrap">
               {TEACHER_COLORS.map(c => (
                 <button
@@ -100,13 +102,13 @@ export default function Teachers() {
               onClick={save}
               className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-indigo-700"
             >
-              <Check size={16} /> Simpan
+              <Check size={16} /> {t('common.save')}
             </button>
             <button
               onClick={() => setShowForm(false)}
               className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
-              <X size={16} /> Batal
+              <X size={16} /> {t('common.cancel')}
             </button>
           </div>
         </div>
@@ -115,7 +117,7 @@ export default function Teachers() {
       {/* List */}
       {data.teachers.length === 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-10 text-center text-gray-400 dark:text-gray-500">
-          <p className="text-sm">Belum ada laoshi. Tambahkan laoshi pertama.</p>
+          <p className="text-sm">{t('teach.empty')}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -128,7 +130,7 @@ export default function Teachers() {
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-gray-900 dark:text-white">{teacher.name}</div>
                   <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    {studentCount} murid · {sessionCount} sesi tercatat
+                    {t('teach.studentsSessions', { students: studentCount, sessions: sessionCount })}
                   </div>
                 </div>
                 <div className="flex gap-1">
