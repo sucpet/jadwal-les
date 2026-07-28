@@ -152,13 +152,16 @@ export default function Schedule() {
     updateSession(session.id, { date, startTime, endTime, status: resolveStatus(date, endTime) });
   };
 
-  // Feature A — geser satu sesi N minggu, jam tetap (dengan konfirmasi)
+  // Feature A — geser satu sesi N minggu, jam tetap (lewat modal konfirmasi)
+  const [confirmShift, setConfirmShift] = useState<{ session: LessonSession; weeks: number } | null>(null);
   const shiftSessionWeeks = (session: LessonSession, weeks: number) => {
-    const newDate = shiftDateByWeeks(session.date, weeks);
-    const student = data.students.find(s => s.id === session.studentId);
-    const msg = `Geser sesi ${student?.name ?? ''} (${session.startTime}) dari ${format(parseISO(session.date), 'EEE d MMM', { locale: localeId })} ke ${format(parseISO(newDate), 'EEE d MMM yyyy', { locale: localeId })}?`;
-    if (!confirm(msg)) return;
-    rescheduleTo(session, newDate, session.startTime, session.endTime);
+    setConfirmShift({ session, weeks });
+  };
+  const applyShift = () => {
+    if (!confirmShift) return;
+    const { session, weeks } = confirmShift;
+    rescheduleTo(session, shiftDateByWeeks(session.date, weeks), session.startTime, session.endTime);
+    setConfirmShift(null);
   };
 
   // Feature B — mini-popover jadwal ulang
@@ -931,6 +934,39 @@ export default function Schedule() {
           </div>
         </div>
       )}
+
+      {/* Confirm +1 minggu shift */}
+      {confirmShift && (() => {
+        const { session, weeks } = confirmShift;
+        const student = data.students.find(s => s.id === session.studentId);
+        const newDate = shiftDateByWeeks(session.date, weeks);
+        return (
+          <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4" onClick={() => setConfirmShift(null)}>
+            <div className="bg-white dark:bg-gray-800 w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl shadow-xl p-5 space-y-4" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center gap-2">
+                <CalendarClock size={18} className="text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+                <h3 className="font-semibold text-gray-900 dark:text-white">Geser {weeks > 0 ? `+${weeks}` : weeks} minggu?</h3>
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
+                <div className="font-medium text-gray-900 dark:text-white">{student?.name ?? '—'} · {session.startTime}–{session.endTime}</div>
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-500 dark:text-gray-400">{format(parseISO(session.date), 'EEE, d MMM', { locale: localeId })}</span>
+                  <span className="text-gray-400">→</span>
+                  <span className="font-medium text-indigo-700 dark:text-indigo-300">{format(parseISO(newDate), 'EEE, d MMM yyyy', { locale: localeId })}</span>
+                </div>
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button onClick={() => setConfirmShift(null)} className="flex-1 text-sm px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">
+                  Batal
+                </button>
+                <button onClick={applyShift} className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700">
+                  <Check size={15} /> Ya, Geser
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Quick reschedule popover */}
       {quickTarget && (() => {
