@@ -667,7 +667,7 @@ export default function Schedule() {
                         background: `${groupColor}80`,
                         color: '#fff',
                         borderLeft: `5px solid ${color}`,
-                        opacity: isDragging ? 0.4 : 1,
+                        opacity: isDragging ? 0.4 : (s.status === 'completed' ? 0.6 : 1),
                       }}
                       className="group relative rounded text-xs px-1 py-0.5 cursor-grab active:cursor-grabbing hover:opacity-80 overflow-hidden"
                       onClick={e => { e.stopPropagation(); openEdit(s); }}
