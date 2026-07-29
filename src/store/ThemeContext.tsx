@@ -6,10 +6,11 @@ interface ThemeContextType {
   toggle: () => void;
 }
 
-const ThemeContext = createContext<ThemeContextType>({ isDark: false, toggle: () => {} });
+const ThemeContext = createContext<ThemeContextType>({ isDark: true, toggle: () => {} });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [isDark, setIsDark] = useState(() => localStorage.getItem('theme') === 'dark');
+  // Default dark; hanya light bila user memang memilih light
+  const [isDark, setIsDark] = useState(() => localStorage.getItem('theme') !== 'light');
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark);
