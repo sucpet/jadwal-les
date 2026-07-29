@@ -18,6 +18,7 @@ Berdasarkan analisis codebase + riset dari repo publik:
 - Reschedule cepat satu sesi: tombol +1 minggu (dengan konfirmasi), mini-popover tanggal/jam, dan drag & drop di grid desktop
 - Log aktivitas perubahan sesi (tambah / reschedule / hapus) di halaman terpisah
 - Pilihan bahasa Indonesia / English (i18n penuh semua halaman, default English)
+- Murid "dibayar lembaga": pendapatan diakui saat pembayaran dicatat (payment log per murid), bukan otomatis per bulan
 
 ---
 
