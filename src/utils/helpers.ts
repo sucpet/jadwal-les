@@ -1,7 +1,7 @@
 import { format, addDays, parseISO, isSameDay, isBefore, differenceInDays } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import type { Locale } from 'date-fns';
-import type { LessonSession, SessionPackage, Student, StudentGroup } from '../types';
+import type { LessonSession, SessionPackage, Student, StudentGroup, Teacher } from '../types';
 
 export function generateId(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -30,6 +30,21 @@ export function effectiveRate(student: Student, date: string): number {
     return student.pendingRate;
   }
   return student.ratePerSession;
+}
+
+/**
+ * Honor per-sesi guru yang berlaku untuk tanggal tertentu.
+ * Mirror dari effectiveRate untuk murid.
+ */
+export function effectiveHonor(teacher: Teacher, date: string): number {
+  if (
+    teacher.pendingHonor != null &&
+    teacher.pendingHonorEffectiveDate != null &&
+    date >= teacher.pendingHonorEffectiveDate
+  ) {
+    return teacher.pendingHonor;
+  }
+  return teacher.honorPerSession;
 }
 
 

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { ROW_H, timeToPixels, computeDayLayout, addOneHour, shiftDateByWeeks, dayOfWeek, diffMinutes, addMinutes } from '../calendar';
 import { xuYuanCycleStart, xuYuanCycleLabel, durationMinutes, formatDuration, formatRp } from '../xuyuan';
 import { groupByMonth, groupByXuYuanCycle, totalDurationLabel, getPackageAttributedSessions } from '../student-groups';
-import { getPackageStatus, getMonthlyRevenue, effectiveRate } from '../helpers';
+import { getPackageStatus, getMonthlyRevenue, effectiveRate, effectiveHonor } from '../helpers';
 import type { LessonSession, SessionPackage, Student } from '../../types';
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
@@ -84,6 +84,21 @@ describe('effectiveRate', () => {
   it('ignores pending rate if effective date is missing', () => {
     const s = makeStudent({ billingType: 'per-session', ratePerSession: 150_000, pendingRate: 175_000 });
     expect(effectiveRate(s, '2026-12-31')).toBe(150_000);
+  });
+});
+
+describe('effectiveHonor', () => {
+  const mk = (o: object) => ({ id: 't1', name: 'T', color: '#000', honorPerSession: 100000, isOwner: false, createdAt: 'x', ...o });
+  it('current honor when no scheduled change', () => {
+    expect(effectiveHonor(mk({}), '2026-08-15')).toBe(100000);
+  });
+  it('current honor before effective date', () => {
+    expect(effectiveHonor(mk({ pendingHonor: 120000, pendingHonorEffectiveDate: '2026-09-01' }), '2026-08-31')).toBe(100000);
+  });
+  it('pending honor on/after effective date', () => {
+    const te = mk({ pendingHonor: 120000, pendingHonorEffectiveDate: '2026-09-01' });
+    expect(effectiveHonor(te, '2026-09-01')).toBe(120000);
+    expect(effectiveHonor(te, '2026-10-10')).toBe(120000);
   });
 });
 

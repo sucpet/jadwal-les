@@ -357,6 +357,9 @@ export const translations: Record<Lang, Record<string, string>> = {
     'pay.deleteConfirm': 'Hapus pembayaran ini?',
     'fin.colNote': 'Catatan',
     'fd.sectionPayments': 'Pembayaran Lembaga (diterima bulan ini)',
+    'fin.honorFrom': '{honor}/sesi mulai {date}',
+    'fin.scheduleHonor': 'Jadwalkan Perubahan Honor (opsional)',
+    'fin.newHonor': 'Honor Baru / Sesi (Rp)',
   },
   en: {
     // common
@@ -712,5 +715,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     'pay.deleteConfirm': 'Delete this payment?',
     'fin.colNote': 'Note',
     'fd.sectionPayments': 'Institution Payments (received this month)',
+    'fin.honorFrom': '{honor}/session from {date}',
+    'fin.scheduleHonor': 'Schedule Honor Change (optional)',
+    'fin.newHonor': 'New Honor / Session (Rp)',
   },
 };

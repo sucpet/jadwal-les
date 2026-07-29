@@ -4,7 +4,7 @@ import { format, addMonths, subMonths } from 'date-fns';
 import { ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { useLang } from '../store/LanguageContext';
-import { formatCurrency, formatDate } from '../utils/helpers';
+import { formatCurrency, formatDate, effectiveHonor } from '../utils/helpers';
 import { durationMinutes, formatDuration } from '../utils/xuyuan';
 
 const RATE_PRIVATE    = 100_000;
@@ -316,14 +316,23 @@ export default function FinanceDetail() {
   }
 
   // ── Non-owner breakdown ──────────────────────────────────────────────────────
-  const studentRows = data.students
-    .filter(s => s.teacherId === teacher.id)
-    .map(student => {
-      const sessions = monthSessions.filter(s => s.studentId === student.id);
-      const honor = sessions.length * teacher.honorPerSession;
-      return { student, sessions, honor };
-    })
-    .filter(r => r.sessions.length > 0);
+  const honorOf = (sessions: typeof data.sessions) =>
+    sessions.reduce((sum, s) => sum + (s.honorSnapshot ?? effectiveHonor(teacher, s.date)), 0);
+
+  type HonorRow = { student: typeof data.students[0]; count: number; honor: number; deferred: boolean };
+  const studentRows: HonorRow[] = [];
+  data.students.filter(s => s.teacherId === teacher.id && !s.deferredPayment).forEach(student => {
+    const sessions = monthSessions.filter(s => s.studentId === student.id);
+    if (sessions.length) studentRows.push({ student, count: sessions.length, honor: honorOf(sessions), deferred: false });
+  });
+  data.students.filter(s => s.teacherId === teacher.id && s.deferredPayment).forEach(student => {
+    const pays = data.payments.filter(p => p.studentId === student.id).sort((a, b) => a.date.localeCompare(b.date));
+    if (pays.length && pays[0].date.startsWith(monthStr)) {
+      const sessions = data.sessions.filter(s => s.studentId === student.id && s.status === 'completed');
+      studentRows.push({ student, count: sessions.length, honor: honorOf(sessions), deferred: true });
+    }
+  });
+  studentRows.sort((a, b) => b.honor - a.honor);
 
   const totalHonor = studentRows.reduce((sum, r) => sum + r.honor, 0);
 
@@ -366,11 +375,14 @@ export default function FinanceDetail() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
-              {studentRows.map(({ student, sessions, honor }) => (
+              {studentRows.map(({ student, count, honor, deferred }) => (
                 <tr key={student.id}>
-                  <td className="py-2 text-gray-800 dark:text-gray-200">{student.name}</td>
-                  <td className="py-2 text-right tabular-nums text-gray-500 dark:text-gray-400">{sessions.length}</td>
-                  <td className="py-2 text-right tabular-nums text-gray-500 dark:text-gray-400">{formatCurrency(teacher.honorPerSession)}</td>
+                  <td className="py-2 text-gray-800 dark:text-gray-200">
+                    {student.name}
+                    {deferred && <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">{t('pay.badge')}</span>}
+                  </td>
+                  <td className="py-2 text-right tabular-nums text-gray-500 dark:text-gray-400">{count}</td>
+                  <td className="py-2 text-right tabular-nums text-gray-500 dark:text-gray-400">{count > 0 ? formatCurrency(Math.round(honor / count)) : '—'}</td>
                   <td className="py-2 text-right tabular-nums font-medium text-gray-900 dark:text-white">{formatCurrency(honor)}</td>
                 </tr>
               ))}

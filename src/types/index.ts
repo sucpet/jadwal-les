@@ -3,6 +3,8 @@ export interface Teacher {
   name: string;
   color: string;
   honorPerSession: number;
+  pendingHonor?: number;              // honor baru yang menunggu berlaku
+  pendingHonorEffectiveDate?: string; // YYYY-MM-DD, tanggal pendingHonor mulai berlaku
   isOwner: boolean;
   createdAt: string;
 }
@@ -59,6 +61,7 @@ export interface LessonSession {
   notes?: string;
   worksheetPages?: number;
   rateSnapshot?: number; // ratePerSession murid saat sesi selesai (postpaid only)
+  honorSnapshot?: number; // honorPerSession guru saat sesi selesai (dibekukan)
   createdAt: string;
 }
 
