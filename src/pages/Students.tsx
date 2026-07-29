@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Plus, Pencil, Trash2, X, Check, ChevronDown, ChevronUp, Package, AlertTriangle, Clock, CalendarDays, CalendarClock, StickyNote, PowerOff, RotateCcw, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Check, ChevronDown, ChevronUp, Package, AlertTriangle, Clock, CalendarDays, CalendarClock, StickyNote, PowerOff, RotateCcw, Search, Wallet } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { useApp } from '../store/AppContext';
 import { useLang } from '../store/LanguageContext';
@@ -61,6 +61,9 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
   const [pendingDate, setPendingDate] = useState(initial?.pendingRateEffectiveDate ?? '');
   const [pendingCancelledNote, setPendingCancelledNote] = useState(false);
 
+  // Dibayar lembaga (deferred revenue)
+  const [deferredPayment, setDeferredPayment] = useState(initial?.deferredPayment ?? false);
+
   // Package fields — only relevant for new prepaid students
   const [showErrors, setShowErrors] = useState(false);
   const [pricingType, setPricingType] = useState<PackagePricingType>('per-session');
@@ -109,6 +112,7 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
       ...form, billingType, ratePerSession, notes: form.notes, xuYuanType,
       pendingRate: hasPending ? pendingRateNum : undefined,
       pendingRateEffectiveDate: hasPending ? pendingDate : undefined,
+      deferredPayment: isXuYuan ? false : deferredPayment,
     };
     const pkgData: InitialPackageData | undefined = (isNew && isPrepaid) ? {
       totalSessions: pkgSessions,
@@ -382,6 +386,18 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
             placeholder="145000" className="input w-full" />
           <p className="text-xs text-gray-400 mt-1">{t('stu.pkgManaged')}</p>
         </div>
+      )}
+
+      {!isXuYuan && (
+        <label className="flex items-start gap-3 border border-gray-300 dark:border-gray-600 rounded-xl p-3 cursor-pointer bg-gray-50 dark:bg-gray-700/40">
+          <input type="checkbox" checked={deferredPayment}
+            onChange={e => setDeferredPayment(e.target.checked)}
+            className="w-4 h-4 mt-0.5 accent-indigo-600 flex-shrink-0" />
+          <div className="min-w-0">
+            <div className="text-sm font-medium text-gray-800 dark:text-gray-200">{t('pay.deferredToggle')}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{t('pay.deferredDesc')}</div>
+          </div>
+        </label>
       )}
 
       <div>
@@ -728,6 +744,97 @@ function PackageCard({
   );
 }
 
+// ─── Payment Panel (murid dibayar lembaga) ─────────────────────────────────────
+
+function PaymentPanel({ student, billedAmount }: { student: Student; billedAmount: number }) {
+  const { data, addPayment, deletePayment } = useApp();
+  const { t, locale } = useLang();
+  const today = new Date().toISOString().slice(0, 10);
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState({ date: today, amount: billedAmount ? String(billedAmount) : '', note: '' });
+
+  const payments = data.payments
+    .filter(p => p.studentId === student.id)
+    .sort((a, b) => b.date.localeCompare(a.date));
+  const received = payments.reduce((s, p) => s + p.amount, 0);
+  const outstanding = billedAmount - received;
+
+  const save = () => {
+    const amt = Number(form.amount);
+    if (!form.date || !(amt > 0)) return;
+    addPayment({ studentId: student.id, date: form.date, amount: amt, note: form.note.trim() || undefined });
+    setForm({ date: today, amount: billedAmount ? String(billedAmount) : '', note: '' });
+    setAdding(false);
+  };
+  const remove = (id: string) => { if (confirm(t('pay.deleteConfirm'))) deletePayment(id); };
+
+  return (
+    <div className="border border-emerald-200 dark:border-emerald-800 rounded-xl p-4 space-y-3 bg-emerald-50/50 dark:bg-emerald-900/15">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wide flex items-center gap-1.5">
+          <Wallet size={13} /> {t('pay.section')}
+        </span>
+        {!adding && (
+          <button onClick={() => setAdding(true)} className="flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-300 hover:underline font-medium">
+            <Plus size={13} /> {t('pay.record')}
+          </button>
+        )}
+      </div>
+
+      <div className="flex items-center gap-2 flex-wrap text-xs text-gray-500 dark:text-gray-400">
+        <span>{t('pay.received')}: <span className="font-semibold text-emerald-700 dark:text-emerald-300">{formatCurrency(received)}</span></span>
+        {billedAmount > 0 && (
+          <>
+            <span className="text-gray-400">·</span>
+            <span>{t('pay.billed')}: <span className="font-medium text-gray-700 dark:text-gray-300">{formatCurrency(billedAmount)}</span></span>
+            {outstanding > 0 && (
+              <>
+                <span className="text-gray-400">·</span>
+                <span>{t('pay.outstanding')}: <span className="font-medium text-amber-600 dark:text-amber-400">{formatCurrency(outstanding)}</span></span>
+              </>
+            )}
+          </>
+        )}
+      </div>
+
+      {adding && (
+        <div className="space-y-2 bg-white dark:bg-gray-800 rounded-lg p-3 border border-emerald-200 dark:border-emerald-800">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('common.date')}</label>
+              <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} className="input w-full" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('pay.amount')}</label>
+              <input type="number" min="0" onKeyDown={e => (e.key === '-' || e.key === 'e') && e.preventDefault()} value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} className="input w-full" />
+            </div>
+          </div>
+          <input type="text" value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} placeholder={t('pay.notePh')} className="input w-full" />
+          <div className="flex gap-2">
+            <button onClick={save} className="flex items-center gap-1.5 bg-emerald-600 text-white text-sm px-3 py-1.5 rounded-lg hover:bg-emerald-700"><Check size={14} /> {t('common.save')}</button>
+            <button onClick={() => setAdding(false)} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"><X size={14} /> {t('common.cancel')}</button>
+          </div>
+        </div>
+      )}
+
+      {payments.length === 0 ? (
+        <p className="text-xs text-gray-400 dark:text-gray-500">{t('pay.none')}</p>
+      ) : (
+        <div className="divide-y divide-emerald-100 dark:divide-emerald-800/50">
+          {payments.map(p => (
+            <div key={p.id} className="flex items-center gap-2 py-2 text-sm">
+              <span className="text-xs text-gray-500 dark:text-gray-400 w-20 flex-shrink-0 tabular-nums">{formatDate(p.date, 'd MMM yy', locale)}</span>
+              <span className="flex-1 min-w-0 truncate text-xs italic text-gray-500 dark:text-gray-400">{p.note ?? ''}</span>
+              <span className="font-semibold tabular-nums text-emerald-700 dark:text-emerald-300">{formatCurrency(p.amount)}</span>
+              <button onClick={() => remove(p.id)} className="text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 flex-shrink-0"><Trash2 size={13} /></button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Student Card ─────────────────────────────────────────────────────────────
 
 function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?: boolean; highlight?: boolean }) {
@@ -819,6 +926,11 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
                 {isPostpaid ? t('stu.postpaid') : t('stu.prepaid')}
               </span>
             )}
+            {student.isActive && student.deferredPayment && (
+              <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">
+                {t('pay.badge')}
+              </span>
+            )}
             {/* Alert untuk paket aktif — hanya saat masih aktif */}
             {student.isActive && currentStatus?.isCurrent && currentStatus?.isExpiringSoon && (
               <span className="flex items-center gap-0.5 text-xs text-amber-600 font-medium">
@@ -892,6 +1004,13 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
       {/* Expanded section — isi berbeda per group */}
       {expanded && (
         <div className="border-t border-gray-100 dark:border-gray-700 p-4 space-y-3 bg-gray-50/50 dark:bg-gray-700/20">
+
+          {student.deferredPayment && (
+            <PaymentPanel
+              student={student}
+              billedAmount={currentPkg ? (currentPkg.packagePrice ?? currentPkg.pricePerSession * currentPkg.totalSessions) : 0}
+            />
+          )}
 
           {/* ── Prepaid (paket): riwayat paket — semua group kecuali xuyuan ── */}
           {student.billingType === 'package' && (

@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import type { AppData, Teacher, Student, SessionPackage, LessonSession, Worksheet, BillingType, StudentGroup, PackagePricingType } from '../types';
+import type { AppData, Teacher, Student, SessionPackage, LessonSession, Worksheet, Payment, BillingType, StudentGroup, PackagePricingType } from '../types';
 import { generateId, effectiveRate } from '../utils/helpers';
 import { supabase } from '../lib/supabase';
 import { format, parseISO } from 'date-fns';
@@ -8,28 +8,31 @@ import { id as localeId } from 'date-fns/locale';
 
 const fmtLogDate = (d: string) => format(parseISO(d), 'd MMM', { locale: localeId });
 
-const defaultData: AppData = { teachers: [], students: [], packages: [], sessions: [], worksheets: [] };
+const defaultData: AppData = { teachers: [], students: [], packages: [], sessions: [], worksheets: [], payments: [] };
 
 // ─── DB row types (snake_case) ────────────────────────────────────────────────
 interface DbTeacher  { id: string; name: string; color: string; honor_per_session: number; is_owner: boolean; created_at: string; }
-interface DbStudent  { id: string; teacher_id: string; name: string; billing_type: string; rate_per_session: number; pending_rate?: number | null; pending_rate_effective_date?: string | null; group: string; xu_yuan_type?: string; notes?: string; is_active: boolean; created_at: string; }
+interface DbStudent  { id: string; teacher_id: string; name: string; billing_type: string; rate_per_session: number; pending_rate?: number | null; pending_rate_effective_date?: string | null; deferred_payment?: boolean | null; group: string; xu_yuan_type?: string; notes?: string; is_active: boolean; created_at: string; }
 interface DbPackage  { id: string; student_id: string; teacher_id: string; total_sessions: number; pricing_type: string; price_per_session: number; package_price?: number; start_date: string; notes?: string; created_at: string; }
 interface DbSession   { id: string; student_id: string; teacher_id: string; date: string; start_time: string; end_time: string; status: string; notes?: string; worksheet_pages?: number; rate_snapshot?: number | null; created_at: string; }
 interface DbWorksheet { id: string; student_id: string; date: string; pages: number; created_at: string; }
+interface DbPayment   { id: string; student_id: string; date: string; amount: number; note?: string | null; created_at: string; }
 
 // ─── Mappers DB → App ─────────────────────────────────────────────────────────
 const mapTeacher  = (r: DbTeacher):  Teacher        => ({ id: r.id, name: r.name, color: r.color, honorPerSession: r.honor_per_session ?? 100000, isOwner: r.is_owner ?? false, createdAt: r.created_at });
-const mapStudent  = (r: DbStudent):  Student        => ({ id: r.id, teacherId: r.teacher_id, name: r.name, billingType: r.billing_type as BillingType, ratePerSession: r.rate_per_session, pendingRate: r.pending_rate ?? undefined, pendingRateEffectiveDate: r.pending_rate_effective_date ?? undefined, group: r.group as StudentGroup, xuYuanType: (r.xu_yuan_type ?? 'private') as 'private' | 'semi-group', notes: r.notes, isActive: r.is_active ?? true, createdAt: r.created_at });
+const mapStudent  = (r: DbStudent):  Student        => ({ id: r.id, teacherId: r.teacher_id, name: r.name, billingType: r.billing_type as BillingType, ratePerSession: r.rate_per_session, pendingRate: r.pending_rate ?? undefined, pendingRateEffectiveDate: r.pending_rate_effective_date ?? undefined, deferredPayment: r.deferred_payment ?? false, group: r.group as StudentGroup, xuYuanType: (r.xu_yuan_type ?? 'private') as 'private' | 'semi-group', notes: r.notes, isActive: r.is_active ?? true, createdAt: r.created_at });
 const mapPackage  = (r: DbPackage):  SessionPackage => ({ id: r.id, studentId: r.student_id, teacherId: r.teacher_id, totalSessions: r.total_sessions, pricingType: r.pricing_type as PackagePricingType, pricePerSession: r.price_per_session, packagePrice: r.package_price, startDate: r.start_date, notes: r.notes, createdAt: r.created_at });
 const mapSession  = (r: DbSession):  LessonSession  => ({ id: r.id, studentId: r.student_id, teacherId: r.teacher_id, date: r.date, startTime: r.start_time, endTime: r.end_time, status: r.status as LessonSession['status'], notes: r.notes, worksheetPages: r.worksheet_pages ?? 0, rateSnapshot: r.rate_snapshot ?? undefined, createdAt: r.created_at });
 
 // ─── Mappers App → DB ─────────────────────────────────────────────────────────
 const toDbTeacher = (t: Teacher)        => ({ id: t.id, name: t.name, color: t.color, honor_per_session: t.honorPerSession, is_owner: t.isOwner, created_at: t.createdAt });
-const toDbStudent = (s: Student)        => ({ id: s.id, teacher_id: s.teacherId, name: s.name, billing_type: s.billingType, rate_per_session: s.ratePerSession, pending_rate: s.pendingRate ?? null, pending_rate_effective_date: s.pendingRateEffectiveDate ?? null, group: s.group, xu_yuan_type: s.xuYuanType ?? 'private', notes: s.notes ?? null, is_active: s.isActive, created_at: s.createdAt });
+const toDbStudent = (s: Student)        => ({ id: s.id, teacher_id: s.teacherId, name: s.name, billing_type: s.billingType, rate_per_session: s.ratePerSession, pending_rate: s.pendingRate ?? null, pending_rate_effective_date: s.pendingRateEffectiveDate ?? null, deferred_payment: s.deferredPayment ?? false, group: s.group, xu_yuan_type: s.xuYuanType ?? 'private', notes: s.notes ?? null, is_active: s.isActive, created_at: s.createdAt });
 const toDbPackage = (p: SessionPackage) => ({ id: p.id, student_id: p.studentId, teacher_id: p.teacherId, total_sessions: p.totalSessions, pricing_type: p.pricingType, price_per_session: p.pricePerSession, package_price: p.packagePrice ?? null, start_date: p.startDate, notes: p.notes ?? null, created_at: p.createdAt });
 const toDbSession = (s: LessonSession)  => ({ id: s.id, student_id: s.studentId, teacher_id: s.teacherId, date: s.date, start_time: s.startTime, end_time: s.endTime, status: s.status, notes: s.notes ?? null, worksheet_pages: s.worksheetPages ?? 0, rate_snapshot: s.rateSnapshot ?? null, created_at: s.createdAt });
 const mapWorksheet  = (r: DbWorksheet): Worksheet => ({ id: r.id, studentId: r.student_id, date: r.date, pages: r.pages, createdAt: r.created_at });
 const toDbWorksheet = (w: Worksheet) => ({ id: w.id, student_id: w.studentId, date: w.date, pages: w.pages, created_at: w.createdAt });
+const mapPayment  = (r: DbPayment): Payment => ({ id: r.id, studentId: r.student_id, date: r.date, amount: r.amount, note: r.note ?? undefined, createdAt: r.created_at });
+const toDbPayment = (p: Payment) => ({ id: p.id, student_id: p.studentId, date: p.date, amount: p.amount, note: p.note ?? null, created_at: p.createdAt });
 
 // ─── Context type ─────────────────────────────────────────────────────────────
 interface AppContextType {
@@ -50,6 +53,8 @@ interface AppContextType {
   addWorksheet:    (w: Omit<Worksheet, 'id' | 'createdAt'>) => Worksheet;
   updateWorksheet: (id: string, updates: Partial<Worksheet>) => void;
   deleteWorksheet: (id: string) => void;
+  addPayment:    (p: Omit<Payment, 'id' | 'createdAt'>) => Payment;
+  deletePayment: (id: string) => void;
 }
 
 // Force lazy Supabase query to execute and log any error
@@ -87,12 +92,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     async function loadAll() {
-      const [t, s, p, se, ws] = await Promise.all([
+      const [t, s, p, se, ws, pay] = await Promise.all([
         supabase.from('teachers').select('*').order('created_at'),
         supabase.from('students').select('*').order('created_at'),
         supabase.from('packages').select('*').order('created_at'),
         supabase.from('sessions').select('*').order('created_at'),
         supabase.from('worksheets').select('*').order('created_at'),
+        supabase.from('payments').select('*').order('created_at'),
       ]);
       if (cancelled) return;
       const loaded: AppData = {
@@ -101,6 +107,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         packages: (p.data ?? []).map(mapPackage),
         sessions: (se.data ?? []).map(mapSession),
         worksheets: (ws.data ?? []).map(mapWorksheet),
+        payments: (pay.data ?? []).map(mapPayment),
       };
       setData(loaded);
       setLoading(false);
@@ -145,6 +152,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ({ new: r }) => setData(d => ({ ...d, worksheets: d.worksheets.map(w => w.id === (r as DbWorksheet).id ? mapWorksheet(r as DbWorksheet) : w) })))
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'worksheets' },
         ({ old: r }) => setData(d => ({ ...d, worksheets: d.worksheets.filter(w => w.id !== (r as DbWorksheet).id) })))
+      // payments
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'payments' },
+        ({ new: r }) => setData(d => ({ ...d, payments: [...d.payments.filter(p => p.id !== (r as DbPayment).id), mapPayment(r as DbPayment)] })))
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'payments' },
+        ({ old: r }) => setData(d => ({ ...d, payments: d.payments.filter(p => p.id !== (r as DbPayment).id) })))
       .subscribe();
 
     return () => {
@@ -293,6 +305,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (updates.ratePerSession !== undefined) row.rate_per_session = updates.ratePerSession;
     if ('pendingRate' in updates)                row.pending_rate                = updates.pendingRate ?? null;
     if ('pendingRateEffectiveDate' in updates)   row.pending_rate_effective_date = updates.pendingRateEffectiveDate ?? null;
+    if (updates.deferredPayment    !== undefined) row.deferred_payment = updates.deferredPayment;
     if (updates.group          !== undefined) row.group           = updates.group;
     if (updates.notes          !== undefined) row.notes           = updates.notes;
     if (updates.isActive       !== undefined) row.is_active       = updates.isActive;
@@ -304,7 +317,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       students: d.students.filter(s => s.id !== id),
       packages: d.packages.filter(p => p.studentId !== id),
       sessions: d.sessions.filter(s => s.studentId !== id),
+      payments: d.payments.filter(p => p.studentId !== id),
     }));
+    db(supabase.from('payments').delete().eq('student_id', id));
     db(supabase.from('students').delete().eq('id', id));
   };
 
@@ -404,6 +419,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     db(supabase.from('worksheets').delete().eq('id', id));
   };
 
+  // ─── Payments (murid dibayar lembaga) ─────────────────────────────────────
+  const addPayment = (p: Omit<Payment, 'id' | 'createdAt'>): Payment => {
+    const payment: Payment = { ...p, id: generateId(), createdAt: new Date().toISOString() };
+    setData(d => ({ ...d, payments: [...d.payments, payment] }));
+    db(supabase.from('payments').insert(toDbPayment(payment)));
+    return payment;
+  };
+  const deletePayment = (id: string) => {
+    setData(d => ({ ...d, payments: d.payments.filter(p => p.id !== id) }));
+    db(supabase.from('payments').delete().eq('id', id));
+  };
+
   return (
     <AppContext.Provider value={{
       data, loading,
@@ -412,6 +439,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addPackage, updatePackage, deletePackage,
       addSession, updateSession, deleteSession,
       addWorksheet, updateWorksheet, deleteWorksheet,
+      addPayment, deletePayment,
     }}>
       {children}
     </AppContext.Provider>

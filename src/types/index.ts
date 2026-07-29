@@ -25,6 +25,7 @@ export interface Student {
   ratePerSession: number;
   pendingRate?: number;              // harga baru yang menunggu berlaku (postpaid only)
   pendingRateEffectiveDate?: string; // YYYY-MM-DD, tanggal pendingRate mulai berlaku
+  deferredPayment?: boolean;         // dibayar lembaga: pendapatan diakui saat pembayaran dicatat, bukan otomatis
   group: StudentGroup;
   xuYuanType?: 'private' | 'semi-group';
   notes?: string;
@@ -69,10 +70,22 @@ export interface Worksheet {
   createdAt: string;
 }
 
+// Pembayaran yang diterima untuk murid "dibayar lembaga" (deferred).
+// Pendapatan owner diakui di bulan `date` sebesar `amount`.
+export interface Payment {
+  id: string;
+  studentId: string;
+  date: string;   // YYYY-MM-DD (tanggal uang diterima)
+  amount: number;
+  note?: string;
+  createdAt: string;
+}
+
 export interface AppData {
   teachers: Teacher[];
   students: Student[];
   packages: SessionPackage[];
   sessions: LessonSession[];
   worksheets: Worksheet[];
+  payments: Payment[];
 }

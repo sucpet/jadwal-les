@@ -341,6 +341,22 @@ export const translations: Record<Lang, Record<string, string>> = {
     'sch.weeksAhead': 'minggu ke depan',
     'sch.deleteSessionConfirm': 'Hapus sesi ini?',
     'sch.reschedTitle': 'Geser +1 minggu',
+
+    // payments (murid dibayar lembaga)
+    'pay.deferredToggle': 'Dibayar lembaga',
+    'pay.deferredDesc': 'Pendapatan dicatat saat pembayaran diterima, bukan otomatis per bulan.',
+    'pay.badge': 'Lembaga',
+    'pay.section': 'Pembayaran',
+    'pay.record': 'Catat Pembayaran',
+    'pay.amount': 'Jumlah (Rp)',
+    'pay.notePh': 'mis. Termin 1, transfer',
+    'pay.none': 'Belum ada pembayaran dicatat.',
+    'pay.received': 'Diterima',
+    'pay.billed': 'Tagihan',
+    'pay.outstanding': 'Sisa',
+    'pay.deleteConfirm': 'Hapus pembayaran ini?',
+    'fin.colNote': 'Catatan',
+    'fd.sectionPayments': 'Pembayaran Lembaga (diterima bulan ini)',
   },
   en: {
     // common
@@ -680,5 +696,21 @@ export const translations: Record<Lang, Record<string, string>> = {
     'sch.weeksAhead': 'weeks ahead',
     'sch.deleteSessionConfirm': 'Delete this session?',
     'sch.reschedTitle': 'Shift +1 week',
+
+    // payments (institution-paid students)
+    'pay.deferredToggle': 'Paid by institution',
+    'pay.deferredDesc': 'Income is recorded when payment is received, not automatically per month.',
+    'pay.badge': 'Institution',
+    'pay.section': 'Payments',
+    'pay.record': 'Record Payment',
+    'pay.amount': 'Amount (Rp)',
+    'pay.notePh': 'e.g. Term 1, transfer',
+    'pay.none': 'No payments recorded yet.',
+    'pay.received': 'Received',
+    'pay.billed': 'Billed',
+    'pay.outstanding': 'Outstanding',
+    'pay.deleteConfirm': 'Delete this payment?',
+    'fin.colNote': 'Note',
+    'fd.sectionPayments': 'Institution Payments (received this month)',
   },
 };

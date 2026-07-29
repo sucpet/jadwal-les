@@ -91,7 +91,7 @@ export default function FinanceDetail() {
     type PrepaidRow = { student: typeof nonXuYuanStudents[0]; packagePrice: number; totalSessions: number; startDate: string };
     const prepaidRows: PrepaidRow[] = [];
     nonXuYuanStudents.forEach(student => {
-      if (student.billingType !== 'package') return;
+      if (student.billingType !== 'package' || student.deferredPayment) return;
       data.packages
         .filter(p => p.studentId === student.id && p.startDate.startsWith(monthStr))
         .forEach(pkg => {
@@ -106,7 +106,7 @@ export default function FinanceDetail() {
 
     // Postpaid: per-session completed this month
     const postpaidRows = nonXuYuanStudents
-      .filter(s => s.billingType === 'per-session')
+      .filter(s => s.billingType === 'per-session' && !s.deferredPayment)
       .map(student => {
         const sessions = monthSessions.filter(s => s.studentId === student.id);
         const income = sessions.reduce(
@@ -116,12 +116,23 @@ export default function FinanceDetail() {
       })
       .filter(r => r.sessions.length > 0);
 
+    // Dibayar lembaga: pembayaran diterima bulan ini (flatten per pembayaran)
+    const paymentRows = nonXuYuanStudents
+      .filter(s => s.deferredPayment)
+      .flatMap(student =>
+        data.payments
+          .filter(p => p.studentId === student.id && p.date.startsWith(monthStr))
+          .map(p => ({ student, payment: p }))
+      )
+      .sort((a, b) => a.payment.date.localeCompare(b.payment.date));
+
     const xuyuanAdj     = monthStr === '2026-06' ? XUYUAN_ADJ_2026_06 : 0;
     const totalXuYuan   = xuyuanRows.reduce((s, r) => s + r.income, 0) + xuyuanAdj;
     const totalWorksheet = worksheetRows.reduce((s, r) => s + r.income, 0);
     const totalPrepaid  = prepaidRows.reduce((s, r) => s + r.packagePrice, 0);
     const totalPostpaid = postpaidRows.reduce((s, r) => s + r.income, 0);
-    const grandTotal    = totalXuYuan + totalWorksheet + totalPrepaid + totalPostpaid;
+    const totalPayments = paymentRows.reduce((s, r) => s + r.payment.amount, 0);
+    const grandTotal    = totalXuYuan + totalWorksheet + totalPrepaid + totalPostpaid + totalPayments;
 
     return (
       <div className="max-w-2xl mx-auto space-y-6">
@@ -257,7 +268,33 @@ export default function FinanceDetail() {
           </Section>
         )}
 
-        {xuyuanRows.length === 0 && worksheetRows.length === 0 && prepaidRows.length === 0 && postpaidRows.length === 0 && (
+        {/* Dibayar lembaga */}
+        {paymentRows.length > 0 && (
+          <Section title={t('fd.sectionPayments')} total={totalPayments}>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-xs text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-700">
+                  <th className="text-left pb-2 font-medium">{t('fin.colStudent')}</th>
+                  <th className="text-left pb-2 font-medium">{t('common.date')}</th>
+                  <th className="text-left pb-2 font-medium">{t('fin.colNote')}</th>
+                  <th className="text-right pb-2 font-medium">{t('fin.colIncome')}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
+                {paymentRows.map(({ student, payment }) => (
+                  <tr key={payment.id}>
+                    <td className="py-2 text-gray-800 dark:text-gray-200">{student.name}</td>
+                    <td className="py-2 text-gray-500 dark:text-gray-400 tabular-nums">{formatDate(payment.date, 'd MMM', locale)}</td>
+                    <td className="py-2 text-gray-400 dark:text-gray-500 text-xs italic">{payment.note ?? ''}</td>
+                    <td className="py-2 text-right tabular-nums font-medium text-gray-900 dark:text-white">{formatCurrency(payment.amount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Section>
+        )}
+
+        {xuyuanRows.length === 0 && worksheetRows.length === 0 && prepaidRows.length === 0 && postpaidRows.length === 0 && paymentRows.length === 0 && (
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-10 text-center text-gray-400 dark:text-gray-500 text-sm">
             {t('fd.noIncome')}
           </div>

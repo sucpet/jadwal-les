@@ -120,6 +120,14 @@ export default function Finance() {
               if (student.group === 'pribadi') incomePribadi += amount;
               else if (student.group === 'wenwen_aizhongwen') incomeWenwen += amount;
             };
+            // Dibayar lembaga: pendapatan = pembayaran yang diterima bulan ini
+            if (student.deferredPayment) {
+              const paid = data.payments
+                .filter(p => p.studentId === student.id && p.date.startsWith(monthStr))
+                .reduce((sum, p) => sum + p.amount, 0);
+              if (paid > 0) add(paid);
+              return;
+            }
             if (student.billingType === 'package') {
               data.packages
                 .filter(p => p.studentId === student.id && p.startDate.startsWith(monthStr))
