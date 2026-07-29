@@ -19,6 +19,8 @@ Berdasarkan analisis codebase + riset dari repo publik:
 - Log aktivitas perubahan sesi (tambah / reschedule / hapus) di halaman terpisah
 - Pilihan bahasa Indonesia / English (i18n penuh semua halaman, default English)
 - Murid "dibayar lembaga": pendapatan diakui saat pembayaran dicatat (payment log per murid), bukan otomatis per bulan
+- Perubahan honor guru terjadwal (mirror perubahan harga sesi murid) + honor snapshot per sesi
+- Honor guru untuk murid dibayar lembaga diakui di bulan pembayaran pertama (Opsi A)
 
 ---
 
