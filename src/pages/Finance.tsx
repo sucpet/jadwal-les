@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Pencil, Check, X, Crown, ArrowRight, Calenda
 import { Link } from 'react-router-dom';
 import { useApp } from '../store/AppContext';
 import { useLang } from '../store/LanguageContext';
-import { formatCurrency, effectiveHonor } from '../utils/helpers';
+import { formatCurrency, effectiveHonor, effectiveRate } from '../utils/helpers';
 import { durationMinutes } from '../utils/xuyuan';
 
 const RATE_PRIVATE    = 100_000;
@@ -59,7 +59,10 @@ export default function Finance() {
   const teacherHonorBreakdown = (teacher: typeof data.teachers[0]) => {
     const rows: { student: typeof data.students[0]; honor: number; deferred: boolean; count: number }[] = [];
     data.students.filter(st => st.teacherId === teacher.id && !st.deferredPayment).forEach(st => {
-      const ss = data.sessions.filter(s => s.studentId === st.id && s.date.startsWith(monthStr) && s.status === 'completed');
+      // Postpaid: sesi selesai + terjadwal (scheduled ikut dihitung); lainnya hanya completed
+      const postpaid = st.billingType === 'per-session';
+      const ss = data.sessions.filter(s => s.studentId === st.id && s.date.startsWith(monthStr) &&
+        (s.status === 'completed' || (postpaid && s.status === 'scheduled')));
       if (ss.length) rows.push({ student: st, honor: honorOf(teacher, ss), deferred: false, count: ss.length });
     });
     data.students.filter(st => st.teacherId === teacher.id && st.deferredPayment).forEach(st => {
@@ -121,10 +124,11 @@ export default function Finance() {
           s.date >= xyCycleStart && s.date <= xyCycleEnd &&
           s.status === 'completed'
         );
-        const monthSessions = data.sessions.filter(s =>
+        // Postpaid: sesi selesai + terjadwal bulan ini (scheduled ikut dihitung)
+        const monthSessionsAll = data.sessions.filter(s =>
           s.teacherId === teacher.id &&
           s.date.startsWith(monthStr) &&
-          s.status === 'completed'
+          (s.status === 'completed' || s.status === 'scheduled')
         );
 
         let incomeXuYuan = 0;
@@ -164,9 +168,9 @@ export default function Finance() {
                   add(pkg.packagePrice ?? pkg.totalSessions * pkg.pricePerSession);
                 });
             } else {
-              const studentSessions = monthSessions.filter(s => s.studentId === student.id);
+              const studentSessions = monthSessionsAll.filter(s => s.studentId === student.id);
               const income = studentSessions.reduce(
-                (sum, s) => sum + (s.rateSnapshot ?? student.ratePerSession), 0
+                (sum, s) => sum + (s.rateSnapshot ?? effectiveRate(student, s.date)), 0
               );
               if (income > 0) add(income);
             }
