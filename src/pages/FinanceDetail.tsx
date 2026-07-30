@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { format, addMonths, subMonths } from 'date-fns';
+import { format, parseISO, addMonths, subMonths } from 'date-fns';
 import { ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react';
+import type { Locale } from 'date-fns';
 import { useApp } from '../store/AppContext';
 import { useLang } from '../store/LanguageContext';
-import { formatCurrency, formatDate, effectiveHonor } from '../utils/helpers';
+import { formatCurrency, formatDate, effectiveHonor, effectiveRate } from '../utils/helpers';
 import { durationMinutes, formatDuration } from '../utils/xuyuan';
+import type { LessonSession } from '../types';
 
 const RATE_PRIVATE    = 100_000;
 const RATE_SEMI_GROUP = 135_000;
@@ -51,6 +53,12 @@ export default function FinanceDetail() {
     s.teacherId === teacher.id &&
     s.date.startsWith(monthStr) &&
     s.status === 'completed'
+  );
+  // Untuk murid postpaid: sesi selesai + terjadwal bulan ini (scheduled ikut dihitung)
+  const monthSessionsAll = data.sessions.filter(s =>
+    s.teacherId === teacher.id &&
+    s.date.startsWith(monthStr) &&
+    (s.status === 'completed' || s.status === 'scheduled')
   );
 
   // ── Owner breakdown ──────────────────────────────────────────────────────────
@@ -104,13 +112,13 @@ export default function FinanceDetail() {
         });
     });
 
-    // Postpaid: per-session completed this month
+    // Postpaid: per-session selesai + terjadwal bulan ini (scheduled ikut dihitung)
     const postpaidRows = nonXuYuanStudents
       .filter(s => s.billingType === 'per-session' && !s.deferredPayment)
       .map(student => {
-        const sessions = monthSessions.filter(s => s.studentId === student.id);
+        const sessions = monthSessionsAll.filter(s => s.studentId === student.id);
         const income = sessions.reduce(
-          (sum, s) => sum + (s.rateSnapshot ?? student.ratePerSession), 0
+          (sum, s) => sum + (s.rateSnapshot ?? effectiveRate(student, s.date)), 0
         );
         return { student, sessions, income };
       })
@@ -258,9 +266,12 @@ export default function FinanceDetail() {
               <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
                 {postpaidRows.map(({ student, sessions, income }) => (
                   <tr key={student.id}>
-                    <td className="py-2 text-gray-800 dark:text-gray-200">{student.name}</td>
-                    <td className="py-2 text-right tabular-nums text-gray-500 dark:text-gray-400">{sessions.length}</td>
-                    <td className="py-2 text-right tabular-nums font-medium text-gray-900 dark:text-white">{formatCurrency(income)}</td>
+                    <td className="py-2 text-gray-800 dark:text-gray-200 align-top">
+                      {student.name}
+                      <SessionDates sessions={sessions} locale={locale} />
+                    </td>
+                    <td className="py-2 text-right tabular-nums text-gray-500 dark:text-gray-400 align-top">{sessions.length}</td>
+                    <td className="py-2 text-right tabular-nums font-medium text-gray-900 dark:text-white align-top">{formatCurrency(income)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -319,17 +330,20 @@ export default function FinanceDetail() {
   const honorOf = (sessions: typeof data.sessions) =>
     sessions.reduce((sum, s) => sum + (s.honorSnapshot ?? effectiveHonor(teacher, s.date)), 0);
 
-  type HonorRow = { student: typeof data.students[0]; count: number; honor: number; deferred: boolean };
+  type HonorRow = { student: typeof data.students[0]; count: number; honor: number; deferred: boolean; sessions: LessonSession[]; postpaid: boolean };
   const studentRows: HonorRow[] = [];
   data.students.filter(s => s.teacherId === teacher.id && !s.deferredPayment).forEach(student => {
-    const sessions = monthSessions.filter(s => s.studentId === student.id);
-    if (sessions.length) studentRows.push({ student, count: sessions.length, honor: honorOf(sessions), deferred: false });
+    // Postpaid: sesi selesai + terjadwal (scheduled ikut dihitung); lainnya hanya completed
+    const postpaid = student.billingType === 'per-session';
+    const pool = postpaid ? monthSessionsAll : monthSessions;
+    const sessions = pool.filter(s => s.studentId === student.id);
+    if (sessions.length) studentRows.push({ student, count: sessions.length, honor: honorOf(sessions), deferred: false, sessions, postpaid });
   });
   data.students.filter(s => s.teacherId === teacher.id && s.deferredPayment).forEach(student => {
     const pays = data.payments.filter(p => p.studentId === student.id).sort((a, b) => a.date.localeCompare(b.date));
     if (pays.length && pays[0].date.startsWith(monthStr)) {
       const sessions = data.sessions.filter(s => s.studentId === student.id && s.status === 'completed');
-      studentRows.push({ student, count: sessions.length, honor: honorOf(sessions), deferred: true });
+      studentRows.push({ student, count: sessions.length, honor: honorOf(sessions), deferred: true, sessions, postpaid: false });
     }
   });
   studentRows.sort((a, b) => b.honor - a.honor);
@@ -375,15 +389,16 @@ export default function FinanceDetail() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
-              {studentRows.map(({ student, count, honor, deferred }) => (
+              {studentRows.map(({ student, count, honor, deferred, sessions, postpaid }) => (
                 <tr key={student.id}>
-                  <td className="py-2 text-gray-800 dark:text-gray-200">
+                  <td className="py-2 text-gray-800 dark:text-gray-200 align-top">
                     {student.name}
                     {deferred && <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">{t('pay.badge')}</span>}
+                    {postpaid && <SessionDates sessions={sessions} locale={locale} />}
                   </td>
-                  <td className="py-2 text-right tabular-nums text-gray-500 dark:text-gray-400">{count}</td>
-                  <td className="py-2 text-right tabular-nums text-gray-500 dark:text-gray-400">{count > 0 ? formatCurrency(Math.round(honor / count)) : '—'}</td>
-                  <td className="py-2 text-right tabular-nums font-medium text-gray-900 dark:text-white">{formatCurrency(honor)}</td>
+                  <td className="py-2 text-right tabular-nums text-gray-500 dark:text-gray-400 align-top">{count}</td>
+                  <td className="py-2 text-right tabular-nums text-gray-500 dark:text-gray-400 align-top">{count > 0 ? formatCurrency(Math.round(honor / count)) : '—'}</td>
+                  <td className="py-2 text-right tabular-nums font-medium text-gray-900 dark:text-white align-top">{formatCurrency(honor)}</td>
                 </tr>
               ))}
             </tbody>
@@ -395,6 +410,25 @@ export default function FinanceDetail() {
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
+
+// Chip tanggal sesi di bawah nama murid: abu-abu = selesai, biru = terjadwal
+function SessionDates({ sessions, locale }: { sessions: LessonSession[]; locale: Locale }) {
+  if (!sessions.length) return null;
+  const sorted = [...sessions].sort((a, b) => a.date.localeCompare(b.date));
+  return (
+    <div className="flex flex-wrap gap-1 mt-1">
+      {sorted.map(s => (
+        <span key={s.id} className={`text-[10px] px-1.5 py-0.5 rounded ${
+          s.status === 'scheduled'
+            ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-500 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+            : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300'
+        }`}>
+          {format(parseISO(s.date), 'd MMM', { locale })}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 function Section({
   title, total, children,

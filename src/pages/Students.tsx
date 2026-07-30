@@ -862,8 +862,9 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
     .filter(p => p.studentId === student.id)
     .sort((a, b) => b.startDate.localeCompare(a.startDate)); // newest first
 
+  // Riwayat les: tampilkan sesi selesai + terjadwal (chip biru = terjadwal)
   const studentSessions = data.sessions.filter(
-    s => s.studentId === student.id && s.status === 'completed'
+    s => s.studentId === student.id && (s.status === 'completed' || s.status === 'scheduled')
   );
   const studentActiveSessions = data.sessions.filter(
     s => s.studentId === student.id
