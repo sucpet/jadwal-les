@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { Plus, Pencil, Trash2, X, Check } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Check, PowerOff, RotateCcw } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { useLang } from '../store/LanguageContext';
 import { TEACHER_COLORS } from '../utils/helpers';
 
 export default function Teachers() {
-  const { data, addTeacher, updateTeacher, deleteTeacher } = useApp();
+  const { data, addTeacher, updateTeacher, deactivateTeacher, deleteTeacher } = useApp();
   const { t } = useLang();
+  const [showInactive, setShowInactive] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [name, setName] = useState('');
@@ -48,6 +49,15 @@ export default function Teachers() {
       ? t('teach.deleteConfirmCascade', { name: teacher?.name ?? '', count: studentCount })
       : t('teach.deleteConfirm', { name: teacher?.name ?? '' });
     if (confirm(msg)) deleteTeacher(id);
+  };
+
+  const deactivate = (id: string) => {
+    const teacher = data.teachers.find(t => t.id === id);
+    const upcoming = data.sessions.filter(s => s.teacherId === id && s.status === 'scheduled').length;
+    const msg = upcoming > 0
+      ? t('teach.deactivateConfirm', { name: teacher?.name ?? '', n: upcoming })
+      : t('teach.deactivateConfirmNoSessions', { name: teacher?.name ?? '' });
+    if (confirm(msg)) deactivateTeacher(id);
   };
 
   return (
@@ -119,39 +129,72 @@ export default function Teachers() {
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-10 text-center text-gray-400 dark:text-gray-500">
           <p className="text-sm">{t('teach.empty')}</p>
         </div>
-      ) : (
-        <div className="space-y-2">
-          {data.teachers.map(teacher => {
-            const studentCount = data.students.filter(s => s.teacherId === teacher.id).length;
-            const sessionCount = data.sessions.filter(s => s.teacherId === teacher.id).length;
-            return (
-              <div key={teacher.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full flex-shrink-0" style={{ background: teacher.color }} />
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-gray-900 dark:text-white">{teacher.name}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    {t('teach.studentsSessions', { students: studentCount, sessions: sessionCount })}
-                  </div>
+      ) : (() => {
+        const activeTeachers = data.teachers.filter(te => te.isActive);
+        const inactiveTeachers = data.teachers.filter(te => !te.isActive);
+
+        const row = (teacher: typeof data.teachers[0], dimmed?: boolean) => {
+          const studentCount = data.students.filter(s => s.teacherId === teacher.id).length;
+          const sessionCount = data.sessions.filter(s => s.teacherId === teacher.id).length;
+          return (
+            <div key={teacher.id} className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex items-center gap-3 ${dimmed ? 'opacity-60' : ''}`}>
+              <div className="w-10 h-10 rounded-full flex-shrink-0" style={{ background: teacher.color }} />
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                  {teacher.name}
+                  {!teacher.isActive && (
+                    <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">{t('stu.inactive')}</span>
+                  )}
                 </div>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => openEdit(teacher.id)}
-                    className="p-2 text-gray-400 dark:text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors"
-                  >
-                    <Pencil size={15} />
-                  </button>
-                  <button
-                    onClick={() => remove(teacher.id)}
-                    className="p-2 text-gray-400 dark:text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                  >
-                    <Trash2 size={15} />
-                  </button>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  {t('teach.studentsSessions', { students: studentCount, sessions: sessionCount })}
                 </div>
               </div>
-            );
-          })}
-        </div>
-      )}
+              <div className="flex gap-1 items-center">
+                {teacher.isActive ? (
+                  <>
+                    <button onClick={() => openEdit(teacher.id)} className="p-2 text-gray-400 dark:text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors">
+                      <Pencil size={15} />
+                    </button>
+                    {!teacher.isOwner && (
+                      <button onClick={() => deactivate(teacher.id)} title={t('teach.deactivate')} className="p-2 text-gray-400 dark:text-gray-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-lg transition-colors">
+                        <PowerOff size={15} />
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <button onClick={() => updateTeacher(teacher.id, { isActive: true })} className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition-colors font-medium">
+                    <RotateCcw size={12} /> {t('stu.activate')}
+                  </button>
+                )}
+                <button onClick={() => remove(teacher.id)} className="p-2 text-gray-400 dark:text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors">
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            </div>
+          );
+        };
+
+        return (
+          <>
+            <div className="space-y-2">
+              {activeTeachers.map(te => row(te))}
+            </div>
+            {inactiveTeachers.length > 0 && (
+              <div className="pt-2 space-y-2">
+                <button onClick={() => setShowInactive(v => !v)} className="w-full flex items-center gap-2 text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors py-1">
+                  <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+                  <span className="whitespace-nowrap">
+                    {showInactive ? t('stu.hideInactive') : t('teach.inactiveCount', { n: inactiveTeachers.length })}
+                  </span>
+                  <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+                </button>
+                {showInactive && inactiveTeachers.map(te => row(te, true))}
+              </div>
+            )}
+          </>
+        );
+      })()}
     </div>
   );
 }

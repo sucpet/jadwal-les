@@ -42,7 +42,7 @@ export default function Schedule() {
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
   const [dayPanel, setDayPanel] = useState<string | null>(null);
   const [form, setForm] = useState({
-    teacherId: data.teachers[0]?.id ?? '',
+    teacherId: data.teachers.find(te => te.isActive)?.id ?? '',
     studentId: '',
     date: new Date().toISOString().slice(0, 10),
     startTime: '09:00',
@@ -82,7 +82,7 @@ export default function Schedule() {
     setEditSession(null);
     const d = date ?? todayStr;
     setForm({
-      teacherId: filterTeacher !== 'all' ? filterTeacher : (data.teachers[0]?.id ?? ''),
+      teacherId: filterTeacher !== 'all' ? filterTeacher : (data.teachers.find(te => te.isActive)?.id ?? ''),
       studentId: '',
       date: d,
       startTime: time ?? '09:00',
@@ -1102,7 +1102,7 @@ export default function Schedule() {
                     onChange={e => setForm(f => ({ ...f, teacherId: e.target.value, studentId: '' }))}
                     className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg pl-3 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
-                    {[...data.teachers].sort((a, b) => a.name.localeCompare(b.name, 'id')).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    {[...data.teachers].filter(te => te.isActive || te.id === form.teacherId).sort((a, b) => a.name.localeCompare(b.name, 'id')).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
                 </div>
                 <div>

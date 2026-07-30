@@ -6,6 +6,7 @@ export interface Teacher {
   pendingHonor?: number;              // honor baru yang menunggu berlaku
   pendingHonorEffectiveDate?: string; // YYYY-MM-DD, tanggal pendingHonor mulai berlaku
   isOwner: boolean;
+  isActive: boolean;
   createdAt: string;
 }
 

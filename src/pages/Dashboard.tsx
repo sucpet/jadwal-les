@@ -81,7 +81,7 @@ export default function Dashboard() {
 
   // ── Alert #4: Laoshi non-owner tanpa jadwal 7 hari ke depan ──────────────
   const teacherNoSchedule = data.teachers.filter(teacher => {
-    if (teacher.isOwner) return false;
+    if (teacher.isOwner || !teacher.isActive) return false;
     const hasActiveStudents = data.students.some(s => s.teacherId === teacher.id && s.isActive);
     if (!hasActiveStudents) return false;
     return !data.sessions.some(s =>

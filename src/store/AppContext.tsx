@@ -11,7 +11,7 @@ const fmtLogDate = (d: string) => format(parseISO(d), 'd MMM', { locale: localeI
 const defaultData: AppData = { teachers: [], students: [], packages: [], sessions: [], worksheets: [], payments: [] };
 
 // ─── DB row types (snake_case) ────────────────────────────────────────────────
-interface DbTeacher  { id: string; name: string; color: string; honor_per_session: number; pending_honor?: number | null; pending_honor_effective_date?: string | null; is_owner: boolean; created_at: string; }
+interface DbTeacher  { id: string; name: string; color: string; honor_per_session: number; pending_honor?: number | null; pending_honor_effective_date?: string | null; is_owner: boolean; is_active?: boolean | null; created_at: string; }
 interface DbStudent  { id: string; teacher_id: string; name: string; billing_type: string; rate_per_session: number; pending_rate?: number | null; pending_rate_effective_date?: string | null; deferred_payment?: boolean | null; group: string; xu_yuan_type?: string; notes?: string; is_active: boolean; created_at: string; }
 interface DbPackage  { id: string; student_id: string; teacher_id: string; total_sessions: number; pricing_type: string; price_per_session: number; package_price?: number; start_date: string; notes?: string; created_at: string; }
 interface DbSession   { id: string; student_id: string; teacher_id: string; date: string; start_time: string; end_time: string; status: string; notes?: string; worksheet_pages?: number; rate_snapshot?: number | null; honor_snapshot?: number | null; created_at: string; }
@@ -19,13 +19,13 @@ interface DbWorksheet { id: string; student_id: string; date: string; pages: num
 interface DbPayment   { id: string; student_id: string; date: string; amount: number; note?: string | null; created_at: string; }
 
 // ─── Mappers DB → App ─────────────────────────────────────────────────────────
-const mapTeacher  = (r: DbTeacher):  Teacher        => ({ id: r.id, name: r.name, color: r.color, honorPerSession: r.honor_per_session ?? 100000, pendingHonor: r.pending_honor ?? undefined, pendingHonorEffectiveDate: r.pending_honor_effective_date ?? undefined, isOwner: r.is_owner ?? false, createdAt: r.created_at });
+const mapTeacher  = (r: DbTeacher):  Teacher        => ({ id: r.id, name: r.name, color: r.color, honorPerSession: r.honor_per_session ?? 100000, pendingHonor: r.pending_honor ?? undefined, pendingHonorEffectiveDate: r.pending_honor_effective_date ?? undefined, isOwner: r.is_owner ?? false, isActive: r.is_active ?? true, createdAt: r.created_at });
 const mapStudent  = (r: DbStudent):  Student        => ({ id: r.id, teacherId: r.teacher_id, name: r.name, billingType: r.billing_type as BillingType, ratePerSession: r.rate_per_session, pendingRate: r.pending_rate ?? undefined, pendingRateEffectiveDate: r.pending_rate_effective_date ?? undefined, deferredPayment: r.deferred_payment ?? false, group: r.group as StudentGroup, xuYuanType: (r.xu_yuan_type ?? 'private') as 'private' | 'semi-group', notes: r.notes, isActive: r.is_active ?? true, createdAt: r.created_at });
 const mapPackage  = (r: DbPackage):  SessionPackage => ({ id: r.id, studentId: r.student_id, teacherId: r.teacher_id, totalSessions: r.total_sessions, pricingType: r.pricing_type as PackagePricingType, pricePerSession: r.price_per_session, packagePrice: r.package_price, startDate: r.start_date, notes: r.notes, createdAt: r.created_at });
 const mapSession  = (r: DbSession):  LessonSession  => ({ id: r.id, studentId: r.student_id, teacherId: r.teacher_id, date: r.date, startTime: r.start_time, endTime: r.end_time, status: r.status as LessonSession['status'], notes: r.notes, worksheetPages: r.worksheet_pages ?? 0, rateSnapshot: r.rate_snapshot ?? undefined, honorSnapshot: r.honor_snapshot ?? undefined, createdAt: r.created_at });
 
 // ─── Mappers App → DB ─────────────────────────────────────────────────────────
-const toDbTeacher = (t: Teacher)        => ({ id: t.id, name: t.name, color: t.color, honor_per_session: t.honorPerSession, pending_honor: t.pendingHonor ?? null, pending_honor_effective_date: t.pendingHonorEffectiveDate ?? null, is_owner: t.isOwner, created_at: t.createdAt });
+const toDbTeacher = (t: Teacher)        => ({ id: t.id, name: t.name, color: t.color, honor_per_session: t.honorPerSession, pending_honor: t.pendingHonor ?? null, pending_honor_effective_date: t.pendingHonorEffectiveDate ?? null, is_owner: t.isOwner, is_active: t.isActive, created_at: t.createdAt });
 const toDbStudent = (s: Student)        => ({ id: s.id, teacher_id: s.teacherId, name: s.name, billing_type: s.billingType, rate_per_session: s.ratePerSession, pending_rate: s.pendingRate ?? null, pending_rate_effective_date: s.pendingRateEffectiveDate ?? null, deferred_payment: s.deferredPayment ?? false, group: s.group, xu_yuan_type: s.xuYuanType ?? 'private', notes: s.notes ?? null, is_active: s.isActive, created_at: s.createdAt });
 const toDbPackage = (p: SessionPackage) => ({ id: p.id, student_id: p.studentId, teacher_id: p.teacherId, total_sessions: p.totalSessions, pricing_type: p.pricingType, price_per_session: p.pricePerSession, package_price: p.packagePrice ?? null, start_date: p.startDate, notes: p.notes ?? null, created_at: p.createdAt });
 const toDbSession = (s: LessonSession)  => ({ id: s.id, student_id: s.studentId, teacher_id: s.teacherId, date: s.date, start_time: s.startTime, end_time: s.endTime, status: s.status, notes: s.notes ?? null, worksheet_pages: s.worksheetPages ?? 0, rate_snapshot: s.rateSnapshot ?? null, honor_snapshot: s.honorSnapshot ?? null, created_at: s.createdAt });
@@ -40,6 +40,7 @@ interface AppContextType {
   loading: boolean;
   addTeacher:    (name: string, color: string) => Teacher;
   updateTeacher: (id: string, updates: Partial<Teacher>) => void;
+  deactivateTeacher: (id: string) => void;
   deleteTeacher: (id: string) => void;
   addStudent:    (student: Omit<Student, 'id' | 'createdAt' | 'isActive'>) => Student;
   updateStudent: (id: string, updates: Partial<Student>) => void;
@@ -289,7 +290,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // ─── Teachers ─────────────────────────────────────────────────────────────
   const addTeacher = (name: string, color: string): Teacher => {
-    const teacher: Teacher = { id: generateId(), name, color, honorPerSession: 100000, isOwner: false, createdAt: new Date().toISOString() };
+    const teacher: Teacher = { id: generateId(), name, color, honorPerSession: 100000, isOwner: false, isActive: true, createdAt: new Date().toISOString() };
     setData(d => ({ ...d, teachers: [...d.teachers, teacher] }));
     db(supabase.from('teachers').insert(toDbTeacher(teacher)));
     logActivity('create', `Tambah laoshi — ${name}`);
@@ -305,6 +306,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if ('pendingHonor' in updates)              row.pending_honor                = updates.pendingHonor ?? null;
     if ('pendingHonorEffectiveDate' in updates) row.pending_honor_effective_date = updates.pendingHonorEffectiveDate ?? null;
     if (updates.isOwner          !== undefined) row.is_owner          = updates.isOwner;
+    if (updates.isActive         !== undefined) row.is_active         = updates.isActive;
     db(supabase.from('teachers').update(row).eq('id', id));
     if (old) {
       let desc = '';
@@ -319,6 +321,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
       if (desc) logActivity('update', desc);
     }
+  };
+  // Non-aktifkan laoshi (arsip): honor & histori tetap, hanya hapus sesi terjadwal mendatang.
+  const deactivateTeacher = (id: string) => {
+    const teacher = data.teachers.find(t => t.id === id);
+    const upcoming = data.sessions.filter(s => s.teacherId === id && s.status === 'scheduled');
+    setData(d => ({
+      ...d,
+      teachers: d.teachers.map(t => t.id === id ? { ...t, isActive: false } : t),
+      sessions: d.sessions.filter(s => !(s.teacherId === id && s.status === 'scheduled')),
+    }));
+    if (upcoming.length) db(supabase.from('sessions').delete().eq('teacher_id', id).eq('status', 'scheduled'));
+    db(supabase.from('teachers').update({ is_active: false }).eq('id', id));
+    if (teacher) logActivity('update', `Non-aktifkan laoshi — ${teacher.name}${upcoming.length ? ` (hapus ${upcoming.length} sesi mendatang)` : ''}`);
   };
   const deleteTeacher = (id: string) => {
     const old = data.teachers.find(t => t.id === id);
@@ -563,7 +578,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return (
     <AppContext.Provider value={{
       data, loading,
-      addTeacher, updateTeacher, deleteTeacher,
+      addTeacher, updateTeacher, deactivateTeacher, deleteTeacher,
       addStudent, updateStudent, deactivateStudent, deleteStudent,
       addPackage, updatePackage, deletePackage,
       addSession, updateSession, deleteSession,

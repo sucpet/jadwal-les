@@ -64,7 +64,7 @@ export default function Settings() {
       throw new Error(t('set.invalidBackup'));
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const teachers   = json.teachers.map((t: any)  => ({ id: t.id, name: t.name, color: t.color, honor_per_session: t.honorPerSession ?? 100000, pending_honor: t.pendingHonor ?? null, pending_honor_effective_date: t.pendingHonorEffectiveDate ?? null, is_owner: t.isOwner ?? false, created_at: t.createdAt }));
+    const teachers   = json.teachers.map((t: any)  => ({ id: t.id, name: t.name, color: t.color, honor_per_session: t.honorPerSession ?? 100000, pending_honor: t.pendingHonor ?? null, pending_honor_effective_date: t.pendingHonorEffectiveDate ?? null, is_owner: t.isOwner ?? false, is_active: t.isActive ?? true, created_at: t.createdAt }));
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const students   = json.students.map((s: any)  => ({ id: s.id, teacher_id: s.teacherId, name: s.name, billing_type: s.billingType, rate_per_session: s.ratePerSession, pending_rate: s.pendingRate ?? null, pending_rate_effective_date: s.pendingRateEffectiveDate ?? null, deferred_payment: s.deferredPayment ?? false, group: s.group ?? 'xuyuan', xu_yuan_type: s.xuYuanType ?? 'private', is_active: s.isActive ?? true, notes: s.notes ?? null, created_at: s.createdAt }));
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

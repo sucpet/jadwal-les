@@ -88,7 +88,7 @@ describe('effectiveRate', () => {
 });
 
 describe('effectiveHonor', () => {
-  const mk = (o: object) => ({ id: 't1', name: 'T', color: '#000', honorPerSession: 100000, isOwner: false, createdAt: 'x', ...o });
+  const mk = (o: object) => ({ id: 't1', name: 'T', color: '#000', honorPerSession: 100000, isOwner: false, isActive: true, createdAt: 'x', ...o });
   it('current honor when no scheduled change', () => {
     expect(effectiveHonor(mk({}), '2026-08-15')).toBe(100000);
   });

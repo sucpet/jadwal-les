@@ -126,6 +126,10 @@ export const translations: Record<Lang, Record<string, string>> = {
     'teach.studentsSessions': '{students} murid · {sessions} sesi tercatat',
     'teach.deleteConfirm': 'Hapus laoshi "{name}"?',
     'teach.deleteConfirmCascade': 'Hapus laoshi "{name}"? Ini juga akan menghapus {count} murid dan semua jadwalnya.',
+    'teach.deactivate': 'Non-aktifkan',
+    'teach.deactivateConfirm': 'Non-aktifkan laoshi {name}?\n\n{n} sesi terjadwal (mendatang) akan dihapus. Honor & histori tetap tersimpan.',
+    'teach.deactivateConfirmNoSessions': 'Non-aktifkan laoshi {name}? Honor & histori tetap tersimpan.',
+    'teach.inactiveCount': '{n} laoshi non-aktif',
 
     // shared
     'common.student': 'Murid',
@@ -488,6 +492,10 @@ export const translations: Record<Lang, Record<string, string>> = {
     'teach.studentsSessions': '{students} students · {sessions} sessions recorded',
     'teach.deleteConfirm': 'Delete laoshi "{name}"?',
     'teach.deleteConfirmCascade': 'Delete laoshi "{name}"? This will also delete {count} students and all their sessions.',
+    'teach.deactivate': 'Deactivate',
+    'teach.deactivateConfirm': 'Deactivate laoshi {name}?\n\n{n} upcoming scheduled session(s) will be deleted. Honor & history stay intact.',
+    'teach.deactivateConfirmNoSessions': 'Deactivate laoshi {name}? Honor & history stay intact.',
+    'teach.inactiveCount': '{n} inactive laoshi',
 
     // shared
     'common.student': 'Student',
