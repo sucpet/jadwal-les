@@ -21,6 +21,7 @@ Berdasarkan analisis codebase + riset dari repo publik:
 - Murid "dibayar lembaga": pendapatan diakui saat pembayaran dicatat (payment log per murid), bukan otomatis per bulan
 - Perubahan honor guru terjadwal (mirror perubahan harga sesi murid) + honor snapshot per sesi
 - Honor guru untuk murid dibayar lembaga diakui di bulan pembayaran pertama (Opsi A)
+- Log Aktivitas mencakup semua CRUD (laoshi, murid, paket, sesi, worksheet, pembayaran, honor) + konfirmasi hapus paket diperkuat
 
 ---
 
