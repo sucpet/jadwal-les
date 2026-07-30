@@ -286,10 +286,7 @@ export default function Dashboard() {
                         <a
                           href={waLink(student.phone, t('wa.reminderMsg', {
                             name: student.name,
-                            date: format(parseISO(session.date), 'd MMM', { locale }),
-                            start: session.startTime,
-                            end: session.endTime,
-                            teacher: teacher.name,
+                            time: `${session.startTime}–${session.endTime}`,
                           }))}
                           target="_blank" rel="noopener noreferrer"
                           title={t('wa.remind')}
