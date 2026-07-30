@@ -5,6 +5,7 @@ import { addWeeks, subWeeks, startOfWeek, addDays, isSameDay, parseISO, format, 
 import { useApp } from '../store/AppContext';
 import { useLang } from '../store/LanguageContext';
 import { useConfirm } from '../store/ConfirmContext';
+import { useToast } from '../store/ToastContext';
 import type { LessonSession } from '../types';
 import { formatCurrency, getPackageStatus, effectiveRate, GROUP_COLORS } from '../utils/helpers';
 import { ROW_H, timeToPixels, computeDayLayout, addOneHour, shiftDateByWeeks, dayOfWeek, diffMinutes, addMinutes } from '../utils/calendar';
@@ -23,6 +24,7 @@ export default function Schedule() {
   const { data, addSession, updateSession, deleteSession } = useApp();
   const { t, locale, lang } = useLang();
   const confirm = useConfirm();
+  const toast = useToast();
   const DAY_LABELS = lang === 'en' ? DAY_LABELS_EN : DAY_LABELS_ID;
   const [searchParams] = useSearchParams();
   const [currentWeek, setCurrentWeek] = useState(() => {
@@ -149,7 +151,7 @@ export default function Schedule() {
   };
 
   const remove = async (id: string) => {
-    if (await confirm({ message: t('sch.deleteSessionConfirm'), danger: true })) deleteSession(id);
+    if (await confirm({ message: t('sch.deleteSessionConfirm'), danger: true })) { deleteSession(id); toast.success(t('common.deleted')); }
   };
 
   // ─── Quick reschedule (satu sesi) ─────────────────────────────────────────

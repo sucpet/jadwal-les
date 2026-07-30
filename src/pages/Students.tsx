@@ -5,6 +5,7 @@ import { format, parseISO } from 'date-fns';
 import { useApp } from '../store/AppContext';
 import { useLang } from '../store/LanguageContext';
 import { useConfirm } from '../store/ConfirmContext';
+import { useToast } from '../store/ToastContext';
 import { formatCurrency, getPackageStatus, formatDate } from '../utils/helpers';
 import { groupByMonth, groupByXuYuanCycle, totalDurationLabel, getPackageAttributedSessions } from '../utils/student-groups';
 import type { BillingType, Student, StudentGroup, SessionPackage, PackagePricingType, LessonSession } from '../types';
@@ -751,6 +752,7 @@ function PaymentPanel({ student, billedAmount }: { student: Student; billedAmoun
   const { data, addPayment, deletePayment } = useApp();
   const { t, locale } = useLang();
   const confirm = useConfirm();
+  const toast = useToast();
   const today = new Date().toISOString().slice(0, 10);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ date: today, amount: billedAmount ? String(billedAmount) : '', note: '' });
@@ -768,7 +770,7 @@ function PaymentPanel({ student, billedAmount }: { student: Student; billedAmoun
     setForm({ date: today, amount: billedAmount ? String(billedAmount) : '', note: '' });
     setAdding(false);
   };
-  const remove = async (id: string) => { if (await confirm({ message: t('pay.deleteConfirm'), danger: true })) deletePayment(id); };
+  const remove = async (id: string) => { if (await confirm({ message: t('pay.deleteConfirm'), danger: true })) { deletePayment(id); toast.success(t('common.deleted')); } };
 
   return (
     <div className="border border-emerald-200 dark:border-emerald-800 rounded-xl p-4 space-y-3 bg-emerald-50/50 dark:bg-emerald-900/15">
@@ -843,6 +845,7 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
   const { data, updateStudent, deactivateStudent, deleteStudent, addPackage, updatePackage, deletePackage } = useApp();
   const { t, locale, lang } = useLang();
   const confirm = useConfirm();
+  const toast = useToast();
   const [expanded, setExpanded] = useState(highlight ?? false);
   const [editing, setEditing] = useState(false);
   const [addingPackage, setAddingPackage] = useState(false);
@@ -880,7 +883,7 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
 
   const handleDelete = async () => {
     const msg = t('stu.deleteConfirm', { name: student.name });
-    if (await confirm({ message: msg, danger: true })) deleteStudent(student.id);
+    if (await confirm({ message: msg, danger: true })) { deleteStudent(student.id); toast.success(t('common.deleted')); }
   };
 
   const handleReactivate = () => {
@@ -891,7 +894,7 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
     const msg = upcoming > 0
       ? t('stu.deactivateConfirm', { name: student.name, n: upcoming })
       : t('stu.deactivateConfirmNoSessions', { name: student.name });
-    if (await confirm({ message: msg, danger: true })) deactivateStudent(student.id);
+    if (await confirm({ message: msg, danger: true })) { deactivateStudent(student.id); toast.success(t('stu.deactivateThis')); }
   };
 
   const handleEditPkg = (pkgId: string, updates: Omit<SessionPackage, 'id' | 'createdAt'>) => {
@@ -907,7 +910,7 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
           name: student.name,
         })
       : t('stu.deletePkgConfirm');
-    if (await confirm({ message: msg, danger: true })) deletePackage(pkgId);
+    if (await confirm({ message: msg, danger: true })) { deletePackage(pkgId); toast.success(t('common.deleted')); }
   };
 
   if (editing) {

@@ -3,12 +3,14 @@ import { Plus, Pencil, Trash2, X, Check, PowerOff, RotateCcw } from 'lucide-reac
 import { useApp } from '../store/AppContext';
 import { useLang } from '../store/LanguageContext';
 import { useConfirm } from '../store/ConfirmContext';
+import { useToast } from '../store/ToastContext';
 import { TEACHER_COLORS } from '../utils/helpers';
 
 export default function Teachers() {
   const { data, addTeacher, updateTeacher, deactivateTeacher, deleteTeacher } = useApp();
   const { t } = useLang();
   const confirm = useConfirm();
+  const toast = useToast();
   const [showInactive, setShowInactive] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -50,7 +52,7 @@ export default function Teachers() {
     const msg = studentCount > 0
       ? t('teach.deleteConfirmCascade', { name: teacher?.name ?? '', count: studentCount })
       : t('teach.deleteConfirm', { name: teacher?.name ?? '' });
-    if (await confirm({ message: msg, danger: true })) deleteTeacher(id);
+    if (await confirm({ message: msg, danger: true })) { deleteTeacher(id); toast.success(t('common.deleted')); }
   };
 
   const deactivate = async (id: string) => {
@@ -59,7 +61,7 @@ export default function Teachers() {
     const msg = upcoming > 0
       ? t('teach.deactivateConfirm', { name: teacher?.name ?? '', n: upcoming })
       : t('teach.deactivateConfirmNoSessions', { name: teacher?.name ?? '' });
-    if (await confirm({ message: msg, danger: true })) deactivateTeacher(id);
+    if (await confirm({ message: msg, danger: true })) { deactivateTeacher(id); toast.success(t('teach.deactivate')); }
   };
 
   return (
