@@ -3,6 +3,7 @@ import { format, parseISO } from 'date-fns';
 import { Plus, Trash2, FileText, X, Check } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { useLang } from '../store/LanguageContext';
+import { useConfirm } from '../store/ConfirmContext';
 import { xuYuanCycleStart as cycleStart, xuYuanCycleLabel as cycleLabel, formatRp } from '../utils/xuyuan';
 
 const WORKSHEET_PRICE = 20_000;
@@ -10,6 +11,7 @@ const WORKSHEET_PRICE = 20_000;
 export default function WorksheetPage() {
   const { data, addWorksheet, deleteWorksheet } = useApp();
   const { t, locale } = useLang();
+  const confirm = useConfirm();
 
   const xuYuanStudents = data.students.filter(s => s.group === 'xuyuan' && s.isActive);
   const today = new Date().toISOString().slice(0, 10);
@@ -33,8 +35,8 @@ export default function WorksheetPage() {
     setShowErrors(false);
   };
 
-  const remove = (id: string) => {
-    if (confirm(t('ws.deleteConfirm'))) deleteWorksheet(id);
+  const remove = async (id: string) => {
+    if (await confirm({ message: t('ws.deleteConfirm'), danger: true })) deleteWorksheet(id);
   };
 
   // Group by cycle

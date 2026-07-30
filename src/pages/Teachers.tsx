@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { Plus, Pencil, Trash2, X, Check, PowerOff, RotateCcw } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { useLang } from '../store/LanguageContext';
+import { useConfirm } from '../store/ConfirmContext';
 import { TEACHER_COLORS } from '../utils/helpers';
 
 export default function Teachers() {
   const { data, addTeacher, updateTeacher, deactivateTeacher, deleteTeacher } = useApp();
   const { t } = useLang();
+  const confirm = useConfirm();
   const [showInactive, setShowInactive] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -42,22 +44,22 @@ export default function Teachers() {
     setShowForm(false);
   };
 
-  const remove = (id: string) => {
+  const remove = async (id: string) => {
     const teacher = data.teachers.find(t => t.id === id);
     const studentCount = data.students.filter(s => s.teacherId === id).length;
     const msg = studentCount > 0
       ? t('teach.deleteConfirmCascade', { name: teacher?.name ?? '', count: studentCount })
       : t('teach.deleteConfirm', { name: teacher?.name ?? '' });
-    if (confirm(msg)) deleteTeacher(id);
+    if (await confirm({ message: msg, danger: true })) deleteTeacher(id);
   };
 
-  const deactivate = (id: string) => {
+  const deactivate = async (id: string) => {
     const teacher = data.teachers.find(t => t.id === id);
     const upcoming = data.sessions.filter(s => s.teacherId === id && s.status === 'scheduled').length;
     const msg = upcoming > 0
       ? t('teach.deactivateConfirm', { name: teacher?.name ?? '', n: upcoming })
       : t('teach.deactivateConfirmNoSessions', { name: teacher?.name ?? '' });
-    if (confirm(msg)) deactivateTeacher(id);
+    if (await confirm({ message: msg, danger: true })) deactivateTeacher(id);
   };
 
   return (

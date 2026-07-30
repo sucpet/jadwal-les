@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { addWeeks, subWeeks, startOfWeek, addDays, isSameDay, parseISO, format, startOfMonth, addMonths, subMonths, isSameMonth } from 'date-fns';
 import { useApp } from '../store/AppContext';
 import { useLang } from '../store/LanguageContext';
+import { useConfirm } from '../store/ConfirmContext';
 import type { LessonSession } from '../types';
 import { formatCurrency, getPackageStatus, effectiveRate, GROUP_COLORS } from '../utils/helpers';
 import { ROW_H, timeToPixels, computeDayLayout, addOneHour, shiftDateByWeeks, dayOfWeek, diffMinutes, addMinutes } from '../utils/calendar';
@@ -21,6 +22,7 @@ const DAY_LABELS_EN = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', '
 export default function Schedule() {
   const { data, addSession, updateSession, deleteSession } = useApp();
   const { t, locale, lang } = useLang();
+  const confirm = useConfirm();
   const DAY_LABELS = lang === 'en' ? DAY_LABELS_EN : DAY_LABELS_ID;
   const [searchParams] = useSearchParams();
   const [currentWeek, setCurrentWeek] = useState(() => {
@@ -146,8 +148,8 @@ export default function Schedule() {
     setShowForm(false);
   };
 
-  const remove = (id: string) => {
-    if (confirm(t('sch.deleteSessionConfirm'))) deleteSession(id);
+  const remove = async (id: string) => {
+    if (await confirm({ message: t('sch.deleteSessionConfirm'), danger: true })) deleteSession(id);
   };
 
   // ─── Quick reschedule (satu sesi) ─────────────────────────────────────────

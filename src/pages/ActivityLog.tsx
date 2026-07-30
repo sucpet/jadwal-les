@@ -3,6 +3,7 @@ import { format, parseISO } from 'date-fns';
 import { RefreshCw, Trash2, Plus, Pencil, CalendarClock, X, History, RotateCcw } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useLang } from '../store/LanguageContext';
+import { useConfirm } from '../store/ConfirmContext';
 
 interface LogRow {
   id: string;
@@ -21,6 +22,7 @@ const ACTION_META: Record<LogRow['action'], { icon: typeof Plus; cls: string }> 
 
 export default function ActivityLog() {
   const { t, locale } = useLang();
+  const confirm = useConfirm();
   const [rows, setRows] = useState<LogRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -38,7 +40,7 @@ export default function ActivityLog() {
   useEffect(() => { load(); }, [load]);
 
   const clearAll = async () => {
-    if (!confirm(t('log.clearConfirm'))) return;
+    if (!(await confirm({ message: t('log.clearConfirm'), danger: true }))) return;
     await supabase.from('activity_log').delete().neq('id', '');
     setRows([]);
   };

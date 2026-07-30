@@ -4,6 +4,7 @@ import { Plus, Pencil, Trash2, X, Check, ChevronDown, ChevronUp, Package, AlertT
 import { format, parseISO } from 'date-fns';
 import { useApp } from '../store/AppContext';
 import { useLang } from '../store/LanguageContext';
+import { useConfirm } from '../store/ConfirmContext';
 import { formatCurrency, getPackageStatus, formatDate } from '../utils/helpers';
 import { groupByMonth, groupByXuYuanCycle, totalDurationLabel, getPackageAttributedSessions } from '../utils/student-groups';
 import type { BillingType, Student, StudentGroup, SessionPackage, PackagePricingType, LessonSession } from '../types';
@@ -749,6 +750,7 @@ function PackageCard({
 function PaymentPanel({ student, billedAmount }: { student: Student; billedAmount: number }) {
   const { data, addPayment, deletePayment } = useApp();
   const { t, locale } = useLang();
+  const confirm = useConfirm();
   const today = new Date().toISOString().slice(0, 10);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ date: today, amount: billedAmount ? String(billedAmount) : '', note: '' });
@@ -766,7 +768,7 @@ function PaymentPanel({ student, billedAmount }: { student: Student; billedAmoun
     setForm({ date: today, amount: billedAmount ? String(billedAmount) : '', note: '' });
     setAdding(false);
   };
-  const remove = (id: string) => { if (confirm(t('pay.deleteConfirm'))) deletePayment(id); };
+  const remove = async (id: string) => { if (await confirm({ message: t('pay.deleteConfirm'), danger: true })) deletePayment(id); };
 
   return (
     <div className="border border-emerald-200 dark:border-emerald-800 rounded-xl p-4 space-y-3 bg-emerald-50/50 dark:bg-emerald-900/15">
@@ -840,6 +842,7 @@ function PaymentPanel({ student, billedAmount }: { student: Student; billedAmoun
 function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?: boolean; highlight?: boolean }) {
   const { data, updateStudent, deactivateStudent, deleteStudent, addPackage, updatePackage, deletePackage } = useApp();
   const { t, locale, lang } = useLang();
+  const confirm = useConfirm();
   const [expanded, setExpanded] = useState(highlight ?? false);
   const [editing, setEditing] = useState(false);
   const [addingPackage, setAddingPackage] = useState(false);
@@ -875,27 +878,27 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
     setEditing(false);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     const msg = t('stu.deleteConfirm', { name: student.name });
-    if (confirm(msg)) deleteStudent(student.id);
+    if (await confirm({ message: msg, danger: true })) deleteStudent(student.id);
   };
 
   const handleReactivate = () => {
     updateStudent(student.id, { isActive: true });
   };
-  const handleDeactivate = () => {
+  const handleDeactivate = async () => {
     const upcoming = data.sessions.filter(s => s.studentId === student.id && s.status === 'scheduled').length;
     const msg = upcoming > 0
       ? t('stu.deactivateConfirm', { name: student.name, n: upcoming })
       : t('stu.deactivateConfirmNoSessions', { name: student.name });
-    if (confirm(msg)) deactivateStudent(student.id);
+    if (await confirm({ message: msg, danger: true })) deactivateStudent(student.id);
   };
 
   const handleEditPkg = (pkgId: string, updates: Omit<SessionPackage, 'id' | 'createdAt'>) => {
     updatePackage(pkgId, updates);
   };
 
-  const handleDeletePkg = (pkgId: string) => {
+  const handleDeletePkg = async (pkgId: string) => {
     const pkg = studentPkgs.find(p => p.id === pkgId);
     const msg = pkg
       ? t('stu.deletePkgConfirmDetail', {
@@ -904,7 +907,7 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
           name: student.name,
         })
       : t('stu.deletePkgConfirm');
-    if (confirm(msg)) deletePackage(pkgId);
+    if (await confirm({ message: msg, danger: true })) deletePackage(pkgId);
   };
 
   if (editing) {

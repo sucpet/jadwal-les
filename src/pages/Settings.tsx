@@ -4,12 +4,14 @@ import { useApp } from '../store/AppContext';
 import { generateId } from '../utils/helpers';
 import { useTheme } from '../store/ThemeContext';
 import { useLang } from '../store/LanguageContext';
+import { useConfirm } from '../store/ConfirmContext';
 import { supabase } from '../lib/supabase';
 
 export default function Settings() {
   const { data } = useApp();
   const { isDark, toggle } = useTheme();
   const { t, lang, setLang } = useLang();
+  const confirm = useConfirm();
   const [status, setStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
   const [backupFiles, setBackupFiles] = useState<Array<{ name: string }>>([]);
@@ -100,7 +102,7 @@ export default function Settings() {
 
   const handleRestore = async (filename: string) => {
     const label = filename.replace('backup_', '').replace('.json', '');
-    if (!confirm(t('set.restoreConfirm', { label }))) return;
+    if (!(await confirm({ message: t('set.restoreConfirm', { label }), danger: true }))) return;
     setRestoring(filename);
     setStatus({ type: 'success', msg: t('set.restoringMsg') });
     try {
@@ -123,8 +125,8 @@ export default function Settings() {
   };
 
   const handleClearData = async () => {
-    if (!confirm(t('set.clearConfirm1'))) return;
-    if (!confirm(t('set.clearConfirm2'))) return;
+    if (!(await confirm({ message: t('set.clearConfirm1'), danger: true }))) return;
+    if (!(await confirm({ message: t('set.clearConfirm2'), danger: true }))) return;
     // Delete in reverse FK order
     await supabase.from('payments').delete().not('id', 'is', null);
     await supabase.from('worksheets').delete().not('id', 'is', null);

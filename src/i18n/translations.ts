@@ -99,6 +99,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     // common (shared)
     'common.save': 'Simpan',
     'common.cancel': 'Batal',
+    'common.yes': 'Ya',
     'common.add': 'Tambah',
     'common.edit': 'Edit',
     'common.delete': 'Hapus',
@@ -465,6 +466,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     // common (shared)
     'common.save': 'Save',
     'common.cancel': 'Cancel',
+    'common.yes': 'Yes',
     'common.add': 'Add',
     'common.edit': 'Edit',
     'common.delete': 'Delete',
