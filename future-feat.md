@@ -22,6 +22,7 @@ Berdasarkan analisis codebase + riset dari repo publik:
 - Perubahan honor guru terjadwal (mirror perubahan harga sesi murid) + honor snapshot per sesi
 - Honor guru untuk murid dibayar lembaga diakui di bulan pembayaran pertama (Opsi A)
 - Log Aktivitas mencakup semua CRUD (laoshi, murid, paket, sesi, worksheet, pembayaran, honor) + konfirmasi hapus paket diperkuat
+- Non-aktifkan (arsip) murid & laoshi: histori/keuangan/honor tetap, hanya sesi terjadwal mendatang dihapus. Hapus tetap permanen (cascade eksplisit, tanpa yatim)
 
 ---
 
