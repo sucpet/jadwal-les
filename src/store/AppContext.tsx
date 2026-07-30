@@ -321,16 +321,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
   const deleteTeacher = (id: string) => {
     const old = data.teachers.find(t => t.id === id);
-    const studentCount = data.students.filter(s => s.teacherId === id).length;
+    const studentIds = data.students.filter(s => s.teacherId === id).map(s => s.id);
     setData(d => ({
       ...d,
       teachers: d.teachers.filter(t => t.id !== id),
       students: d.students.filter(s => s.teacherId !== id),
       packages: d.packages.filter(p => p.teacherId !== id),
       sessions: d.sessions.filter(s => s.teacherId !== id),
+      worksheets: d.worksheets.filter(w => !studentIds.includes(w.studentId)),
+      payments: d.payments.filter(p => !studentIds.includes(p.studentId)),
     }));
+    // worksheets & payments hanya punya student_id → hapus per student milik laoshi ini
+    if (studentIds.length) {
+      db(supabase.from('worksheets').delete().in('student_id', studentIds));
+      db(supabase.from('payments').delete().in('student_id', studentIds));
+    }
+    db(supabase.from('sessions').delete().eq('teacher_id', id));
+    db(supabase.from('packages').delete().eq('teacher_id', id));
+    db(supabase.from('students').delete().eq('teacher_id', id));
     db(supabase.from('teachers').delete().eq('id', id));
-    if (old) logActivity('delete', `Hapus laoshi — ${old.name}${studentCount ? ` (+${studentCount} murid)` : ''}`);
+    if (old) logActivity('delete', `Hapus laoshi — ${old.name}${studentIds.length ? ` (+${studentIds.length} murid)` : ''}`);
   };
 
   // ─── Students ─────────────────────────────────────────────────────────────
@@ -380,9 +390,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       students: d.students.filter(s => s.id !== id),
       packages: d.packages.filter(p => p.studentId !== id),
       sessions: d.sessions.filter(s => s.studentId !== id),
+      worksheets: d.worksheets.filter(w => w.studentId !== id),
       payments: d.payments.filter(p => p.studentId !== id),
     }));
+    // Hapus semua anak secara eksplisit (tidak bergantung FK cascade) agar tidak jadi yatim
+    db(supabase.from('worksheets').delete().eq('student_id', id));
     db(supabase.from('payments').delete().eq('student_id', id));
+    db(supabase.from('sessions').delete().eq('student_id', id));
+    db(supabase.from('packages').delete().eq('student_id', id));
     db(supabase.from('students').delete().eq('id', id));
     if (oldStudent) logActivity('delete', `Hapus murid — ${oldStudent.name}`);
   };
