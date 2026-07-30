@@ -31,6 +31,7 @@ export interface Student {
   deferredPayment?: boolean;         // dibayar lembaga: pendapatan diakui saat pembayaran dicatat, bukan otomatis
   group: StudentGroup;
   xuYuanType?: 'private' | 'semi-group';
+  phone?: string;                    // No. WhatsApp (opsional), disimpan format 62xxx
   notes?: string;
   isActive: boolean;
   createdAt: string;

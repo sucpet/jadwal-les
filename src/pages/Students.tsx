@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Plus, Pencil, Trash2, X, Check, ChevronDown, ChevronUp, Package, AlertTriangle, Clock, CalendarDays, CalendarClock, StickyNote, PowerOff, RotateCcw, Search, Wallet } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Check, ChevronDown, ChevronUp, Package, AlertTriangle, Clock, CalendarDays, CalendarClock, StickyNote, PowerOff, RotateCcw, Search, Wallet, MessageCircle } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { useApp } from '../store/AppContext';
 import { useLang } from '../store/LanguageContext';
 import { useConfirm } from '../store/ConfirmContext';
 import { useToast } from '../store/ToastContext';
+import { waLink, isValidPhone } from '../utils/whatsapp';
 import { formatCurrency, getPackageStatus, formatDate } from '../utils/helpers';
 import { groupByMonth, groupByXuYuanCycle, totalDurationLabel, getPackageAttributedSessions } from '../utils/student-groups';
 import type { BillingType, Student, StudentGroup, SessionPackage, PackagePricingType, LessonSession } from '../types';
@@ -51,6 +52,7 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
     billingType: initial?.billingType ?? ('per-session' as BillingType),
     group: initial?.group ?? ('xuyuan' as StudentGroup),
     ratePerSession: initial?.ratePerSession != null ? String(initial.ratePerSession) : '',
+    phone: initial?.phone ?? '',
     notes: initial?.notes ?? '',
   });
 
@@ -148,6 +150,13 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
             <p className="text-xs text-red-500 mt-1">{t('stu.nameRequired')}</p>
           )}
         </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('stu.phone')}</label>
+        <input type="tel" inputMode="tel" value={form.phone}
+          onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+          placeholder={t('stu.phonePh')} className="input w-full" />
       </div>
 
       <div>
@@ -778,11 +787,27 @@ function PaymentPanel({ student, billedAmount }: { student: Student; billedAmoun
         <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wide flex items-center gap-1.5">
           <Wallet size={13} /> {t('pay.section')}
         </span>
-        {!adding && (
-          <button onClick={() => setAdding(true)} className="flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-300 hover:underline font-medium">
-            <Plus size={13} /> {t('pay.record')}
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {isValidPhone(student.phone) && outstanding > 0 && (
+            <a
+              href={waLink(student.phone, t('wa.billMsg', {
+                name: student.name,
+                billed: formatCurrency(billedAmount),
+                received: formatCurrency(received),
+                outstanding: formatCurrency(outstanding),
+              }))}
+              target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 hover:underline font-medium"
+            >
+              <MessageCircle size={13} /> {t('wa.bill')}
+            </a>
+          )}
+          {!adding && (
+            <button onClick={() => setAdding(true)} className="flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-300 hover:underline font-medium">
+              <Plus size={13} /> {t('pay.record')}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex items-center gap-2 flex-wrap text-xs text-gray-500 dark:text-gray-400">

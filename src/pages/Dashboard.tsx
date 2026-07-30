@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { format, parseISO, differenceInDays, addDays } from 'date-fns';
-import { Clock, AlertTriangle, CheckCircle2, Calendar, UserX, CalendarClock, ChevronLeft, ChevronRight, CalendarX } from 'lucide-react';
+import { Clock, AlertTriangle, CheckCircle2, Calendar, UserX, CalendarClock, ChevronLeft, ChevronRight, CalendarX, MessageCircle } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { useLang } from '../store/LanguageContext';
 import { getTodaySessions, getPackageStatus } from '../utils/helpers';
+import { waLink, isValidPhone } from '../utils/whatsapp';
 import { getHoliday } from '../utils/holidays';
 import { Link } from 'react-router-dom';
 
@@ -281,6 +282,22 @@ export default function Dashboard() {
                           <span className="ml-2 text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded">{t('common.package')}</span>
                         )}
                       </div>
+                      {session.status !== 'completed' && student && isValidPhone(student.phone) && (
+                        <a
+                          href={waLink(student.phone, t('wa.reminderMsg', {
+                            name: student.name,
+                            date: format(parseISO(session.date), 'd MMM', { locale }),
+                            start: session.startTime,
+                            end: session.endTime,
+                            teacher: teacher.name,
+                          }))}
+                          target="_blank" rel="noopener noreferrer"
+                          title={t('wa.remind')}
+                          className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 px-1.5 py-1 rounded-md flex-shrink-0"
+                        >
+                          <MessageCircle size={14} />
+                        </a>
+                      )}
                       <div className={`text-xs px-2 py-0.5 rounded-full ${
                         session.status === 'completed'
                           ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
