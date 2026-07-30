@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { AppData, Teacher, Student, SessionPackage, LessonSession, Worksheet, Payment, BillingType, StudentGroup, PackagePricingType } from '../types';
-import { generateId, effectiveRate, effectiveHonor } from '../utils/helpers';
+import { generateId, effectiveRate, effectiveHonor, formatCurrency } from '../utils/helpers';
 import { supabase } from '../lib/supabase';
 import { format, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
@@ -63,7 +63,7 @@ function db(query: PromiseLike<{ error: any }>) {
   query.then(({ error }) => { if (error) console.error('Supabase error:', error); });
 }
 
-function logActivity(action: 'create' | 'reschedule' | 'delete', description: string) {
+function logActivity(action: 'create' | 'reschedule' | 'delete' | 'update', description: string) {
   db(supabase.from('activity_log').insert({ id: generateId(), action, description, created_at: new Date().toISOString() }));
 }
 
@@ -291,9 +291,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const teacher: Teacher = { id: generateId(), name, color, honorPerSession: 100000, isOwner: false, createdAt: new Date().toISOString() };
     setData(d => ({ ...d, teachers: [...d.teachers, teacher] }));
     db(supabase.from('teachers').insert(toDbTeacher(teacher)));
+    logActivity('create', `Tambah laoshi — ${name}`);
     return teacher;
   };
   const updateTeacher = (id: string, updates: Partial<Teacher>) => {
+    const old = data.teachers.find(t => t.id === id);
     setData(d => ({ ...d, teachers: d.teachers.map(t => t.id === id ? { ...t, ...updates } : t) }));
     const row: Partial<DbTeacher> = {};
     if (updates.name             !== undefined) row.name              = updates.name;
@@ -303,8 +305,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if ('pendingHonorEffectiveDate' in updates) row.pending_honor_effective_date = updates.pendingHonorEffectiveDate ?? null;
     if (updates.isOwner          !== undefined) row.is_owner          = updates.isOwner;
     db(supabase.from('teachers').update(row).eq('id', id));
+    if (old) {
+      let desc = '';
+      if ('pendingHonor' in updates && updates.pendingHonor != null && updates.pendingHonorEffectiveDate) {
+        desc = `Jadwalkan honor ${old.name}: ${formatCurrency(updates.pendingHonor)} mulai ${fmtLogDate(updates.pendingHonorEffectiveDate)}`;
+      } else if (updates.honorPerSession !== undefined && updates.honorPerSession !== old.honorPerSession) {
+        desc = `Ubah honor ${old.name}: ${formatCurrency(old.honorPerSession)} → ${formatCurrency(updates.honorPerSession)}`;
+      } else if (updates.name !== undefined && updates.name !== old.name) {
+        desc = `Ubah nama laoshi: ${old.name} → ${updates.name}`;
+      } else if (updates.color !== undefined && updates.color !== old.color) {
+        desc = `Ubah warna laoshi — ${old.name}`;
+      }
+      if (desc) logActivity('update', desc);
+    }
   };
   const deleteTeacher = (id: string) => {
+    const old = data.teachers.find(t => t.id === id);
+    const studentCount = data.students.filter(s => s.teacherId === id).length;
     setData(d => ({
       ...d,
       teachers: d.teachers.filter(t => t.id !== id),
@@ -313,6 +330,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       sessions: d.sessions.filter(s => s.teacherId !== id),
     }));
     db(supabase.from('teachers').delete().eq('id', id));
+    if (old) logActivity('delete', `Hapus laoshi — ${old.name}${studentCount ? ` (+${studentCount} murid)` : ''}`);
   };
 
   // ─── Students ─────────────────────────────────────────────────────────────
@@ -320,9 +338,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const s: Student = { ...student, isActive: true, id: generateId(), createdAt: new Date().toISOString() };
     setData(d => ({ ...d, students: [...d.students, s] }));
     db(supabase.from('students').insert(toDbStudent(s)));
+    logActivity('create', `Tambah murid — ${s.name}`);
     return s;
   };
   const updateStudent = (id: string, updates: Partial<Student>) => {
+    const oldStudent = data.students.find(s => s.id === id);
     setData(d => ({ ...d, students: d.students.map(s => s.id === id ? { ...s, ...updates } : s) }));
     const row: Partial<DbStudent> = {};
     if (updates.name           !== undefined) row.name            = updates.name;
@@ -336,8 +356,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (updates.notes          !== undefined) row.notes           = updates.notes;
     if (updates.isActive       !== undefined) row.is_active       = updates.isActive;
     db(supabase.from('students').update(row).eq('id', id));
+    if (oldStudent) {
+      const n = oldStudent.name;
+      let desc = '';
+      if (updates.isActive !== undefined && updates.isActive !== oldStudent.isActive) {
+        desc = updates.isActive ? `Aktifkan murid — ${n}` : `Non-aktifkan murid — ${n}`;
+      } else if ('pendingRate' in updates && updates.pendingRate != null && updates.pendingRateEffectiveDate) {
+        desc = `Jadwalkan harga ${n}: ${formatCurrency(updates.pendingRate)} mulai ${fmtLogDate(updates.pendingRateEffectiveDate)}`;
+      } else if (updates.ratePerSession !== undefined && updates.ratePerSession !== oldStudent.ratePerSession) {
+        desc = `Ubah harga ${n}: ${formatCurrency(oldStudent.ratePerSession)} → ${formatCurrency(updates.ratePerSession)}`;
+      } else if (updates.deferredPayment !== undefined && updates.deferredPayment !== oldStudent.deferredPayment) {
+        desc = updates.deferredPayment ? `Set dibayar lembaga — ${n}` : `Batal dibayar lembaga — ${n}`;
+      } else if (updates.name !== undefined || updates.notes !== undefined || updates.teacherId !== undefined || updates.billingType !== undefined || updates.group !== undefined) {
+        desc = `Ubah data murid — ${n}`;
+      }
+      if (desc) logActivity('update', desc);
+    }
   };
   const deleteStudent = (id: string) => {
+    const oldStudent = data.students.find(s => s.id === id);
     setData(d => ({
       ...d,
       students: d.students.filter(s => s.id !== id),
@@ -347,16 +384,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }));
     db(supabase.from('payments').delete().eq('student_id', id));
     db(supabase.from('students').delete().eq('id', id));
+    if (oldStudent) logActivity('delete', `Hapus murid — ${oldStudent.name}`);
   };
 
   // ─── Packages ─────────────────────────────────────────────────────────────
+  const pkgTotal = (p: { packagePrice?: number; pricePerSession: number; totalSessions: number }) =>
+    p.packagePrice ?? p.pricePerSession * p.totalSessions;
   const addPackage = (pkg: Omit<SessionPackage, 'id' | 'createdAt'>): SessionPackage => {
     const p: SessionPackage = { ...pkg, id: generateId(), createdAt: new Date().toISOString() };
     setData(d => ({ ...d, packages: [...d.packages, p] }));
     db(supabase.from('packages').insert(toDbPackage(p)));
+    const student = data.students.find(s => s.id === p.studentId);
+    logActivity('create', `Tambah paket — ${student?.name ?? '—'}, ${p.totalSessions} sesi, ${formatCurrency(pkgTotal(p))}`);
     return p;
   };
   const updatePackage = (id: string, updates: Partial<SessionPackage>) => {
+    const old = data.packages.find(p => p.id === id);
     setData(d => ({ ...d, packages: d.packages.map(p => p.id === id ? { ...p, ...updates } : p) }));
     const row: Partial<DbPackage> = {};
     if (updates.totalSessions   !== undefined) row.total_sessions   = updates.totalSessions;
@@ -366,10 +409,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (updates.startDate       !== undefined) row.start_date       = updates.startDate;
     if (updates.notes           !== undefined) row.notes            = updates.notes;
     db(supabase.from('packages').update(row).eq('id', id));
+    if (old) {
+      const student = data.students.find(s => s.id === old.studentId);
+      logActivity('update', `Ubah paket — ${student?.name ?? '—'}, ${updates.totalSessions ?? old.totalSessions} sesi`);
+    }
   };
   const deletePackage = (id: string) => {
+    const old = data.packages.find(p => p.id === id);
     setData(d => ({ ...d, packages: d.packages.filter(p => p.id !== id) }));
     db(supabase.from('packages').delete().eq('id', id));
+    if (old) {
+      const student = data.students.find(s => s.id === old.studentId);
+      logActivity('delete', `Hapus paket — ${student?.name ?? '—'}, ${old.totalSessions} sesi, ${formatCurrency(pkgTotal(old))}`);
+    }
   };
 
   // ─── Sessions ─────────────────────────────────────────────────────────────
@@ -438,16 +490,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const newW: Worksheet = { ...w, id: generateId(), createdAt: now };
     setData(d => ({ ...d, worksheets: [...d.worksheets, newW] }));
     db(supabase.from('worksheets').insert(toDbWorksheet(newW)));
+    const student = data.students.find(s => s.id === newW.studentId);
+    logActivity('create', `Tambah worksheet — ${student?.name ?? '—'}, ${newW.pages} hal, ${fmtLogDate(newW.date)}`);
     return newW;
   };
   const updateWorksheet = (id: string, updates: Partial<Worksheet>) => {
     setData(d => ({ ...d, worksheets: d.worksheets.map(w => w.id === id ? { ...w, ...updates } : w) }));
-    const updated = { ...data.worksheets.find(w => w.id === id)!, ...updates };
-    db(supabase.from('worksheets').update(toDbWorksheet(updated)).eq('id', id));
+    const old = data.worksheets.find(w => w.id === id)!;
+    db(supabase.from('worksheets').update(toDbWorksheet({ ...old, ...updates })).eq('id', id));
+    const student = data.students.find(s => s.id === old.studentId);
+    logActivity('update', `Ubah worksheet — ${student?.name ?? '—'}, ${updates.pages ?? old.pages} hal`);
   };
   const deleteWorksheet = (id: string) => {
+    const old = data.worksheets.find(w => w.id === id);
     setData(d => ({ ...d, worksheets: d.worksheets.filter(w => w.id !== id) }));
     db(supabase.from('worksheets').delete().eq('id', id));
+    if (old) {
+      const student = data.students.find(s => s.id === old.studentId);
+      logActivity('delete', `Hapus worksheet — ${student?.name ?? '—'}, ${old.pages} hal, ${fmtLogDate(old.date)}`);
+    }
   };
 
   // ─── Payments (murid dibayar lembaga) ─────────────────────────────────────
@@ -455,11 +516,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const payment: Payment = { ...p, id: generateId(), createdAt: new Date().toISOString() };
     setData(d => ({ ...d, payments: [...d.payments, payment] }));
     db(supabase.from('payments').insert(toDbPayment(payment)));
+    const student = data.students.find(s => s.id === payment.studentId);
+    logActivity('create', `Catat pembayaran — ${student?.name ?? '—'}, ${formatCurrency(payment.amount)}, ${fmtLogDate(payment.date)}`);
     return payment;
   };
   const deletePayment = (id: string) => {
+    const old = data.payments.find(p => p.id === id);
     setData(d => ({ ...d, payments: d.payments.filter(p => p.id !== id) }));
     db(supabase.from('payments').delete().eq('id', id));
+    if (old) {
+      const student = data.students.find(s => s.id === old.studentId);
+      logActivity('delete', `Hapus pembayaran — ${student?.name ?? '—'}, ${formatCurrency(old.amount)}`);
+    }
   };
 
   return (

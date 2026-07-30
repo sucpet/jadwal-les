@@ -1,21 +1,22 @@
 import { useState, useEffect, useCallback } from 'react';
 import { format, parseISO } from 'date-fns';
-import { RefreshCw, Trash2, Plus, CalendarClock, X, History, RotateCcw } from 'lucide-react';
+import { RefreshCw, Trash2, Plus, Pencil, CalendarClock, X, History, RotateCcw } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useLang } from '../store/LanguageContext';
 
 interface LogRow {
   id: string;
-  action: 'create' | 'reschedule' | 'delete' | 'restore';
+  action: 'create' | 'reschedule' | 'delete' | 'restore' | 'update';
   description: string;
   created_at: string;
 }
 
-const ACTION_META: Record<LogRow['action'], { label: string; icon: typeof Plus; cls: string }> = {
-  create:     { label: 'Tambah',     icon: Plus,          cls: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' },
-  reschedule: { label: 'Reschedule', icon: CalendarClock, cls: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' },
-  delete:     { label: 'Hapus',      icon: X,             cls: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' },
-  restore:    { label: 'Restore',    icon: RotateCcw,     cls: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' },
+const ACTION_META: Record<LogRow['action'], { icon: typeof Plus; cls: string }> = {
+  create:     { icon: Plus,          cls: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' },
+  update:     { icon: Pencil,        cls: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' },
+  reschedule: { icon: CalendarClock, cls: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' },
+  delete:     { icon: X,             cls: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' },
+  restore:    { icon: RotateCcw,     cls: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' },
 };
 
 export default function ActivityLog() {

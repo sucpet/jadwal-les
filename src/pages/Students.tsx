@@ -889,7 +889,15 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
   };
 
   const handleDeletePkg = (pkgId: string) => {
-    if (confirm(t('stu.deletePkgConfirm'))) deletePackage(pkgId);
+    const pkg = studentPkgs.find(p => p.id === pkgId);
+    const msg = pkg
+      ? t('stu.deletePkgConfirmDetail', {
+          n: pkg.totalSessions,
+          price: formatCurrency(pkg.packagePrice ?? pkg.pricePerSession * pkg.totalSessions),
+          name: student.name,
+        })
+      : t('stu.deletePkgConfirm');
+    if (confirm(msg)) deletePackage(pkgId);
   };
 
   if (editing) {
