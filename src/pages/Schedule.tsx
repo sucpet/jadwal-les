@@ -157,6 +157,7 @@ export default function Schedule() {
   // ─── Quick reschedule (satu sesi) ─────────────────────────────────────────
   const rescheduleTo = (session: LessonSession, date: string, startTime: string, endTime: string) => {
     updateSession(session.id, { date, startTime, endTime, status: resolveStatus(date, endTime) });
+    toast.success(t('sch.rescheduled'));
   };
 
   // Konfirmasi pindah sesi — dipakai oleh +1mgg (A) dan drag & drop (C)
@@ -224,12 +225,15 @@ export default function Schedule() {
   const deselectAll = () => setSelectedIds(new Set());
 
   const bulkCancel = () => {
+    const n = selectedIds.size;
     selectedIds.forEach(id => deleteSession(id));
     exitBulkMode();
+    toast.success(t('sch.bulkCancelled', { n }));
   };
 
   const bulkReschedule = () => {
     const weeks = Math.max(1, Math.min(52, Number(rescheduleWeeks) || 1));
+    const n = selectedIds.size;
     selectedIds.forEach(id => {
       const s = data.sessions.find(s => s.id === id);
       if (!s) return;
@@ -237,6 +241,7 @@ export default function Schedule() {
       updateSession(id, { ...s, date: newDate, status: resolveStatus(newDate, s.endTime) });
     });
     exitBulkMode();
+    toast.success(t('sch.bulkRescheduled', { n }));
   };
 
   // Group bulk sessions by date

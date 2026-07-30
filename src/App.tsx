@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './lib/supabase';
@@ -10,16 +10,31 @@ import { ToastProvider } from './store/ToastContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/Layout';
 import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import Teachers from './pages/Teachers';
-import Students from './pages/Students';
-import Schedule from './pages/Schedule';
-import Settings from './pages/Settings';
-import Hours from './pages/Hours';
-import Worksheet from './pages/Worksheet';
-import Finance from './pages/Finance';
-import FinanceDetail from './pages/FinanceDetail';
-import ActivityLog from './pages/ActivityLog';
+
+// Code-splitting: tiap halaman dimuat terpisah (bundle awal ringan).
+// Thunk disimpan agar bisa dipakai lazy() sekaligus di-prefetch di background.
+const load = {
+  dashboard: () => import('./pages/Dashboard'),
+  teachers: () => import('./pages/Teachers'),
+  students: () => import('./pages/Students'),
+  schedule: () => import('./pages/Schedule'),
+  hours: () => import('./pages/Hours'),
+  worksheet: () => import('./pages/Worksheet'),
+  finance: () => import('./pages/Finance'),
+  financeDetail: () => import('./pages/FinanceDetail'),
+  log: () => import('./pages/ActivityLog'),
+  settings: () => import('./pages/Settings'),
+};
+const Dashboard = lazy(load.dashboard);
+const Teachers = lazy(load.teachers);
+const Students = lazy(load.students);
+const Schedule = lazy(load.schedule);
+const Settings = lazy(load.settings);
+const Hours = lazy(load.hours);
+const Worksheet = lazy(load.worksheet);
+const Finance = lazy(load.finance);
+const FinanceDetail = lazy(load.financeDetail);
+const ActivityLog = lazy(load.log);
 
 const LOGIN_AT_KEY = 'jadwal-les-login-at';
 const MAX_SESSION_MS = 5 * 60 * 60 * 1000; // force logout setelah 5 jam login
@@ -76,6 +91,19 @@ export default function App() {
     };
   }, []);
 
+  // Prefetch: setelah login, muat chunk halaman lain di background saat idle
+  // agar pindah halaman terasa instan (file di-cache oleh service worker).
+  useEffect(() => {
+    if (!session) return;
+    const prefetch = () => Object.values(load).forEach(fn => fn());
+    const ric = (window as unknown as { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback;
+    const id = ric ? ric(prefetch) : window.setTimeout(prefetch, 2000);
+    return () => {
+      const cic = (window as unknown as { cancelIdleCallback?: (id: number) => void }).cancelIdleCallback;
+      if (ric && cic) cic(id); else clearTimeout(id);
+    };
+  }, [session]);
+
   return (
     <ErrorBoundary>
     <ThemeProvider>
@@ -92,18 +120,24 @@ export default function App() {
         <AppProvider>
           <BrowserRouter>
             <Layout>
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/teachers" element={<Teachers />} />
-                <Route path="/students" element={<Students />} />
-                <Route path="/schedule" element={<Schedule />} />
-                <Route path="/hours" element={<Hours />} />
-                <Route path="/worksheet" element={<Worksheet />} />
-                <Route path="/finance" element={<Finance />} />
-                <Route path="/finance/:teacherId" element={<FinanceDetail />} />
-                <Route path="/log" element={<ActivityLog />} />
-                <Route path="/settings" element={<Settings />} />
-              </Routes>
+              <Suspense fallback={
+                <div className="flex items-center justify-center py-20">
+                  <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                </div>
+              }>
+                <Routes>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/teachers" element={<Teachers />} />
+                  <Route path="/students" element={<Students />} />
+                  <Route path="/schedule" element={<Schedule />} />
+                  <Route path="/hours" element={<Hours />} />
+                  <Route path="/worksheet" element={<Worksheet />} />
+                  <Route path="/finance" element={<Finance />} />
+                  <Route path="/finance/:teacherId" element={<FinanceDetail />} />
+                  <Route path="/log" element={<ActivityLog />} />
+                  <Route path="/settings" element={<Settings />} />
+                </Routes>
+              </Suspense>
             </Layout>
           </BrowserRouter>
         </AppProvider>
