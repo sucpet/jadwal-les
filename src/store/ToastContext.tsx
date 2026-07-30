@@ -4,7 +4,7 @@ import { CheckCircle2, AlertTriangle, Info, X } from 'lucide-react';
 
 // Toast in-app reusable. Pemakaian: const toast = useToast(); toast.success('Tersimpan');
 type ToastType = 'success' | 'error' | 'info';
-interface Toast { id: number; type: ToastType; msg: string }
+interface Toast { id: number; type: ToastType; msg: string; exiting?: boolean }
 
 interface ToastApi {
   success: (msg: string) => void;
@@ -24,7 +24,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const nextId = useRef(1);
 
-  const dismiss = useCallback((id: number) => setToasts(ts => ts.filter(t => t.id !== id)), []);
+  // Tandai exiting dulu (untuk animasi fade-out), lalu hapus setelah transisi selesai.
+  const dismiss = useCallback((id: number) => {
+    setToasts(ts => ts.map(t => t.id === id ? { ...t, exiting: true } : t));
+    setTimeout(() => setToasts(ts => ts.filter(t => t.id !== id)), 300);
+  }, []);
 
   const push = useCallback((type: ToastType, msg: string) => {
     const id = nextId.current++;
@@ -41,13 +45,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={api}>
       {children}
-      <div className="fixed top-9 inset-x-0 z-[70] flex flex-col items-center gap-2 px-4 pointer-events-none">
+      <div className="fixed top-[66px] inset-x-0 z-[70] flex flex-col items-center gap-2 px-4 pointer-events-none">
         {toasts.map(t => {
           const { icon: Icon, cls } = META[t.type];
           return (
             <div
               key={t.id}
-              className="pointer-events-auto w-full max-w-sm bg-gray-900 dark:bg-gray-700 ring-1 ring-black/10 dark:ring-white/10 rounded-xl shadow-xl px-4 py-3 flex items-start gap-3"
+              className={`pointer-events-auto w-full max-w-sm bg-gray-900 dark:bg-gray-700 ring-1 ring-black/10 dark:ring-white/10 rounded-xl shadow-xl px-4 py-3 flex items-start gap-3 transition-all duration-300 ${t.exiting ? 'opacity-0 -translate-y-2' : 'opacity-100 translate-y-0'}`}
             >
               <Icon size={18} className={`${cls} flex-shrink-0 mt-0.5`} />
               <span className="flex-1 text-sm text-gray-100 break-words">{t.msg}</span>
