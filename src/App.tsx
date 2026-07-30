@@ -18,19 +18,59 @@ import Finance from './pages/Finance';
 import FinanceDetail from './pages/FinanceDetail';
 import ActivityLog from './pages/ActivityLog';
 
+const LOGIN_AT_KEY = 'jadwal-les-login-at';
+const MAX_SESSION_MS = 5 * 60 * 60 * 1000; // force logout setelah 5 jam login
+
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
+    const sessionExpired = () => {
+      const loginAt = Number(localStorage.getItem(LOGIN_AT_KEY) || 0);
+      return loginAt > 0 && Date.now() - loginAt > MAX_SESSION_MS;
+    };
+
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session && sessionExpired()) {
+        localStorage.removeItem(LOGIN_AT_KEY);
+        supabase.auth.signOut();
+        setSession(null);
+        setAuthLoading(false);
+        return;
+      }
+      if (session && !localStorage.getItem(LOGIN_AT_KEY)) {
+        localStorage.setItem(LOGIN_AT_KEY, String(Date.now()));
+      }
       setSession(session);
       setAuthLoading(false);
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
+      if (event === 'SIGNED_IN' && !localStorage.getItem(LOGIN_AT_KEY)) {
+        localStorage.setItem(LOGIN_AT_KEY, String(Date.now()));
+      }
+      if (event === 'SIGNED_OUT' || !session) {
+        localStorage.removeItem(LOGIN_AT_KEY);
+      }
     });
-    return () => subscription.unsubscribe();
+
+    // Force logout begitu umur sesi lewat 5 jam (dicek berkala + saat tab fokus)
+    const checkExpiry = () => {
+      if (sessionExpired()) {
+        localStorage.removeItem(LOGIN_AT_KEY);
+        supabase.auth.signOut();
+      }
+    };
+    const expiryTimer = setInterval(checkExpiry, 60 * 1000);
+    window.addEventListener('focus', checkExpiry);
+
+    return () => {
+      subscription.unsubscribe();
+      clearInterval(expiryTimer);
+      window.removeEventListener('focus', checkExpiry);
+    };
   }, []);
 
   return (
