@@ -43,6 +43,7 @@ interface AppContextType {
   deleteTeacher: (id: string) => void;
   addStudent:    (student: Omit<Student, 'id' | 'createdAt' | 'isActive'>) => Student;
   updateStudent: (id: string, updates: Partial<Student>) => void;
+  deactivateStudent: (id: string) => void;
   deleteStudent: (id: string) => void;
   addPackage:    (pkg: Omit<SessionPackage, 'id' | 'createdAt'>) => SessionPackage;
   updatePackage: (id: string, updates: Partial<SessionPackage>) => void;
@@ -383,6 +384,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (desc) logActivity('update', desc);
     }
   };
+  // Non-aktifkan murid: simpan semua histori (sesi selesai, paket, worksheet, pembayaran),
+  // hanya hapus sesi TERJADWAL (mendatang) agar tidak nyangkut di kalender.
+  const deactivateStudent = (id: string) => {
+    const student = data.students.find(s => s.id === id);
+    const upcoming = data.sessions.filter(s => s.studentId === id && s.status === 'scheduled');
+    setData(d => ({
+      ...d,
+      students: d.students.map(s => s.id === id ? { ...s, isActive: false } : s),
+      sessions: d.sessions.filter(s => !(s.studentId === id && s.status === 'scheduled')),
+    }));
+    if (upcoming.length) db(supabase.from('sessions').delete().eq('student_id', id).eq('status', 'scheduled'));
+    db(supabase.from('students').update({ is_active: false }).eq('id', id));
+    if (student) logActivity('update', `Non-aktifkan murid — ${student.name}${upcoming.length ? ` (hapus ${upcoming.length} sesi mendatang)` : ''}`);
+  };
   const deleteStudent = (id: string) => {
     const oldStudent = data.students.find(s => s.id === id);
     setData(d => ({
@@ -549,7 +564,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     <AppContext.Provider value={{
       data, loading,
       addTeacher, updateTeacher, deleteTeacher,
-      addStudent, updateStudent, deleteStudent,
+      addStudent, updateStudent, deactivateStudent, deleteStudent,
       addPackage, updatePackage, deletePackage,
       addSession, updateSession, deleteSession,
       addWorksheet, updateWorksheet, deleteWorksheet,

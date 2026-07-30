@@ -838,7 +838,7 @@ function PaymentPanel({ student, billedAmount }: { student: Student; billedAmoun
 // ─── Student Card ─────────────────────────────────────────────────────────────
 
 function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?: boolean; highlight?: boolean }) {
-  const { data, updateStudent, deleteStudent, addPackage, updatePackage, deletePackage } = useApp();
+  const { data, updateStudent, deactivateStudent, deleteStudent, addPackage, updatePackage, deletePackage } = useApp();
   const { t, locale, lang } = useLang();
   const [expanded, setExpanded] = useState(highlight ?? false);
   const [editing, setEditing] = useState(false);
@@ -880,8 +880,15 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
     if (confirm(msg)) deleteStudent(student.id);
   };
 
-  const handleToggleActive = () => {
-    updateStudent(student.id, { isActive: !student.isActive });
+  const handleReactivate = () => {
+    updateStudent(student.id, { isActive: true });
+  };
+  const handleDeactivate = () => {
+    const upcoming = data.sessions.filter(s => s.studentId === student.id && s.status === 'scheduled').length;
+    const msg = upcoming > 0
+      ? t('stu.deactivateConfirm', { name: student.name, n: upcoming })
+      : t('stu.deactivateConfirmNoSessions', { name: student.name });
+    if (confirm(msg)) deactivateStudent(student.id);
   };
 
   const handleEditPkg = (pkgId: string, updates: Omit<SessionPackage, 'id' | 'createdAt'>) => {
@@ -990,7 +997,7 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
             </button>
           ) : (
             <button
-              onClick={handleToggleActive}
+              onClick={handleReactivate}
               className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition-colors font-medium"
             >
               <RotateCcw size={12} /> {t('stu.activate')}
@@ -1107,7 +1114,7 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
           {student.isActive && (
             <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
               <button
-                onClick={handleToggleActive}
+                onClick={handleDeactivate}
                 className="flex items-center gap-1.5 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20 px-2 py-1.5 rounded-lg transition-colors"
               >
                 <PowerOff size={13} /> {t('stu.deactivateThis')}
