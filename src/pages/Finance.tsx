@@ -75,6 +75,8 @@ export default function Finance() {
     teacherHonorBreakdown(teacher).reduce((s, r) => s + r.honor, 0);
 
   const totalPayroll = nonOwners.reduce((sum, teacher) => sum + teacherHonorTotal(teacher), 0);
+  // Sembunyikan laoshi non-aktif yang tidak punya honor di bulan berjalan
+  const visibleNonOwners = nonOwners.filter(te => te.isActive || teacherHonorBreakdown(te).length > 0);
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -227,7 +229,7 @@ export default function Finance() {
       })}
 
       {/* ── Non-owner teachers ── */}
-      {nonOwners.map(teacher => {
+      {visibleNonOwners.map(teacher => {
         const isEditing = editingId === teacher.id;
         const breakdown = teacherHonorBreakdown(teacher);
         const totalHonor = breakdown.reduce((s, r) => s + r.honor, 0);
@@ -355,7 +357,7 @@ export default function Finance() {
       })}
 
       {/* Total payroll */}
-      {nonOwners.length > 0 && (
+      {visibleNonOwners.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 px-5 py-4 flex items-center justify-between">
           <span className="font-semibold text-gray-900 dark:text-white">
             {t('fin.totalPayroll', { month: format(month, 'MMMM', { locale }) })}
