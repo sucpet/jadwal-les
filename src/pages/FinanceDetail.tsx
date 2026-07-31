@@ -471,7 +471,6 @@ function ReceiptModal({
         <div ref={receiptRef} className="bg-white rounded-2xl p-6 shadow-xl font-sans">
           {/* Header */}
           <div className="text-center border-b border-gray-200 pb-4 mb-4">
-            <p className="text-xs tracking-widest text-gray-400 uppercase mb-1">Jadwal Les</p>
             <h2 className="text-2xl font-bold tracking-tight text-gray-900">RECEIPT</h2>
             <p className="text-sm text-gray-500 mt-1">{periodLabel}</p>
           </div>
