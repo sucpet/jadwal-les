@@ -17,8 +17,6 @@ export default function Dashboard() {
 
   const [upcomingPage, setUpcomingPage] = useState(0);
   const UPCOMING_PAGE_SIZE = 10;
-  const [todayPage, setTodayPage] = useState(0);
-  const TODAY_PAGE_SIZE = 6;
 
   // Sesi 7 hari ke depan (kecuali hari ini)
   const tomorrowStr = format(addDays(today, 1), 'yyyy-MM-dd');
@@ -96,14 +94,23 @@ export default function Dashboard() {
   });
 
 
-  // Semua sesi hari ini, urut jam (paginasi di UI)
-  const todayAll = [...todaySessions]
-    .sort((a, b) => a.startTime.localeCompare(b.startTime) || a.endTime.localeCompare(b.endTime))
-    .map(s => ({
-      session: s,
-      student: data.students.find(st => st.id === s.studentId),
-      teacher: data.teachers.find(te => te.id === s.teacherId),
-    }));
+  // Group by teacher, each teacher gets max 1 completed (most recent) + 3 next scheduled
+  const sessionsByTeacher = data.teachers.map(teacher => {
+    const teacherSessions = todaySessions.filter(s => s.teacherId === teacher.id);
+    const completed = teacherSessions.filter(s => s.status === 'completed');
+    const scheduled = teacherSessions.filter(s => s.status === 'scheduled');
+    const display = [...completed.slice(-1), ...scheduled.slice(0, 3)];
+    return {
+      teacher,
+      sessions: display
+        .sort((a, b) => a.startTime.localeCompare(b.startTime))
+        .map(s => ({
+          session: s,
+          student: data.students.find(st => st.id === s.studentId),
+        })),
+      totalCount: teacherSessions.length,
+    };
+  }).filter(t => t.sessions.length > 0);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -244,80 +251,64 @@ export default function Dashboard() {
             <Calendar size={32} className="mx-auto mb-2 opacity-40" />
             <p className="text-sm">{t('dash.noToday')}</p>
           </div>
-        ) : (() => {
-          const pageCount = Math.ceil(todayAll.length / TODAY_PAGE_SIZE);
-          const page = Math.min(todayPage, pageCount - 1);
-          const pageItems = todayAll.slice(page * TODAY_PAGE_SIZE, (page + 1) * TODAY_PAGE_SIZE);
-          return (
-            <div className="space-y-2">
-              {pageItems.map(({ session, student, teacher }) => (
+        ) : (
+          <div className="space-y-4">
+            {sessionsByTeacher.map(({ teacher, sessions }) => (
+              <div key={teacher.id}>
                 <div
-                  key={session.id}
-                  className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 flex items-center gap-3"
+                  className="text-xs font-semibold uppercase tracking-wide mb-2 flex items-center gap-2"
+                  style={{ color: teacher.color }}
                 >
-                  <div className="w-1 self-stretch rounded-full" style={{ background: teacher?.color ?? '#9ca3af' }} />
-                  <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm flex-shrink-0">
-                    <Clock size={14} />
-                    <span className="tabular-nums">{session.startTime}–{session.endTime}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="font-medium text-gray-900 dark:text-white truncate">{student?.name ?? '—'}</span>
-                    {student?.billingType === 'package' && (
-                      <span className="ml-2 text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded">{t('common.package')}</span>
-                    )}
-                  </div>
-                  {session.status !== 'completed' && student && isValidPhone(student.phone) && (
-                    <a
-                      href={waLink(student.phone, t('wa.reminderMsg', {
-                        name: student.name,
-                        time: `${session.startTime}–${session.endTime}`,
-                      }))}
-                      target="_blank" rel="noopener noreferrer"
-                      title={t('wa.remind')}
-                      className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 px-1.5 py-1 rounded-md flex-shrink-0"
+                  <div className="w-2 h-2 rounded-full" style={{ background: teacher.color }} />
+                  {teacher.name}
+                </div>
+                <div className="space-y-2">
+                  {sessions.map(({ session, student }) => (
+                    <div
+                      key={session.id}
+                      className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 flex items-center gap-3"
                     >
-                      <MessageCircle size={14} />
-                    </a>
-                  )}
-                  <div className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
-                    session.status === 'completed'
-                      ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                      : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
-                  }`}>
-                    {session.status === 'completed' ? t('status.completed') : t('status.scheduled')}
-                  </div>
-                  {teacher && (
-                    <span className="flex items-center gap-1 text-xs flex-shrink-0 justify-end" style={{ color: teacher.color }}>
-                      <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: teacher.color }} />
-                      {teacher.name}
-                    </span>
-                  )}
+                      <div
+                        className="w-1 self-stretch rounded-full"
+                        style={{ background: teacher.color }}
+                      />
+                      <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm">
+                        <Clock size={14} />
+                        <span>{session.startTime}–{session.endTime}</span>
+                      </div>
+                      <div className="flex-1">
+                        <span className="font-medium text-gray-900 dark:text-white">{student?.name ?? '—'}</span>
+                        {student?.billingType === 'package' && (
+                          <span className="ml-2 text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded">{t('common.package')}</span>
+                        )}
+                      </div>
+                      {session.status !== 'completed' && student && isValidPhone(student.phone) && (
+                        <a
+                          href={waLink(student.phone, t('wa.reminderMsg', {
+                            name: student.name,
+                            time: `${session.startTime}–${session.endTime}`,
+                          }))}
+                          target="_blank" rel="noopener noreferrer"
+                          title={t('wa.remind')}
+                          className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 px-1.5 py-1 rounded-md flex-shrink-0"
+                        >
+                          <MessageCircle size={14} />
+                        </a>
+                      )}
+                      <div className={`text-xs px-2 py-0.5 rounded-full ${
+                        session.status === 'completed'
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                          : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                      }`}>
+                        {session.status === 'completed' ? t('status.completed') : t('status.scheduled')}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-              {pageCount > 1 && (
-                <div className="flex items-center justify-between px-1 pt-1">
-                  <button
-                    onClick={() => setTodayPage(p => Math.max(0, p - 1))}
-                    disabled={page === 0}
-                    className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
-                  >
-                    <ChevronLeft size={13} /> {t('dash.prev')}
-                  </button>
-                  <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">
-                    {page + 1} / {pageCount}
-                  </span>
-                  <button
-                    onClick={() => setTodayPage(p => Math.min(pageCount - 1, p + 1))}
-                    disabled={page === pageCount - 1}
-                    className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
-                  >
-                    {t('dash.next')} <ChevronRight size={13} />
-                  </button>
-                </div>
-              )}
-            </div>
-          );
-        })()}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Upcoming 7 days */}
