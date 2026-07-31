@@ -1,13 +1,14 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { format, parseISO, addMonths, subMonths } from 'date-fns';
-import { ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowLeft, Download, X } from 'lucide-react';
 import type { Locale } from 'date-fns';
+import { toPng } from 'html-to-image';
 import { useApp } from '../store/AppContext';
 import { useLang } from '../store/LanguageContext';
 import { formatCurrency, formatDate, effectiveHonor, effectiveRate } from '../utils/helpers';
 import { durationMinutes, formatDuration } from '../utils/xuyuan';
-import type { LessonSession } from '../types';
+import type { LessonSession, Teacher as TeacherType } from '../types';
 
 const RATE_PRIVATE    = 100_000;
 const RATE_SEMI_GROUP = 135_000;
@@ -327,6 +328,7 @@ export default function FinanceDetail() {
   }
 
   // ── Non-owner breakdown ──────────────────────────────────────────────────────
+  const [showReceipt, setShowReceipt] = useState(false);
   const honorOf = (sessions: typeof data.sessions) =>
     sessions.reduce((sum, s) => sum + (s.honorSnapshot ?? effectiveHonor(teacher, s.date)), 0);
 
@@ -373,6 +375,15 @@ export default function FinanceDetail() {
         <button onClick={() => setMonth(m => addMonths(m, 1))} className="p-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
           <ChevronRight size={16} />
         </button>
+        {studentRows.length > 0 && (
+          <button
+            onClick={() => setShowReceipt(true)}
+            className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
+          >
+            <Download size={14} />
+            Receipt
+          </button>
+        )}
       </div>
 
       <Section title={t('fd.sectionHonor')} total={totalHonor}>
@@ -405,6 +416,129 @@ export default function FinanceDetail() {
           </table>
         )}
       </Section>
+
+      {showReceipt && (
+        <ReceiptModal
+          teacher={teacher}
+          month={month}
+          studentRows={studentRows}
+          totalHonor={totalHonor}
+          onClose={() => setShowReceipt(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Receipt Modal ─────────────────────────────────────────────────────────────
+
+type StudentRow = { student: { name: string; id: string }; count: number; honor: number };
+
+function ReceiptModal({
+  teacher, month, studentRows, totalHonor, onClose,
+}: {
+  teacher: TeacherType;
+  month: Date;
+  studentRows: StudentRow[];
+  totalHonor: number;
+  onClose: () => void;
+}) {
+  const receiptRef = useRef<HTMLDivElement>(null);
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = useCallback(async () => {
+    if (!receiptRef.current) return;
+    setDownloading(true);
+    try {
+      const dataUrl = await toPng(receiptRef.current, { pixelRatio: 2, backgroundColor: '#ffffff' });
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = `receipt-${teacher.name.replace(/\s+/g, '-')}-${format(month, 'yyyy-MM')}.png`;
+      a.click();
+    } finally {
+      setDownloading(false);
+    }
+  }, [teacher, month]);
+
+  const periodLabel = format(month, 'MMMM yyyy');
+  const today = format(new Date(), 'd MMMM yyyy');
+  const totalSessions = studentRows.reduce((s, r) => s + r.count, 0);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+      <div className="w-full max-w-sm space-y-3" onClick={e => e.stopPropagation()}>
+        {/* Receipt card — always light, captured as image */}
+        <div ref={receiptRef} className="bg-white rounded-2xl p-6 shadow-xl font-sans">
+          {/* Header */}
+          <div className="text-center border-b border-gray-200 pb-4 mb-4">
+            <p className="text-xs tracking-widest text-gray-400 uppercase mb-1">Jadwal Les</p>
+            <h2 className="text-2xl font-bold tracking-tight text-gray-900">RECEIPT</h2>
+            <p className="text-sm text-gray-500 mt-1">{periodLabel}</p>
+          </div>
+
+          {/* Teacher */}
+          <div className="flex items-center gap-2 mb-4">
+            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: teacher.color }} />
+            <span className="font-semibold text-gray-900">{teacher.name}</span>
+          </div>
+
+          {/* Table */}
+          <table className="w-full text-sm mb-4">
+            <thead>
+              <tr className="text-xs text-gray-400 border-b border-gray-100">
+                <th className="text-left pb-2 font-medium">Student</th>
+                <th className="text-right pb-2 font-medium">Sessions</th>
+                <th className="text-right pb-2 font-medium">Rate</th>
+                <th className="text-right pb-2 font-medium">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {studentRows.map(({ student, count, honor }) => (
+                <tr key={student.id} className="border-b border-gray-50">
+                  <td className="py-2 text-gray-800">{student.name}</td>
+                  <td className="py-2 text-right tabular-nums text-gray-500">{count}</td>
+                  <td className="py-2 text-right tabular-nums text-gray-500">
+                    {count > 0 ? formatCurrency(Math.round(honor / count)) : '—'}
+                  </td>
+                  <td className="py-2 text-right tabular-nums font-medium text-gray-900">{formatCurrency(honor)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* Totals */}
+          <div className="border-t border-gray-200 pt-3 space-y-1">
+            <div className="flex justify-between text-sm text-gray-500">
+              <span>Total sessions</span>
+              <span className="tabular-nums font-medium text-gray-700">{totalSessions}</span>
+            </div>
+            <div className="flex justify-between text-base font-bold text-gray-900">
+              <span>Total</span>
+              <span className="tabular-nums">{formatCurrency(totalHonor)}</span>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <p className="text-[10px] text-gray-300 text-center mt-5">{today}</p>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2">
+          <button
+            onClick={onClose}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-gray-600 text-gray-300 hover:bg-gray-800 text-sm"
+          >
+            <X size={14} /> Close
+          </button>
+          <button
+            onClick={handleDownload}
+            disabled={downloading}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium disabled:opacity-60"
+          >
+            <Download size={14} /> {downloading ? 'Saving…' : 'Download'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
