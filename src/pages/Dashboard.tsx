@@ -94,16 +94,15 @@ export default function Dashboard() {
   });
 
 
-  // Group by teacher, each teacher gets max 1 completed (most recent) + 3 next scheduled
+  // Group by teacher — tampilkan SEMUA sesi laoshi hari itu, urut jam
   const sessionsByTeacher = data.teachers.map(teacher => {
     const teacherSessions = todaySessions.filter(s => s.teacherId === teacher.id);
     const completed = teacherSessions.filter(s => s.status === 'completed');
     const scheduled = teacherSessions.filter(s => s.status === 'scheduled');
-    const display = [...completed.slice(-1), ...scheduled.slice(0, 3)];
     return {
       teacher,
-      sessions: display
-        .sort((a, b) => a.startTime.localeCompare(b.startTime))
+      sessions: [...teacherSessions]
+        .sort((a, b) => a.startTime.localeCompare(b.startTime) || a.endTime.localeCompare(b.endTime))
         .map(s => ({
           session: s,
           student: data.students.find(st => st.id === s.studentId),
