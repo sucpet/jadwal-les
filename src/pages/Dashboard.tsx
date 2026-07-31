@@ -266,12 +266,6 @@ export default function Dashboard() {
                       <span className="ml-2 text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded">{t('common.package')}</span>
                     )}
                   </div>
-                  {teacher && (
-                    <span className="flex items-center gap-1 text-xs flex-shrink-0 justify-end" style={{ color: teacher.color }}>
-                      <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: teacher.color }} />
-                      {teacher.name}
-                    </span>
-                  )}
                   {session.status !== 'completed' && student && isValidPhone(student.phone) && (
                     <a
                       href={waLink(student.phone, t('wa.reminderMsg', {
@@ -292,6 +286,12 @@ export default function Dashboard() {
                   }`}>
                     {session.status === 'completed' ? t('status.completed') : t('status.scheduled')}
                   </div>
+                  {teacher && (
+                    <span className="flex items-center gap-1 text-xs flex-shrink-0 justify-end" style={{ color: teacher.color }}>
+                      <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: teacher.color }} />
+                      {teacher.name}
+                    </span>
+                  )}
                 </div>
               ))}
               {pageCount > 1 && (
