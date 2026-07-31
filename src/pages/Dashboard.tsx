@@ -109,6 +109,8 @@ export default function Dashboard() {
           student: data.students.find(st => st.id === s.studentId),
         })),
       totalCount: teacherSessions.length,
+      completedCount: completed.length,
+      leftCount: scheduled.length,
     };
   }).filter(t => t.sessions.length > 0);
 
@@ -237,9 +239,6 @@ export default function Dashboard() {
           <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
             <Calendar size={18} />
             {t('dash.todaySchedule')}
-            {todaySessions.length > 0 && (
-              <span className="text-xs font-normal text-gray-400 dark:text-gray-500">({t('common.sessions_n', { n: todaySessions.length })})</span>
-            )}
           </h2>
           <Link to="/schedule" className="text-sm text-indigo-600 hover:underline">
             {t('dash.seeAll')}
@@ -253,14 +252,19 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="space-y-4">
-            {sessionsByTeacher.map(({ teacher, sessions }) => (
+            {sessionsByTeacher.map(({ teacher, sessions, completedCount, leftCount }) => (
               <div key={teacher.id}>
-                <div
-                  className="text-xs font-semibold uppercase tracking-wide mb-2 flex items-center gap-2"
-                  style={{ color: teacher.color }}
-                >
-                  <div className="w-2 h-2 rounded-full" style={{ background: teacher.color }} />
-                  {teacher.name}
+                <div className="mb-2 flex items-center gap-2">
+                  <div
+                    className="text-xs font-semibold uppercase tracking-wide flex items-center gap-2"
+                    style={{ color: teacher.color }}
+                  >
+                    <div className="w-2 h-2 rounded-full" style={{ background: teacher.color }} />
+                    {teacher.name}
+                  </div>
+                  <span className="text-xs font-normal text-gray-400 dark:text-gray-500">
+                    · {t('dash.doneCount', { n: completedCount })} · {t('dash.leftCount', { n: leftCount })}
+                  </span>
                 </div>
                 <div className="space-y-2">
                   {sessions.map(({ session, student }) => (
