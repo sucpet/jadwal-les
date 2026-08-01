@@ -2,16 +2,38 @@ import { Component } from 'react';
 import type { ReactNode } from 'react';
 import { AlertTriangle, RotateCcw } from 'lucide-react';
 
+const CHUNK_ERR_PATTERNS = [
+  'Failed to fetch dynamically imported module',
+  'Importing a module script failed',
+  'ChunkLoadError',
+  'Loading chunk',
+  'error loading dynamically imported module',
+];
+
+function isChunkError(error: unknown): boolean {
+  const msg = error instanceof Error ? `${error.name} ${error.message}` : String(error);
+  return CHUNK_ERR_PATTERNS.some(p => msg.includes(p));
+}
+
 // Menangkap error render agar app tidak blank putih; tampil fallback + tombol muat ulang.
+// Chunk load errors (lazy import gagal setelah deploy baru) di-auto-reload sekali.
 export default class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
 
-  static getDerivedStateFromError() {
+  static getDerivedStateFromError(error: unknown) {
+    if (isChunkError(error)) {
+      const already = sessionStorage.getItem('chunk-reload');
+      if (!already) {
+        sessionStorage.setItem('chunk-reload', '1');
+        window.location.reload();
+        return { hasError: false };
+      }
+    }
     return { hasError: true };
   }
 
   componentDidCatch(error: unknown) {
-    console.error('App error:', error);
+    if (!isChunkError(error)) console.error('App error:', error);
   }
 
   render() {

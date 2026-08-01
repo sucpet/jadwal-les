@@ -44,6 +44,11 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
+    // Clear chunk-reload flag setelah app berhasil mount
+    sessionStorage.removeItem('chunk-reload');
+  }, []);
+
+  useEffect(() => {
     const sessionExpired = () => {
       const loginAt = Number(localStorage.getItem(LOGIN_AT_KEY) || 0);
       return loginAt > 0 && Date.now() - loginAt > MAX_SESSION_MS;
