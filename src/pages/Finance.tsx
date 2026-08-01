@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { format, parseISO, addMonths, subMonths } from 'date-fns';
-import { ChevronLeft, ChevronRight, Pencil, Check, X, Crown, ArrowRight, CalendarClock } from 'lucide-react';
+import { format, parseISO, subMonths } from 'date-fns';
+import { Pencil, Check, X, Crown, ArrowRight, CalendarClock } from 'lucide-react';
+import MonthSelector from '../components/MonthSelector';
 import { Link } from 'react-router-dom';
 import { useApp } from '../store/AppContext';
 import { useLang } from '../store/LanguageContext';
@@ -88,24 +89,7 @@ export default function Finance() {
         <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">{t('fin.subtitle')}</p>
       </div>
 
-      {/* Month selector */}
-      <div className="flex items-center gap-3">
-        <button
-          onClick={() => setMonth(m => subMonths(m, 1))}
-          className="p-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-        >
-          <ChevronLeft size={16} />
-        </button>
-        <span className="font-semibold text-gray-900 dark:text-white capitalize min-w-36 text-center">
-          {format(month, 'MMMM yyyy', { locale })}
-        </span>
-        <button
-          onClick={() => setMonth(m => addMonths(m, 1))}
-          className="p-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-        >
-          <ChevronRight size={16} />
-        </button>
-      </div>
+      <MonthSelector month={month} onChange={setMonth} />
 
       {/* ── Pemilik ── */}
       {owners.map(teacher => {
