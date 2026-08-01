@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { format, parseISO, addMonths, subMonths } from 'date-fns';
+import { format, parseISO, subMonths } from 'date-fns';
 import { ArrowLeft, Download, X } from 'lucide-react';
 import MonthSelector from '../components/MonthSelector';
 import type { Locale } from 'date-fns';
