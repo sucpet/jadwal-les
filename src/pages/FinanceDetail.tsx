@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { format, parseISO, addMonths, subMonths } from 'date-fns';
 import { ChevronLeft, ChevronRight, ArrowLeft, Download, X } from 'lucide-react';
@@ -155,18 +155,7 @@ export default function FinanceDetail() {
           </div>
         </div>
 
-        {/* Month selector */}
-        <div className="flex items-center gap-3">
-          <button onClick={() => setMonth(m => subMonths(m, 1))} className="p-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
-            <ChevronLeft size={16} />
-          </button>
-          <span className="font-semibold text-gray-900 dark:text-white capitalize min-w-36 text-center">
-            {format(month, 'MMMM yyyy', { locale })}
-          </span>
-          <button onClick={() => setMonth(m => addMonths(m, 1))} className="p-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
-            <ChevronRight size={16} />
-          </button>
-        </div>
+        <MonthSelector month={month} onChange={setMonth} />
 
         {/* XuYuan */}
         {xuyuanRows.length > 0 && (
@@ -364,17 +353,8 @@ export default function FinanceDetail() {
         </div>
       </div>
 
-      {/* Month selector */}
       <div className="flex items-center gap-3">
-        <button onClick={() => setMonth(m => subMonths(m, 1))} className="p-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
-          <ChevronLeft size={16} />
-        </button>
-        <span className="font-semibold text-gray-900 dark:text-white capitalize min-w-36 text-center">
-          {format(month, 'MMMM yyyy', { locale })}
-        </span>
-        <button onClick={() => setMonth(m => addMonths(m, 1))} className="p-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
-          <ChevronRight size={16} />
-        </button>
+        <MonthSelector month={month} onChange={setMonth} />
         {studentRows.length > 0 && (
           <button
             onClick={() => setShowReceipt(true)}
@@ -560,6 +540,87 @@ function SessionDates({ sessions, locale }: { sessions: LessonSession[]; locale:
           {format(parseISO(s.date), 'd MMM', { locale })}
         </span>
       ))}
+    </div>
+  );
+}
+
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function MonthSelector({ month, onChange }: { month: Date; onChange: (d: Date) => void }) {
+  const [open, setOpen] = useState(false);
+  const [pickerYear, setPickerYear] = useState(month.getFullYear());
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const select = (m: number) => {
+    onChange(new Date(pickerYear, m, 1));
+    setOpen(false);
+  };
+
+  return (
+    <div className="relative flex items-center gap-3" ref={ref}>
+      <button
+        onClick={() => onChange(subMonths(month, 1))}
+        className="p-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+      >
+        <ChevronLeft size={16} />
+      </button>
+
+      <button
+        onClick={() => { setPickerYear(month.getFullYear()); setOpen(v => !v); }}
+        className="font-semibold text-gray-900 dark:text-white capitalize min-w-36 text-center hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+      >
+        {format(month, 'MMMM yyyy')}
+      </button>
+
+      <button
+        onClick={() => onChange(addMonths(month, 1))}
+        className="p-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+      >
+        <ChevronRight size={16} />
+      </button>
+
+      {open && (
+        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-20 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-3 w-56">
+          {/* Year nav */}
+          <div className="flex items-center justify-between mb-2 px-1">
+            <button onClick={() => setPickerYear(y => y - 1)} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400">
+              <ChevronLeft size={14} />
+            </button>
+            <span className="text-sm font-semibold text-gray-900 dark:text-white">{pickerYear}</span>
+            <button onClick={() => setPickerYear(y => y + 1)} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400">
+              <ChevronRight size={14} />
+            </button>
+          </div>
+          {/* Month grid */}
+          <div className="grid grid-cols-4 gap-1">
+            {MONTHS_SHORT.map((label, i) => {
+              const active = pickerYear === month.getFullYear() && i === month.getMonth();
+              return (
+                <button
+                  key={i}
+                  onClick={() => select(i)}
+                  className={`py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    active
+                      ? 'bg-indigo-600 text-white'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
