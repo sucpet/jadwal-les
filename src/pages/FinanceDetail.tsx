@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, Link } from 'react-router-dom';
 import { format, parseISO, addMonths, subMonths } from 'date-fns';
 import { ChevronLeft, ChevronRight, ArrowLeft, Download, X } from 'lucide-react';
@@ -549,16 +550,30 @@ const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct
 function MonthSelector({ month, onChange }: { month: Date; onChange: (d: Date) => void }) {
   const [open, setOpen] = useState(false);
   const [pickerYear, setPickerYear] = useState(month.getFullYear());
-  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const pickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (
+        pickerRef.current && !pickerRef.current.contains(e.target as Node) &&
+        btnRef.current && !btnRef.current.contains(e.target as Node)
+      ) setOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
+
+  const handleOpen = () => {
+    if (btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect();
+      setPos({ top: r.bottom + 8, left: r.left + r.width / 2 });
+    }
+    setPickerYear(month.getFullYear());
+    setOpen(v => !v);
+  };
 
   const select = (m: number) => {
     onChange(new Date(pickerYear, m, 1));
@@ -566,7 +581,7 @@ function MonthSelector({ month, onChange }: { month: Date; onChange: (d: Date) =
   };
 
   return (
-    <div className="relative flex items-center gap-3" ref={ref}>
+    <div className="flex items-center gap-3">
       <button
         onClick={() => onChange(subMonths(month, 1))}
         className="p-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -575,7 +590,8 @@ function MonthSelector({ month, onChange }: { month: Date; onChange: (d: Date) =
       </button>
 
       <button
-        onClick={() => { setPickerYear(month.getFullYear()); setOpen(v => !v); }}
+        ref={btnRef}
+        onClick={handleOpen}
         className="font-semibold text-gray-900 dark:text-white capitalize min-w-36 text-center hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
       >
         {format(month, 'MMMM yyyy')}
@@ -588,9 +604,12 @@ function MonthSelector({ month, onChange }: { month: Date; onChange: (d: Date) =
         <ChevronRight size={16} />
       </button>
 
-      {open && (
-        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-20 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-3 w-56">
-          {/* Year nav */}
+      {open && createPortal(
+        <div
+          ref={pickerRef}
+          style={{ position: 'fixed', top: pos.top, left: pos.left, transform: 'translateX(-50%)', zIndex: 9999 }}
+          className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl p-3 w-56"
+        >
           <div className="flex items-center justify-between mb-2 px-1">
             <button onClick={() => setPickerYear(y => y - 1)} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400">
               <ChevronLeft size={14} />
@@ -600,7 +619,6 @@ function MonthSelector({ month, onChange }: { month: Date; onChange: (d: Date) =
               <ChevronRight size={14} />
             </button>
           </div>
-          {/* Month grid */}
           <div className="grid grid-cols-4 gap-1">
             {MONTHS_SHORT.map((label, i) => {
               const active = pickerYear === month.getFullYear() && i === month.getMonth();
@@ -619,7 +637,8 @@ function MonthSelector({ month, onChange }: { month: Date; onChange: (d: Date) =
               );
             })}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
