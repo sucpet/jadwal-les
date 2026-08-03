@@ -210,24 +210,24 @@ export default function FinanceDetail() {
               </tbody>
             </table>
 
-            {/* Forecast row */}
-            {totalXuYuanScheduled > 0 && (
-              <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-gray-400 dark:text-gray-500">
-                    Realisasi <span className="font-medium text-gray-700 dark:text-gray-300">{formatCurrency(totalXuYuan)}</span>
-                    {' '}+ terjadwal <span className="font-medium text-blue-500">{formatCurrency(totalXuYuanScheduled)}</span>
-                  </p>
-                  <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
-                    Cycle {format(parseISO(xyCycleStart), 'd MMM')} – {format(parseISO(xyCycleEnd), 'd MMM yyyy')}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-0.5">Proyeksi</p>
-                  <p className="text-base font-bold tabular-nums text-blue-600 dark:text-blue-400">{formatCurrency(totalXuYuanForecast)}</p>
-                </div>
+            {/* Forecast row — always shown */}
+            <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-400 dark:text-gray-500">
+                  Realisasi <span className="font-medium text-gray-700 dark:text-gray-300">{formatCurrency(totalXuYuan)}</span>
+                  {totalXuYuanScheduled > 0 && (
+                    <>{' '}+ terjadwal <span className="font-medium text-blue-500">{formatCurrency(totalXuYuanScheduled)}</span></>
+                  )}
+                </p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
+                  Cycle {format(parseISO(xyCycleStart), 'd MMM')} – {format(parseISO(xyCycleEnd), 'd MMM yyyy')}
+                </p>
               </div>
-            )}
+              <div className="text-right">
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-0.5">Proyeksi</p>
+                <p className="text-base font-bold tabular-nums text-blue-600 dark:text-blue-400">{formatCurrency(totalXuYuanForecast)}</p>
+              </div>
+            </div>
           </Section>
         )}
 
