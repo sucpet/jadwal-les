@@ -471,16 +471,18 @@ export default function Schedule() {
                       const student = data.students.find(st => st.id === s.studentId);
                       const teacher = data.teachers.find(t => t.id === s.teacherId);
                       const checked = selectedIds.has(s.id);
+                      const groupColor = student ? GROUP_COLORS[student.group] : '#6366f1';
                       return (
                         <div
                           key={s.id}
                           onClick={() => toggleSelect(s.id)}
-                          className={`flex items-center gap-3 bg-white dark:bg-gray-800 border rounded-lg px-3 py-2.5 cursor-pointer transition-colors ${checked ? 'border-indigo-400 dark:border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'}`}
+                          style={checked ? undefined : { background: `${groupColor}22` }}
+                          className={`flex items-center gap-3 border rounded-lg px-3 py-2.5 cursor-pointer transition-colors ${checked ? 'border-indigo-400 dark:border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'}`}
                         >
                           <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${checked ? 'bg-indigo-600 border-indigo-600' : 'border-gray-300 dark:border-gray-600'}`}>
                             {checked && <Check size={12} className="text-white" />}
                           </div>
-                          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: teacher?.color ?? '#6366f1' }} />
+                          <div className="w-1 self-stretch rounded-full flex-shrink-0" style={{ background: teacher?.color ?? '#6366f1' }} />
                           <span className="text-sm text-gray-500 dark:text-gray-400 w-24 flex-shrink-0">{s.startTime}–{s.endTime}</span>
                           <span className="flex-1 text-sm font-medium text-gray-900 dark:text-white truncate">{student?.name ?? '—'}</span>
                           {filterTeacher === 'all' && (
