@@ -356,21 +356,32 @@ export default function Schedule() {
   return (
     <div className="space-y-4 pb-32">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('sch.title')}</h1>
-        <div className="flex gap-2">
+        {bulkMode ? (
           <button
-            onClick={() => { setBulkMode(b => !b); setSelectedIds(new Set()); setBulkConfirm(null); }}
-            className={`flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg border transition-colors ${bulkMode ? 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+            onClick={exitBulkMode}
+            className="flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
           >
-            <ListChecks size={16} /> {t('sch.selectSessions')}
+            <ChevronLeft size={16} /> {t('sch.back')}
           </button>
+        ) : (
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('sch.title')}</h1>
+        )}
+        <div className="flex gap-2">
           {!bulkMode && (
-            <button
-              onClick={() => openAdd()}
-              className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700"
-            >
-              <Plus size={16} /> {t('sch.addSession')}
-            </button>
+            <>
+              <button
+                onClick={() => { setBulkMode(true); setSelectedIds(new Set()); setBulkConfirm(null); }}
+                className="flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
+              >
+                <ListChecks size={16} /> {t('sch.selectSessions')}
+              </button>
+              <button
+                onClick={() => openAdd()}
+                className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700"
+              >
+                <Plus size={16} /> {t('sch.addSession')}
+              </button>
+            </>
           )}
         </div>
       </div>
