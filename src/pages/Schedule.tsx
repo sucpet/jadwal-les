@@ -45,6 +45,7 @@ export default function Schedule() {
   const [copyIsRecurring, setCopyIsRecurring] = useState(false);
   const [copyCount, setCopyCount] = useState('4');
   const [bulkStudentFilter, setBulkStudentFilter] = useState('');
+  const [bulkWeek, setBulkWeek] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
   const [dayPanel, setDayPanel] = useState<string | null>(null);
@@ -206,6 +207,7 @@ export default function Schedule() {
     setSelectedIds(new Set());
     setBulkConfirm(null);
     setBulkStudentFilter('');
+    setBulkWeek(startOfWeek(new Date(), { weekStartsOn: 1 }));
   };
 
   const toggleSelect = (id: string) => {
@@ -216,8 +218,13 @@ export default function Schedule() {
     });
   };
 
+  const bulkWeekEnd = addDays(bulkWeek, 6);
+  const bulkWeekStr = format(bulkWeek, 'yyyy-MM-dd');
+  const bulkWeekEndStr = format(bulkWeekEnd, 'yyyy-MM-dd');
+
   const bulkSessions = [...filteredSessions]
     .filter(s => {
+      if (s.date < bulkWeekStr || s.date > bulkWeekEndStr) return false;
       if (!bulkStudentFilter.trim()) return true;
       const student = data.students.find(st => st.id === s.studentId);
       return student?.name.toLowerCase().includes(bulkStudentFilter.toLowerCase());
@@ -272,14 +279,11 @@ export default function Schedule() {
     toast.success(t('sch.bulkCopied', { n: n * count }));
   };
 
-  // Group bulk sessions by week → date
-  const bulkByWeek = bulkSessions.reduce<{ weekStart: string; byDate: { date: string; sessions: LessonSession[] }[] }[]>((acc, s) => {
-    const ws = format(startOfWeek(parseISO(s.date), { weekStartsOn: 1 }), 'yyyy-MM-dd');
-    let wg = acc.find(g => g.weekStart === ws);
-    if (!wg) { wg = { weekStart: ws, byDate: [] }; acc.push(wg); }
-    const last = wg.byDate[wg.byDate.length - 1];
+  // Group bulk sessions by date (already filtered to one week)
+  const bulkByDate = bulkSessions.reduce<{ date: string; sessions: LessonSession[] }[]>((acc, s) => {
+    const last = acc[acc.length - 1];
     if (last && last.date === s.date) last.sessions.push(s);
-    else wg.byDate.push({ date: s.date, sessions: [s] });
+    else acc.push({ date: s.date, sessions: [s] });
     return acc;
   }, []);
 
@@ -409,10 +413,29 @@ export default function Schedule() {
             )}
           </div>
 
+          {/* Week navigation */}
+          <div className="flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2">
+            <button onClick={() => setBulkWeek(w => addDays(w, -7))} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded dark:text-gray-300">
+              <ChevronLeft size={18} />
+            </button>
+            <span className="flex-1 text-center text-sm font-medium dark:text-gray-200 capitalize">
+              {format(bulkWeek, 'd MMM', { locale })} – {format(bulkWeekEnd, 'd MMM yyyy', { locale })}
+            </span>
+            <button onClick={() => setBulkWeek(startOfWeek(new Date(), { weekStartsOn: 1 }))} className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline px-1">
+              {t('sch.today')}
+            </button>
+            <button onClick={() => setBulkWeek(w => addDays(w, 7))} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded dark:text-gray-300">
+              <ChevronRight size={18} />
+            </button>
+          </div>
+
           {/* Select all bar */}
           <div className="flex items-center justify-between bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5">
             <span className="text-sm text-gray-600 dark:text-gray-400">
               {selectedIds.size > 0 ? t('sch.sessionsSelected', { n: selectedIds.size }) : t('sch.selectPrompt')}
+              {selectedIds.size > 0 && bulkSessions.filter(s => selectedIds.has(s.id)).length < selectedIds.size && (
+                <span className="ml-1 text-xs text-indigo-500 dark:text-indigo-400">(dari beberapa minggu)</span>
+              )}
             </span>
             <div className="flex gap-2">
               <button onClick={selectAll} className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">{t('sch.selectAll')}</button>
@@ -426,23 +449,8 @@ export default function Schedule() {
               {t('sch.noSessions')}
             </div>
           ) : (
-            <div className="space-y-4">
-              {bulkByWeek.map(({ weekStart, byDate }) => {
-                const ws = parseISO(weekStart);
-                const we = addDays(ws, 6);
-                const total = byDate.reduce((n, d) => n + d.sessions.length, 0);
-                return (
-                <div key={weekStart}>
-                  {/* Week header */}
-                  <div className="flex items-center gap-2 mb-2 px-1">
-                    <span className="text-sm font-bold text-gray-700 dark:text-gray-200 capitalize">
-                      {format(ws, 'd MMM', { locale })} – {format(we, 'd MMM yyyy', { locale })}
-                    </span>
-                    <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
-                    <span className="text-xs text-gray-400 dark:text-gray-500">{total} sesi</span>
-                  </div>
-                  <div className="space-y-3">
-                  {byDate.map(({ date, sessions: daySessions }) => (
+            <div className="space-y-3">
+              {bulkByDate.map(({ date, sessions: daySessions }) => (
                 <div key={date}>
                   <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 px-1">
                     {format(parseISO(date), 'EEEE, d MMMM yyyy', { locale })}
@@ -458,21 +466,15 @@ export default function Schedule() {
                           onClick={() => toggleSelect(s.id)}
                           className={`flex items-center gap-3 bg-white dark:bg-gray-800 border rounded-lg px-3 py-2.5 cursor-pointer transition-colors ${checked ? 'border-indigo-400 dark:border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'}`}
                         >
-                          {/* Checkbox */}
                           <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${checked ? 'bg-indigo-600 border-indigo-600' : 'border-gray-300 dark:border-gray-600'}`}>
                             {checked && <Check size={12} className="text-white" />}
                           </div>
-                          {/* Color dot */}
                           <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: teacher?.color ?? '#6366f1' }} />
-                          {/* Time */}
                           <span className="text-sm text-gray-500 dark:text-gray-400 w-24 flex-shrink-0">{s.startTime}–{s.endTime}</span>
-                          {/* Student */}
                           <span className="flex-1 text-sm font-medium text-gray-900 dark:text-white truncate">{student?.name ?? '—'}</span>
-                          {/* Teacher */}
                           {filterTeacher === 'all' && (
                             <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">{teacher?.name}</span>
                           )}
-                          {/* Status */}
                           <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
                             s.status === 'completed' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
                             : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
@@ -485,10 +487,6 @@ export default function Schedule() {
                   </div>
                 </div>
               ))}
-                  </div>
-                </div>
-                );
-              })}
             </div>
           )}
         </div>
