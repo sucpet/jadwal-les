@@ -152,8 +152,34 @@ export default function FinanceDetail() {
     const totalPrepaid  = prepaidRows.reduce((s, r) => s + r.packagePrice, 0);
     const totalPostpaid = postpaidRows.reduce((s, r) => s + r.income, 0);
     const totalPayments = paymentRows.reduce((s, r) => s + r.payment.amount, 0);
-    const grandTotal         = totalXuYuan + totalWorksheet + totalPrepaid + totalPostpaid + totalPayments;
-    const grandTotalForecast = totalXuYuanForecast + totalWorksheet + totalPrepaid + totalPostpaid + totalPayments;
+
+    // Margin dari laoshi: selisih rate murid - honor laoshi per sesi → pendapatan owner
+    const nonOwnerTeachers = data.teachers.filter(t => !t.isOwner);
+    type MarginStudentRow = { student: typeof data.students[0]; sessions: typeof data.sessions; rate: number; honor: number; margin: number };
+    type MarginLaoshiRow  = { teacher: TeacherType; rows: MarginStudentRow[]; total: number };
+    const laoshiMarginRows: MarginLaoshiRow[] = nonOwnerTeachers.flatMap(laoshi => {
+      const laoshiSessions = data.sessions.filter(s =>
+        s.teacherId === laoshi.id &&
+        s.date.startsWith(monthStr) &&
+        s.status === 'completed'
+      );
+      const studentIds = [...new Set(laoshiSessions.map(s => s.studentId))];
+      const rows: MarginStudentRow[] = studentIds.flatMap(studentId => {
+        const student = data.students.find(s => s.id === studentId);
+        if (!student) return [];
+        const sessions = laoshiSessions.filter(s => s.studentId === studentId);
+        const rate  = sessions.reduce((sum, s) => sum + (s.rateSnapshot  ?? effectiveRate(student, s.date)), 0);
+        const honor = sessions.reduce((sum, s) => sum + (s.honorSnapshot ?? effectiveHonor(laoshi, s.date)), 0);
+        const margin = rate - honor;
+        return [{ student, sessions, rate, honor, margin }];
+      }).filter(r => r.sessions.length > 0);
+      if (!rows.length) return [];
+      return [{ teacher: laoshi, rows, total: rows.reduce((sum, r) => sum + r.margin, 0) }];
+    });
+    const totalLaoshiMargin = laoshiMarginRows.reduce((sum, r) => sum + r.total, 0);
+
+    const grandTotal         = totalXuYuan + totalWorksheet + totalPrepaid + totalPostpaid + totalPayments + totalLaoshiMargin;
+    const grandTotalForecast = totalXuYuanForecast + totalWorksheet + totalPrepaid + totalPostpaid + totalPayments + totalLaoshiMargin;
 
     return (
       <div className="max-w-2xl mx-auto space-y-6">
@@ -345,7 +371,51 @@ export default function FinanceDetail() {
           </Section>
         )}
 
-        {xuyuanRows.length === 0 && worksheetRows.length === 0 && prepaidRows.length === 0 && postpaidRows.length === 0 && paymentRows.length === 0 && (
+        {/* Margin laoshi — selisih rate murid vs honor laoshi */}
+        {laoshiMarginRows.length > 0 && (
+          <Section title={t('fd.sectionMargin')} total={totalLaoshiMargin}>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-xs text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-700">
+                  <th className="text-left pb-2 font-medium">{t('fin.colStudent')}</th>
+                  <th className="text-right pb-2 font-medium">{t('fin.colSessions')}</th>
+                  <th className="text-right pb-2 font-medium">{t('fd.marginCol')}</th>
+                  <th className="text-right pb-2 font-medium">{t('fin.colIncome')}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
+                {laoshiMarginRows.map(({ teacher: laoshi, rows, total }) => (
+                  <>
+                    <tr key={laoshi.id + '-header'}>
+                      <td colSpan={4} className="pt-3 pb-1">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                          <span className="w-2 h-2 rounded-full inline-block" style={{ background: laoshi.color }} />
+                          {laoshi.name}
+                        </span>
+                      </td>
+                    </tr>
+                    {rows.map(({ student, sessions, rate, honor, margin }) => (
+                      <tr key={student.id}>
+                        <td className="py-2 pl-4 text-gray-700 dark:text-gray-300">{student.name}</td>
+                        <td className="py-2 text-right tabular-nums text-gray-400 dark:text-gray-500">{sessions.length}</td>
+                        <td className="py-2 text-right tabular-nums text-gray-400 dark:text-gray-500 text-xs">
+                          {formatCurrency(rate / sessions.length)}–{formatCurrency(honor / sessions.length)}
+                        </td>
+                        <td className="py-2 text-right tabular-nums font-medium text-gray-900 dark:text-white">{formatCurrency(margin)}</td>
+                      </tr>
+                    ))}
+                    <tr key={laoshi.id + '-subtotal'} className="border-t border-gray-100 dark:border-gray-700">
+                      <td colSpan={3} className="py-1.5 pl-4 text-xs text-gray-400 dark:text-gray-500">{t('fd.marginSubtotal', { name: laoshi.name })}</td>
+                      <td className="py-1.5 text-right tabular-nums text-sm font-semibold text-gray-700 dark:text-gray-300">{formatCurrency(total)}</td>
+                    </tr>
+                  </>
+                ))}
+              </tbody>
+            </table>
+          </Section>
+        )}
+
+        {xuyuanRows.length === 0 && worksheetRows.length === 0 && prepaidRows.length === 0 && postpaidRows.length === 0 && paymentRows.length === 0 && laoshiMarginRows.length === 0 && (
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-10 text-center text-gray-400 dark:text-gray-500 text-sm">
             {t('fd.noIncome')}
           </div>

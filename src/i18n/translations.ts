@@ -223,6 +223,9 @@ export const translations: Record<Lang, Record<string, string>> = {
     'fd.forecastScheduled': 'Terjadwal',
     'fd.forecastCycle': 'Cycle {start}–{end}',
     'fd.forecastProjected': 'Proyeksi s/d akhir cycle',
+    'fd.sectionMargin': 'Margin Laoshi',
+    'fd.marginCol': 'Rate–Honor',
+    'fd.marginSubtotal': 'Subtotal {name}',
 
     // students
     'stu.title': 'Murid',
@@ -613,6 +616,9 @@ export const translations: Record<Lang, Record<string, string>> = {
     'fd.forecastScheduled': 'Scheduled',
     'fd.forecastCycle': 'Cycle {start}–{end}',
     'fd.forecastProjected': 'Projected to cycle end',
+    'fd.sectionMargin': 'Laoshi Margin',
+    'fd.marginCol': 'Rate–Honor',
+    'fd.marginSubtotal': '{name} subtotal',
 
     // students
     'stu.title': 'Students',
