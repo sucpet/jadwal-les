@@ -272,11 +272,14 @@ export default function Schedule() {
     toast.success(t('sch.bulkCopied', { n: n * count }));
   };
 
-  // Group bulk sessions by date
-  const bulkByDate = bulkSessions.reduce<{ date: string; sessions: LessonSession[] }[]>((acc, s) => {
-    const last = acc[acc.length - 1];
-    if (last && last.date === s.date) { last.sessions.push(s); }
-    else acc.push({ date: s.date, sessions: [s] });
+  // Group bulk sessions by month → date
+  const bulkByMonth = bulkSessions.reduce<{ month: string; byDate: { date: string; sessions: LessonSession[] }[] }[]>((acc, s) => {
+    const month = s.date.slice(0, 7);
+    let mg = acc.find(g => g.month === month);
+    if (!mg) { mg = { month, byDate: [] }; acc.push(mg); }
+    const last = mg.byDate[mg.byDate.length - 1];
+    if (last && last.date === s.date) last.sessions.push(s);
+    else mg.byDate.push({ date: s.date, sessions: [s] });
     return acc;
   }, []);
 
@@ -423,11 +426,24 @@ export default function Schedule() {
               {t('sch.noSessions')}
             </div>
           ) : (
-            <div className="space-y-3">
-              {bulkByDate.map(({ date, sessions: daySessions }) => (
+            <div className="space-y-4">
+              {bulkByMonth.map(({ month, byDate }) => (
+                <div key={month}>
+                  {/* Month header */}
+                  <div className="flex items-center gap-2 mb-2 px-1">
+                    <span className="text-sm font-bold text-gray-700 dark:text-gray-200 capitalize">
+                      {format(parseISO(`${month}-01`), 'MMMM yyyy', { locale })}
+                    </span>
+                    <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+                    <span className="text-xs text-gray-400 dark:text-gray-500">
+                      {byDate.reduce((n, d) => n + d.sessions.length, 0)} sesi
+                    </span>
+                  </div>
+                  <div className="space-y-3">
+                  {byDate.map(({ date, sessions: daySessions }) => (
                 <div key={date}>
                   <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 px-1">
-                    {format(parseISO(date), 'EEEE, d MMMM yyyy', { locale })}
+                    {format(parseISO(date), 'EEEE, d MMMM', { locale })}
                   </div>
                   <div className="space-y-1">
                     {daySessions.map(s => {
@@ -464,6 +480,9 @@ export default function Schedule() {
                         </div>
                       );
                     })}
+                  </div>
+                </div>
+              ))}
                   </div>
                 </div>
               ))}
