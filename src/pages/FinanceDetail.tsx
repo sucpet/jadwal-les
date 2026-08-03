@@ -152,7 +152,8 @@ export default function FinanceDetail() {
     const totalPrepaid  = prepaidRows.reduce((s, r) => s + r.packagePrice, 0);
     const totalPostpaid = postpaidRows.reduce((s, r) => s + r.income, 0);
     const totalPayments = paymentRows.reduce((s, r) => s + r.payment.amount, 0);
-    const grandTotal    = totalXuYuan + totalWorksheet + totalPrepaid + totalPostpaid + totalPayments;
+    const grandTotal         = totalXuYuan + totalWorksheet + totalPrepaid + totalPostpaid + totalPayments;
+    const grandTotalForecast = totalXuYuanForecast + totalWorksheet + totalPrepaid + totalPostpaid + totalPayments;
 
     return (
       <div className="max-w-2xl mx-auto space-y-6">
@@ -352,13 +353,23 @@ export default function FinanceDetail() {
 
         {/* Grand total */}
         {grandTotal > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 px-5 py-4 flex items-center justify-between">
-            <span className="font-semibold text-gray-900 dark:text-white">
-              {t('fin.total', { month: format(month, 'MMMM', { locale }) })}
-            </span>
-            <span className="text-xl font-bold tabular-nums text-amber-600 dark:text-amber-400">
-              {formatCurrency(grandTotal)}
-            </span>
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 px-5 py-4">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-gray-900 dark:text-white">
+                {t('fin.total', { month: format(month, 'MMMM', { locale }) })}
+              </span>
+              <span className="text-xl font-bold tabular-nums text-amber-600 dark:text-amber-400">
+                {formatCurrency(grandTotal)}
+              </span>
+            </div>
+            {grandTotalForecast > grandTotal && (
+              <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-gray-100 dark:border-gray-700">
+                <span className="text-xs text-gray-400 dark:text-gray-500">Proyeksi s/d akhir cycle</span>
+                <span className="text-sm font-bold tabular-nums text-blue-600 dark:text-blue-400">
+                  {formatCurrency(grandTotalForecast)}
+                </span>
+              </div>
+            )}
           </div>
         )}
       </div>
