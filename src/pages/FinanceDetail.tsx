@@ -168,7 +168,7 @@ export default function FinanceDetail() {
 
         <MonthSelector month={month} onChange={setMonth} />
 
-        {/* XuYuan */}
+        {/* XuYuan sessions table — only when there is session data */}
         {xuyuanRows.length > 0 && (
           <Section title={t('fin.sectionXuYuan')} total={totalXuYuan}>
             <table className="w-full text-sm">
@@ -188,13 +188,13 @@ export default function FinanceDetail() {
                     <td className="py-2 text-right tabular-nums text-gray-500 dark:text-gray-400">
                       {formatDuration(totalMins, lang)}
                       {scheduledMins > 0 && (
-                        <span className="ml-1 text-blue-400 dark:text-blue-400">+{formatDuration(scheduledMins, lang)}</span>
+                        <span className="ml-1 text-blue-400">+{formatDuration(scheduledMins, lang)}</span>
                       )}
                     </td>
                     <td className="py-2 text-right tabular-nums font-medium text-gray-900 dark:text-white">
                       {formatCurrency(income)}
                       {scheduledIncome > 0 && (
-                        <span className="ml-1 text-blue-400 dark:text-blue-400 font-normal text-xs">+{formatCurrency(scheduledIncome)}</span>
+                        <span className="ml-1 text-blue-400 font-normal text-xs">+{formatCurrency(scheduledIncome)}</span>
                       )}
                     </td>
                   </tr>
@@ -209,26 +209,35 @@ export default function FinanceDetail() {
                 )}
               </tbody>
             </table>
+          </Section>
+        )}
 
-            {/* Forecast row — always shown */}
-            <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-400 dark:text-gray-500">
-                  Realisasi <span className="font-medium text-gray-700 dark:text-gray-300">{formatCurrency(totalXuYuan)}</span>
-                  {totalXuYuanScheduled > 0 && (
-                    <>{' '}+ terjadwal <span className="font-medium text-blue-500">{formatCurrency(totalXuYuanScheduled)}</span></>
-                  )}
+        {/* XuYuan forecast — always shown when owner has XuYuan students */}
+        {xuyuanStudents.length > 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 px-5 py-4">
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3">Forecast XuYuan</p>
+            <div className="flex items-end justify-between">
+              <div className="space-y-1">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Realisasi&nbsp;
+                  <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(totalXuYuan)}</span>
                 </p>
-                <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
-                  Cycle {format(parseISO(xyCycleStart), 'd MMM')} – {format(parseISO(xyCycleEnd), 'd MMM yyyy')}
+                {totalXuYuanScheduled > 0 && (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Terjadwal&nbsp;
+                    <span className="font-semibold text-blue-600 dark:text-blue-400">+{formatCurrency(totalXuYuanScheduled)}</span>
+                  </p>
+                )}
+                <p className="text-[11px] text-gray-400 dark:text-gray-500 pt-1">
+                  Cycle {format(parseISO(xyCycleStart), 'd MMM')}–{format(parseISO(xyCycleEnd), 'd MMM yyyy')}
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-0.5">Proyeksi</p>
-                <p className="text-base font-bold tabular-nums text-blue-600 dark:text-blue-400">{formatCurrency(totalXuYuanForecast)}</p>
+                <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-0.5">Proyeksi s/d akhir cycle</p>
+                <p className="text-2xl font-bold tabular-nums text-blue-600 dark:text-blue-400">{formatCurrency(totalXuYuanForecast)}</p>
               </div>
             </div>
-          </Section>
+          </div>
         )}
 
         {/* Worksheet */}
