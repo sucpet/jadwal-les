@@ -363,6 +363,11 @@ export const translations: Record<Lang, Record<string, string>> = {
     'sch.weeksAhead': 'minggu ke depan',
     'sch.deleteSessionConfirm': 'Hapus sesi ini?',
     'sch.reschedTitle': 'Geser +1 minggu',
+    'sch.copy': 'Salin',
+    'sch.bulkCopied': '{n} sesi disalin',
+    'sch.copyStartAt': 'Salin mulai',
+    'sch.copyRepeat': 'Ulangi tiap minggu setelahnya',
+    'sch.copyTimes': 'kali',
 
     // payments (murid dibayar lembaga)
     'pay.deferredToggle': 'Dibayar lembaga',
@@ -743,6 +748,11 @@ export const translations: Record<Lang, Record<string, string>> = {
     'sch.weeksAhead': 'weeks ahead',
     'sch.deleteSessionConfirm': 'Delete this session?',
     'sch.reschedTitle': 'Shift +1 week',
+    'sch.copy': 'Copy',
+    'sch.bulkCopied': '{n} sessions copied',
+    'sch.copyStartAt': 'Copy starting at',
+    'sch.copyRepeat': 'Repeat weekly after that',
+    'sch.copyTimes': 'times',
 
     // payments (institution-paid students)
     'pay.deferredToggle': 'Paid by institution',

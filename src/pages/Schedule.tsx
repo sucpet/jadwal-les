@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Plus, X, Check, Trash2, Clock, AlertTriangle, RefreshCw, ListChecks, CalendarClock, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, X, Check, Trash2, Clock, AlertTriangle, RefreshCw, ListChecks, CalendarClock, Search, Copy } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { addWeeks, subWeeks, startOfWeek, addDays, isSameDay, parseISO, format, startOfMonth, addMonths, subMonths, isSameMonth } from 'date-fns';
 import { useApp } from '../store/AppContext';
@@ -40,7 +40,10 @@ export default function Schedule() {
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [rescheduleWeeks, setRescheduleWeeks] = useState('1');
-  const [bulkConfirm, setBulkConfirm] = useState<'cancel' | 'reschedule' | null>(null);
+  const [bulkConfirm, setBulkConfirm] = useState<'cancel' | 'reschedule' | 'copy' | null>(null);
+  const [copyWeeks, setCopyWeeks] = useState('1');
+  const [copyIsRecurring, setCopyIsRecurring] = useState(false);
+  const [copyCount, setCopyCount] = useState('4');
   const [bulkStudentFilter, setBulkStudentFilter] = useState('');
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
@@ -242,6 +245,31 @@ export default function Schedule() {
     });
     exitBulkMode();
     toast.success(t('sch.bulkRescheduled', { n }));
+  };
+
+  const bulkCopy = () => {
+    const offset = Math.max(1, Math.min(52, Number(copyWeeks) || 1));
+    const count = copyIsRecurring ? Math.max(1, Math.min(13, Number(copyCount) || 1)) : 1;
+    const n = selectedIds.size;
+    selectedIds.forEach(id => {
+      const s = data.sessions.find(s => s.id === id);
+      if (!s) return;
+      for (let i = 0; i < count; i++) {
+        const newDate = shiftDateByWeeks(s.date, offset + i);
+        addSession({
+          teacherId: s.teacherId,
+          studentId: s.studentId,
+          date: newDate,
+          startTime: s.startTime,
+          endTime: s.endTime,
+          status: resolveStatus(newDate, s.endTime),
+          notes: s.notes,
+          worksheetPages: s.worksheetPages ?? 0,
+        });
+      }
+    });
+    exitBulkMode();
+    toast.success(t('sch.bulkCopied', { n: n * count }));
   };
 
   // Group bulk sessions by date
@@ -898,6 +926,12 @@ export default function Schedule() {
                   <Trash2 size={15} /> {t('sch.deleteSchedule')}
                 </button>
                 <button
+                  onClick={() => setBulkConfirm('copy')}
+                  className="flex-1 flex items-center justify-center gap-1.5 border border-indigo-300 dark:border-indigo-700 text-indigo-600 dark:text-indigo-400 text-sm px-3 py-2 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
+                >
+                  <Copy size={15} /> {t('sch.copy')}
+                </button>
+                <button
                   onClick={() => setBulkConfirm('reschedule')}
                   className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700"
                 >
@@ -943,6 +977,67 @@ export default function Schedule() {
                   </button>
                   <button onClick={bulkReschedule} className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700">
                     <CalendarClock size={15} /> {t('sch.reschedule')}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {bulkConfirm === 'copy' && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">{t('sch.copyStartAt')}</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="52"
+                    value={copyWeeks}
+                    onChange={e => setCopyWeeks(e.target.value)}
+                    onKeyDown={e => (e.key === '-' || e.key === 'e') && e.preventDefault()}
+                    className="w-16 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <span className="text-sm text-gray-600 dark:text-gray-400">{t('sch.weeksAhead')}</span>
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={copyIsRecurring}
+                    onChange={e => setCopyIsRecurring(e.target.checked)}
+                    className="w-4 h-4 accent-indigo-600"
+                  />
+                  <RefreshCw size={13} className="text-gray-400 dark:text-gray-500" />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">{t('sch.copyRepeat')}</span>
+                </label>
+                {copyIsRecurring && (
+                  <div className="flex items-center gap-2 pl-6">
+                    <input
+                      type="number"
+                      min="1"
+                      max="13"
+                      value={copyCount}
+                      onChange={e => setCopyCount(e.target.value)}
+                      onKeyDown={e => (e.key === '-' || e.key === 'e') && e.preventDefault()}
+                      className="w-16 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{t('sch.copyTimes')}</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500">{t('sch.maxWeeks')}</span>
+                  </div>
+                )}
+                {(() => {
+                  const offset = Math.max(1, Number(copyWeeks) || 1);
+                  const count = copyIsRecurring ? Math.max(1, Math.min(13, Number(copyCount) || 1)) : 1;
+                  const total = selectedIds.size * count;
+                  return (
+                    <p className="text-xs text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg px-3 py-2">
+                      +{offset} mgg{copyIsRecurring && count > 1 ? ` s/d +${offset + count - 1} mgg` : ''} · <strong>{total} sesi</strong> baru
+                    </p>
+                  );
+                })()}
+                <div className="flex gap-2">
+                  <button onClick={() => setBulkConfirm(null)} className="flex-1 text-sm px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    {t('sch.back')}
+                  </button>
+                  <button onClick={bulkCopy} className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700">
+                    <Copy size={15} /> {t('sch.copy')}
                   </button>
                 </div>
               </div>
