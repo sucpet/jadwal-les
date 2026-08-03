@@ -495,18 +495,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return s;
   };
   const updateSession = (id: string, updates: Partial<LessonSession>) => {
-    // Capture rate/honor snapshot when marking a session as completed
+    // Capture/refresh rate+honor snapshots for completed sessions
     let finalUpdates = updates;
-    if (updates.status === 'completed') {
-      const session = data.sessions.find(s => s.id === id);
-      if (session) {
-        const student = data.students.find(s => s.id === session.studentId);
-        const teacher = data.teachers.find(te => te.id === session.teacherId);
-        if (session.rateSnapshot == null && student && student.billingType === 'per-session') {
-          finalUpdates = { ...finalUpdates, rateSnapshot: effectiveRate(student, session.date) };
+    const session = data.sessions.find(s => s.id === id);
+    if (session) {
+      const isCompletedOrStays = updates.status === 'completed' || (session.status === 'completed' && updates.status === undefined);
+      if (isCompletedOrStays) {
+        const studentId = updates.studentId ?? session.studentId;
+        const teacherId = updates.teacherId ?? session.teacherId;
+        const date = updates.date ?? session.date;
+        const student = data.students.find(s => s.id === studentId);
+        const teacher = data.teachers.find(te => te.id === teacherId);
+        const studentChanged = updates.studentId !== undefined && updates.studentId !== session.studentId;
+        const teacherChanged = updates.teacherId !== undefined && updates.teacherId !== session.teacherId;
+        if ((session.rateSnapshot == null || studentChanged) && student && student.billingType === 'per-session') {
+          finalUpdates = { ...finalUpdates, rateSnapshot: effectiveRate(student, date) };
         }
-        if (session.honorSnapshot == null && teacher) {
-          finalUpdates = { ...finalUpdates, honorSnapshot: effectiveHonor(teacher, session.date) };
+        if ((session.honorSnapshot == null || teacherChanged) && teacher) {
+          finalUpdates = { ...finalUpdates, honorSnapshot: effectiveHonor(teacher, date) };
         }
       }
     }
@@ -533,6 +539,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (newDate !== old.date || newStart !== old.startTime || newEnd !== old.endTime) {
         const student = data.students.find(st => st.id === old.studentId);
         logActivity('reschedule', `Reschedule — ${student?.name ?? '—'}: ${fmtLogDate(old.date)} ${old.startTime} → ${fmtLogDate(newDate)} ${newStart}`);
+      }
+      if (finalUpdates.studentId !== undefined && finalUpdates.studentId !== old.studentId) {
+        const oldStudent = data.students.find(st => st.id === old.studentId);
+        const newStudent = data.students.find(st => st.id === finalUpdates.studentId);
+        logActivity('update', `Ganti murid sesi ${fmtLogDate(old.date)} ${old.startTime}: ${oldStudent?.name ?? '—'} → ${newStudent?.name ?? '—'}`);
       }
     }
   };
