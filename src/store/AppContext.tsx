@@ -385,20 +385,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (updates.isActive       !== undefined) row.is_active       = updates.isActive;
     db(supabase.from('students').update(row).eq('id', id));
     if (oldStudent) {
-      const n = oldStudent.name;
-      let desc = '';
+      const n = updates.name ?? oldStudent.name;
       if (updates.isActive !== undefined && updates.isActive !== oldStudent.isActive) {
-        desc = updates.isActive ? `Aktifkan murid — ${n}` : `Non-aktifkan murid — ${n}`;
+        logActivity('update', updates.isActive ? `Aktifkan murid — ${n}` : `Non-aktifkan murid — ${n}`);
       } else if ('pendingRate' in updates && updates.pendingRate != null && updates.pendingRateEffectiveDate) {
-        desc = `Jadwalkan harga ${n}: ${formatCurrency(updates.pendingRate)} mulai ${fmtLogDate(updates.pendingRateEffectiveDate)}`;
-      } else if (updates.ratePerSession !== undefined && updates.ratePerSession !== oldStudent.ratePerSession) {
-        desc = `Ubah harga ${n}: ${formatCurrency(oldStudent.ratePerSession)} → ${formatCurrency(updates.ratePerSession)}`;
-      } else if (updates.deferredPayment !== undefined && updates.deferredPayment !== oldStudent.deferredPayment) {
-        desc = updates.deferredPayment ? `Set dibayar lembaga — ${n}` : `Batal dibayar lembaga — ${n}`;
-      } else if (updates.name !== undefined || updates.notes !== undefined || updates.teacherId !== undefined || updates.billingType !== undefined || updates.group !== undefined) {
-        desc = `Ubah data murid — ${n}`;
+        logActivity('update', `Jadwalkan harga ${n}: ${formatCurrency(updates.pendingRate)} mulai ${fmtLogDate(updates.pendingRateEffectiveDate)}`);
+      } else {
+        const changes: string[] = [];
+        if (updates.name          !== undefined && updates.name          !== oldStudent.name)
+          changes.push(`nama "${oldStudent.name}" → "${updates.name}"`);
+        if (updates.ratePerSession !== undefined && updates.ratePerSession !== oldStudent.ratePerSession)
+          changes.push(`harga ${formatCurrency(oldStudent.ratePerSession)} → ${formatCurrency(updates.ratePerSession)}`);
+        if (updates.billingType   !== undefined && updates.billingType   !== oldStudent.billingType)
+          changes.push(`billing ${oldStudent.billingType} → ${updates.billingType}`);
+        if (updates.group         !== undefined && updates.group         !== oldStudent.group)
+          changes.push(`grup ${oldStudent.group} → ${updates.group}`);
+        if (updates.xuYuanType    !== undefined && updates.xuYuanType    !== oldStudent.xuYuanType)
+          changes.push(`tipe XuYuan ${oldStudent.xuYuanType ?? 'private'} → ${updates.xuYuanType}`);
+        if (updates.teacherId     !== undefined && updates.teacherId     !== oldStudent.teacherId) {
+          const oldT = data.teachers.find(t => t.id === oldStudent.teacherId)?.name ?? '—';
+          const newT = data.teachers.find(t => t.id === updates.teacherId)?.name    ?? '—';
+          changes.push(`laoshi ${oldT} → ${newT}`);
+        }
+        if (updates.deferredPayment !== undefined && updates.deferredPayment !== oldStudent.deferredPayment)
+          changes.push(updates.deferredPayment ? 'set dibayar lembaga' : 'batal dibayar lembaga');
+        if (updates.notes !== undefined && updates.notes !== oldStudent.notes)
+          changes.push('catatan diubah');
+        if (changes.length) logActivity('update', `Ubah murid ${n}: ${changes.join(', ')}`);
       }
-      if (desc) logActivity('update', desc);
     }
   };
   // Non-aktifkan murid: simpan semua histori (sesi selesai, paket, worksheet, pembayaran),
@@ -504,9 +518,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (finalUpdates.startTime     !== undefined) row.start_time    = finalUpdates.startTime;
     if (finalUpdates.endTime       !== undefined) row.end_time      = finalUpdates.endTime;
     if (finalUpdates.status        !== undefined) row.status        = finalUpdates.status;
-    if (finalUpdates.notes         !== undefined) row.notes         = finalUpdates.notes;
-    if (finalUpdates.rateSnapshot  !== undefined) row.rate_snapshot = finalUpdates.rateSnapshot;
-    if (finalUpdates.honorSnapshot !== undefined) row.honor_snapshot = finalUpdates.honorSnapshot;
+    if (finalUpdates.notes          !== undefined) row.notes           = finalUpdates.notes;
+    if (finalUpdates.worksheetPages !== undefined) row.worksheet_pages = finalUpdates.worksheetPages ?? null;
+    if (finalUpdates.rateSnapshot   !== undefined) row.rate_snapshot   = finalUpdates.rateSnapshot;
+    if (finalUpdates.honorSnapshot  !== undefined) row.honor_snapshot  = finalUpdates.honorSnapshot;
     db(supabase.from('sessions').update(row).eq('id', id));
 
     // Log reschedule (perubahan tanggal/jam)
