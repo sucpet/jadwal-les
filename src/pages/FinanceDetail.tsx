@@ -73,13 +73,21 @@ export default function FinanceDetail() {
     const xuyuanStudents = data.students.filter(
       s => s.teacherId === teacher.id && s.group === 'xuyuan'
     );
+    const xuyuanScheduledSessions = data.sessions.filter(s =>
+      s.teacherId === teacher.id &&
+      s.date >= xyCycleStart && s.date <= xyCycleEnd &&
+      s.status === 'scheduled'
+    );
     const xuyuanRows = xuyuanStudents.map(student => {
       const sessions = xuyuanSessions.filter(s => s.studentId === student.id);
+      const scheduledSessions = xuyuanScheduledSessions.filter(s => s.studentId === student.id);
       const totalMins = sessions.reduce((sum, s) => sum + durationMinutes(s), 0);
+      const scheduledMins = scheduledSessions.reduce((sum, s) => sum + durationMinutes(s), 0);
       const rate = student.xuYuanType === 'semi-group' ? RATE_SEMI_GROUP : RATE_PRIVATE;
       const income = Math.round(totalMins / 60 * rate);
-      return { student, sessions, totalMins, income };
-    }).filter(r => r.sessions.length > 0);
+      const scheduledIncome = Math.round(scheduledMins / 60 * rate);
+      return { student, sessions, totalMins, income, scheduledIncome, scheduledMins };
+    }).filter(r => r.sessions.length > 0 || r.scheduledMins > 0);
 
     // Worksheet per student — ikut siklus XuYuan
     const worksheetRows = data.students
@@ -137,7 +145,9 @@ export default function FinanceDetail() {
       .sort((a, b) => a.payment.date.localeCompare(b.payment.date));
 
     const xuyuanAdj     = monthStr === '2026-06' ? XUYUAN_ADJ_2026_06 : 0;
-    const totalXuYuan   = xuyuanRows.reduce((s, r) => s + r.income, 0) + xuyuanAdj;
+    const totalXuYuan        = xuyuanRows.reduce((s, r) => s + r.income, 0) + xuyuanAdj;
+    const totalXuYuanScheduled = xuyuanRows.reduce((s, r) => s + r.scheduledIncome, 0);
+    const totalXuYuanForecast  = totalXuYuan + totalXuYuanScheduled;
     const totalWorksheet = worksheetRows.reduce((s, r) => s + r.income, 0);
     const totalPrepaid  = prepaidRows.reduce((s, r) => s + r.packagePrice, 0);
     const totalPostpaid = postpaidRows.reduce((s, r) => s + r.income, 0);
@@ -171,12 +181,22 @@ export default function FinanceDetail() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
-                {xuyuanRows.map(({ student, sessions, totalMins, income }) => (
+                {xuyuanRows.map(({ student, sessions, totalMins, income, scheduledIncome, scheduledMins }) => (
                   <tr key={student.id}>
                     <td className="py-2 text-gray-800 dark:text-gray-200">{student.name}</td>
                     <td className="py-2 text-right tabular-nums text-gray-500 dark:text-gray-400">{sessions.length}</td>
-                    <td className="py-2 text-right tabular-nums text-gray-500 dark:text-gray-400">{formatDuration(totalMins, lang)}</td>
-                    <td className="py-2 text-right tabular-nums font-medium text-gray-900 dark:text-white">{formatCurrency(income)}</td>
+                    <td className="py-2 text-right tabular-nums text-gray-500 dark:text-gray-400">
+                      {formatDuration(totalMins, lang)}
+                      {scheduledMins > 0 && (
+                        <span className="ml-1 text-blue-400 dark:text-blue-400">+{formatDuration(scheduledMins, lang)}</span>
+                      )}
+                    </td>
+                    <td className="py-2 text-right tabular-nums font-medium text-gray-900 dark:text-white">
+                      {formatCurrency(income)}
+                      {scheduledIncome > 0 && (
+                        <span className="ml-1 text-blue-400 dark:text-blue-400 font-normal text-xs">+{formatCurrency(scheduledIncome)}</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
                 {xuyuanAdj > 0 && (
@@ -189,6 +209,25 @@ export default function FinanceDetail() {
                 )}
               </tbody>
             </table>
+
+            {/* Forecast row */}
+            {totalXuYuanScheduled > 0 && (
+              <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">
+                    Realisasi <span className="font-medium text-gray-700 dark:text-gray-300">{formatCurrency(totalXuYuan)}</span>
+                    {' '}+ terjadwal <span className="font-medium text-blue-500">{formatCurrency(totalXuYuanScheduled)}</span>
+                  </p>
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
+                    Cycle {format(parseISO(xyCycleStart), 'd MMM')} – {format(parseISO(xyCycleEnd), 'd MMM yyyy')}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-0.5">Proyeksi</p>
+                  <p className="text-base font-bold tabular-nums text-blue-600 dark:text-blue-400">{formatCurrency(totalXuYuanForecast)}</p>
+                </div>
+              </div>
+            )}
           </Section>
         )}
 
