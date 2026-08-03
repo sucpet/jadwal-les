@@ -403,7 +403,7 @@ export default function FinanceDetail() {
                         </span>
                       </td>
                     </tr>
-                    {rows.map(({ student, completedSessions, scheduledSessions, rate, honor, margin, scheduledMargin }) => (
+                    {rows.map(({ student, completedSessions, scheduledSessions, rate, honor, margin, scheduledRate, scheduledHonor, scheduledMargin }) => (
                       <tr key={student.id}>
                         <td className="py-2 pl-4 text-gray-700 dark:text-gray-300">{student.name}</td>
                         <td className="py-2 text-right tabular-nums text-gray-400 dark:text-gray-500">
