@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { format, parseISO, subMonths } from 'date-fns';
 import { ArrowLeft, Download, X } from 'lucide-react';
@@ -155,31 +155,40 @@ export default function FinanceDetail() {
 
     // Margin dari laoshi: selisih rate murid - honor laoshi per sesi → pendapatan owner
     const nonOwnerTeachers = data.teachers.filter(t => !t.isOwner);
-    type MarginStudentRow = { student: typeof data.students[0]; sessions: typeof data.sessions; rate: number; honor: number; margin: number };
-    type MarginLaoshiRow  = { teacher: TeacherType; rows: MarginStudentRow[]; total: number };
+    type MarginStudentRow = {
+      student: typeof data.students[0];
+      completedSessions: typeof data.sessions;
+      scheduledSessions: typeof data.sessions;
+      rate: number; honor: number; margin: number;
+      scheduledRate: number; scheduledHonor: number; scheduledMargin: number;
+    };
+    type MarginLaoshiRow = { teacher: TeacherType; rows: MarginStudentRow[]; total: number; scheduledTotal: number };
     const laoshiMarginRows: MarginLaoshiRow[] = nonOwnerTeachers.flatMap(laoshi => {
-      const laoshiSessions = data.sessions.filter(s =>
-        s.teacherId === laoshi.id &&
-        s.date.startsWith(monthStr) &&
-        s.status === 'completed'
-      );
-      const studentIds = [...new Set(laoshiSessions.map(s => s.studentId))];
-      const rows: MarginStudentRow[] = studentIds.flatMap(studentId => {
-        const student = data.students.find(s => s.id === studentId);
-        if (!student) return [];
-        const sessions = laoshiSessions.filter(s => s.studentId === studentId);
-        const rate  = sessions.reduce((sum, s) => sum + (s.rateSnapshot  ?? effectiveRate(student, s.date)), 0);
-        const honor = sessions.reduce((sum, s) => sum + (s.honorSnapshot ?? effectiveHonor(laoshi, s.date)), 0);
-        const margin = rate - honor;
-        return [{ student, sessions, rate, honor, margin }];
-      }).filter(r => r.sessions.length > 0);
+      const rows: MarginStudentRow[] = data.students
+        .filter(st => st.teacherId === laoshi.id)
+        .flatMap(student => {
+          const completedSessions = data.sessions.filter(s =>
+            s.studentId === student.id && s.date.startsWith(monthStr) && s.status === 'completed'
+          );
+          const scheduledSessions = data.sessions.filter(s =>
+            s.studentId === student.id && s.date.startsWith(monthStr) && s.status === 'scheduled'
+          );
+          if (!completedSessions.length && !scheduledSessions.length) return [];
+          const rate          = completedSessions.reduce((sum, s) => sum + (s.rateSnapshot  ?? effectiveRate(student, s.date)), 0);
+          const honor         = completedSessions.reduce((sum, s) => sum + (s.honorSnapshot ?? effectiveHonor(laoshi, s.date)), 0);
+          const scheduledRate  = scheduledSessions.reduce((sum, s) => sum + (s.rateSnapshot  ?? effectiveRate(student, s.date)), 0);
+          const scheduledHonor = scheduledSessions.reduce((sum, s) => sum + (s.honorSnapshot ?? effectiveHonor(laoshi, s.date)), 0);
+          return [{ student, completedSessions, scheduledSessions, rate, honor, margin: rate - honor, scheduledRate, scheduledHonor, scheduledMargin: scheduledRate - scheduledHonor }];
+        });
       if (!rows.length) return [];
-      return [{ teacher: laoshi, rows, total: rows.reduce((sum, r) => sum + r.margin, 0) }];
+      return [{ teacher: laoshi, rows, total: rows.reduce((sum, r) => sum + r.margin, 0), scheduledTotal: rows.reduce((sum, r) => sum + r.scheduledMargin, 0) }];
     });
-    const totalLaoshiMargin = laoshiMarginRows.reduce((sum, r) => sum + r.total, 0);
+    const totalLaoshiMargin          = laoshiMarginRows.reduce((sum, r) => sum + r.total, 0);
+    const totalLaoshiMarginScheduled = laoshiMarginRows.reduce((sum, r) => sum + r.scheduledTotal, 0);
+    const totalLaoshiMarginForecast  = totalLaoshiMargin + totalLaoshiMarginScheduled;
 
     const grandTotal         = totalXuYuan + totalWorksheet + totalPrepaid + totalPostpaid + totalPayments + totalLaoshiMargin;
-    const grandTotalForecast = totalXuYuanForecast + totalWorksheet + totalPrepaid + totalPostpaid + totalPayments + totalLaoshiMargin;
+    const grandTotalForecast = totalXuYuanForecast + totalWorksheet + totalPrepaid + totalPostpaid + totalPayments + totalLaoshiMarginForecast;
 
     return (
       <div className="max-w-2xl mx-auto space-y-6">
@@ -384,9 +393,9 @@ export default function FinanceDetail() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
-                {laoshiMarginRows.map(({ teacher: laoshi, rows, total }) => (
-                  <>
-                    <tr key={laoshi.id + '-header'}>
+                {laoshiMarginRows.map(({ teacher: laoshi, rows, total, scheduledTotal }) => (
+                  <React.Fragment key={laoshi.id}>
+                    <tr>
                       <td colSpan={4} className="pt-3 pb-1">
                         <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">
                           <span className="w-2 h-2 rounded-full inline-block" style={{ background: laoshi.color }} />
@@ -394,24 +403,62 @@ export default function FinanceDetail() {
                         </span>
                       </td>
                     </tr>
-                    {rows.map(({ student, sessions, rate, honor, margin }) => (
+                    {rows.map(({ student, completedSessions, scheduledSessions, rate, honor, margin, scheduledMargin }) => (
                       <tr key={student.id}>
                         <td className="py-2 pl-4 text-gray-700 dark:text-gray-300">{student.name}</td>
-                        <td className="py-2 text-right tabular-nums text-gray-400 dark:text-gray-500">{sessions.length}</td>
-                        <td className="py-2 text-right tabular-nums text-gray-400 dark:text-gray-500 text-xs">
-                          {formatCurrency(rate / sessions.length)}–{formatCurrency(honor / sessions.length)}
+                        <td className="py-2 text-right tabular-nums text-gray-400 dark:text-gray-500">
+                          {completedSessions.length}
+                          {scheduledSessions.length > 0 && (
+                            <span className="ml-1 text-blue-400">+{scheduledSessions.length}</span>
+                          )}
                         </td>
-                        <td className="py-2 text-right tabular-nums font-medium text-gray-900 dark:text-white">{formatCurrency(margin)}</td>
+                        <td className="py-2 text-right tabular-nums text-gray-400 dark:text-gray-500 text-xs">
+                          {completedSessions.length > 0
+                            ? `${formatCurrency(rate / completedSessions.length)}–${formatCurrency(honor / completedSessions.length)}`
+                            : `${formatCurrency(scheduledRate / scheduledSessions.length)}–${formatCurrency(scheduledHonor / scheduledSessions.length)}`
+                          }
+                        </td>
+                        <td className="py-2 text-right tabular-nums font-medium text-gray-900 dark:text-white">
+                          {completedSessions.length > 0 ? formatCurrency(margin) : '—'}
+                          {scheduledMargin > 0 && (
+                            <span className="ml-1 text-blue-400 font-normal text-xs">+{formatCurrency(scheduledMargin)}</span>
+                          )}
+                        </td>
                       </tr>
                     ))}
-                    <tr key={laoshi.id + '-subtotal'} className="border-t border-gray-100 dark:border-gray-700">
+                    <tr className="border-t border-gray-100 dark:border-gray-700">
                       <td colSpan={3} className="py-1.5 pl-4 text-xs text-gray-400 dark:text-gray-500">{t('fd.marginSubtotal', { name: laoshi.name })}</td>
-                      <td className="py-1.5 text-right tabular-nums text-sm font-semibold text-gray-700 dark:text-gray-300">{formatCurrency(total)}</td>
+                      <td className="py-1.5 text-right tabular-nums text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        {formatCurrency(total)}
+                        {scheduledTotal > 0 && (
+                          <span className="ml-1 text-blue-400 font-normal text-xs">+{formatCurrency(scheduledTotal)}</span>
+                        )}
+                      </td>
                     </tr>
-                  </>
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>
+
+            {/* Forecast block */}
+            <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex items-end justify-between">
+              <div className="space-y-1">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {t('fd.forecastRealized')}&nbsp;
+                  <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(totalLaoshiMargin)}</span>
+                </p>
+                {totalLaoshiMarginScheduled > 0 && (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {t('fd.forecastScheduled')}&nbsp;
+                    <span className="font-semibold text-blue-600 dark:text-blue-400">+{formatCurrency(totalLaoshiMarginScheduled)}</span>
+                  </p>
+                )}
+              </div>
+              <div className="text-right">
+                <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-0.5">{t('fd.forecastProjected')}</p>
+                <p className="text-xl font-bold tabular-nums text-blue-600 dark:text-blue-400">{formatCurrency(totalLaoshiMarginForecast)}</p>
+              </div>
+            </div>
           </Section>
         )}
 
