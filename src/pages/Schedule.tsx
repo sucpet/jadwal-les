@@ -45,7 +45,7 @@ export default function Schedule() {
   const [copyIsRecurring, setCopyIsRecurring] = useState(false);
   const [copyCount, setCopyCount] = useState('4');
   const [bulkStudentFilter, setBulkStudentFilter] = useState('');
-  const [bulkWeek, setBulkWeek] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const [bulkMonth, setBulkMonth] = useState(() => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), 1); });
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
   const [dayPanel, setDayPanel] = useState<string | null>(null);
@@ -207,7 +207,7 @@ export default function Schedule() {
     setSelectedIds(new Set());
     setBulkConfirm(null);
     setBulkStudentFilter('');
-    setBulkWeek(startOfWeek(new Date(), { weekStartsOn: 1 }));
+    setBulkMonth(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   };
 
   const toggleSelect = (id: string) => {
@@ -218,13 +218,11 @@ export default function Schedule() {
     });
   };
 
-  const bulkWeekEnd = addDays(bulkWeek, 6);
-  const bulkWeekStr = format(bulkWeek, 'yyyy-MM-dd');
-  const bulkWeekEndStr = format(bulkWeekEnd, 'yyyy-MM-dd');
+  const bulkMonthStr = format(bulkMonth, 'yyyy-MM');
 
   const bulkSessions = [...filteredSessions]
     .filter(s => {
-      if (s.date < bulkWeekStr || s.date > bulkWeekEndStr) return false;
+      if (!s.date.startsWith(bulkMonthStr)) return false;
       if (!bulkStudentFilter.trim()) return true;
       const student = data.students.find(st => st.id === s.studentId);
       return student?.name.toLowerCase().includes(bulkStudentFilter.toLowerCase());
@@ -424,18 +422,18 @@ export default function Schedule() {
             )}
           </div>
 
-          {/* Week navigation */}
+          {/* Month navigation */}
           <div className="flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2">
-            <button onClick={() => setBulkWeek(w => addDays(w, -7))} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded dark:text-gray-300">
+            <button onClick={() => setBulkMonth(m => subMonths(m, 1))} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded dark:text-gray-300">
               <ChevronLeft size={18} />
             </button>
             <span className="flex-1 text-center text-sm font-medium dark:text-gray-200 capitalize">
-              {format(bulkWeek, 'd MMM', { locale })} – {format(bulkWeekEnd, 'd MMM yyyy', { locale })}
+              {format(bulkMonth, 'MMMM yyyy', { locale })}
             </span>
-            <button onClick={() => setBulkWeek(startOfWeek(new Date(), { weekStartsOn: 1 }))} className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline px-1">
+            <button onClick={() => setBulkMonth(new Date(new Date().getFullYear(), new Date().getMonth(), 1))} className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline px-1">
               {t('sch.today')}
             </button>
-            <button onClick={() => setBulkWeek(w => addDays(w, 7))} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded dark:text-gray-300">
+            <button onClick={() => setBulkMonth(m => addMonths(m, 1))} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded dark:text-gray-300">
               <ChevronRight size={18} />
             </button>
           </div>
