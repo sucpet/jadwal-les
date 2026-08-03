@@ -218,6 +218,11 @@ export const translations: Record<Lang, Record<string, string>> = {
     'fd.adjMayShort': 'Penyesuaian Mei (6,5j private + 0,5j semi)',
     'fd.adjDur7': '7 jam',
     'fd.noIncome': 'Tidak ada pendapatan bulan ini.',
+    'fd.forecastTitle': 'Forecast XuYuan',
+    'fd.forecastRealized': 'Realisasi',
+    'fd.forecastScheduled': 'Terjadwal',
+    'fd.forecastCycle': 'Cycle {start}–{end}',
+    'fd.forecastProjected': 'Proyeksi s/d akhir cycle',
 
     // students
     'stu.title': 'Murid',
@@ -603,6 +608,11 @@ export const translations: Record<Lang, Record<string, string>> = {
     'fd.adjMayShort': 'May adjustment (6.5h private + 0.5h semi)',
     'fd.adjDur7': '7 hours',
     'fd.noIncome': 'No income this month.',
+    'fd.forecastTitle': 'XuYuan Forecast',
+    'fd.forecastRealized': 'Realized',
+    'fd.forecastScheduled': 'Scheduled',
+    'fd.forecastCycle': 'Cycle {start}–{end}',
+    'fd.forecastProjected': 'Projected to cycle end',
 
     // students
     'stu.title': 'Students',

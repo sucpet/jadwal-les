@@ -216,25 +216,25 @@ export default function FinanceDetail() {
         {/* XuYuan forecast — always shown when owner has XuYuan students */}
         {xuyuanStudents.length > 0 && (
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 px-5 py-4">
-            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3">Forecast XuYuan</p>
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3">{t('fd.forecastTitle')}</p>
             <div className="flex items-end justify-between">
               <div className="space-y-1">
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Realisasi&nbsp;
+                  {t('fd.forecastRealized')}&nbsp;
                   <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(totalXuYuan)}</span>
                 </p>
                 {totalXuYuanScheduled > 0 && (
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Terjadwal&nbsp;
+                    {t('fd.forecastScheduled')}&nbsp;
                     <span className="font-semibold text-blue-600 dark:text-blue-400">+{formatCurrency(totalXuYuanScheduled)}</span>
                   </p>
                 )}
                 <p className="text-[11px] text-gray-400 dark:text-gray-500 pt-1">
-                  Cycle {format(parseISO(xyCycleStart), 'd MMM')}–{format(parseISO(xyCycleEnd), 'd MMM yyyy')}
+                  {t('fd.forecastCycle', { start: format(parseISO(xyCycleStart), 'd MMM'), end: format(parseISO(xyCycleEnd), 'd MMM yyyy') })}
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-0.5">Proyeksi s/d akhir cycle</p>
+                <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-0.5">{t('fd.forecastProjected')}</p>
                 <p className="text-2xl font-bold tabular-nums text-blue-600 dark:text-blue-400">{formatCurrency(totalXuYuanForecast)}</p>
               </div>
             </div>
@@ -364,7 +364,7 @@ export default function FinanceDetail() {
             </div>
             {grandTotalForecast > grandTotal && (
               <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-gray-100 dark:border-gray-700">
-                <span className="text-xs text-gray-400 dark:text-gray-500">Proyeksi s/d akhir cycle</span>
+                <span className="text-xs text-gray-400 dark:text-gray-500">{t('fd.forecastProjected')}</span>
                 <span className="text-sm font-bold tabular-nums text-blue-600 dark:text-blue-400">
                   {formatCurrency(grandTotalForecast)}
                 </span>
