@@ -379,6 +379,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if ('pendingRateEffectiveDate' in updates)   row.pending_rate_effective_date = updates.pendingRateEffectiveDate ?? null;
     if (updates.deferredPayment    !== undefined) row.deferred_payment = updates.deferredPayment;
     if (updates.group          !== undefined) row.group           = updates.group;
+    if (updates.xuYuanType     !== undefined) row.xu_yuan_type    = updates.xuYuanType;
     if (updates.phone          !== undefined) row.phone           = updates.phone ?? null;
     if (updates.notes          !== undefined) row.notes           = updates.notes;
     if (updates.isActive       !== undefined) row.is_active       = updates.isActive;
