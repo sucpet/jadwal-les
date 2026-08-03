@@ -165,13 +165,36 @@ export default function Finance() {
           .filter(w => w.date >= xyCycleStart && w.date <= xyCycleEnd && ownerStudentIds.has(w.studentId))
           .reduce((sum, w) => sum + w.pages * WORKSHEET_PRICE, 0);
 
-        const totalOwnerIncome = incomeXuYuan + incomeWorksheet + incomePribadi + incomeWenwen;
+        // Margin laoshi: selisih rate murid - honor laoshi per sesi
+        let incomeMarginRealized = 0;
+        let incomeMarginScheduled = 0;
+        nonOwners.forEach(laoshi => {
+          data.students.filter(st => st.teacherId === laoshi.id).forEach(student => {
+            const postpaid = student.billingType === 'per-session';
+            data.sessions
+              .filter(s =>
+                s.studentId === student.id &&
+                s.date.startsWith(monthStr) &&
+                (s.status === 'completed' || (postpaid && s.status === 'scheduled'))
+              )
+              .forEach(s => {
+                const m = (s.rateSnapshot ?? effectiveRate(student, s.date))
+                        - (s.honorSnapshot ?? effectiveHonor(laoshi, s.date));
+                if (s.status === 'completed') incomeMarginRealized  += m;
+                else                          incomeMarginScheduled += m;
+              });
+          });
+        });
+        const incomeMargin = incomeMarginRealized + incomeMarginScheduled;
+
+        const totalOwnerIncome = incomeXuYuan + incomeWorksheet + incomePribadi + incomeWenwen + incomeMarginRealized;
 
         const incomeRows = [
           { label: t('fin.rowXuYuan'), value: incomeXuYuan },
           { label: t('fin.rowWorksheet'), value: incomeWorksheet },
           { label: 'Pribadi', value: incomePribadi },
           { label: 'WenWen_AiZhongWen', value: incomeWenwen },
+          { label: t('fin.rowMargin'), value: incomeMarginRealized, forecast: incomeMargin },
         ];
 
         return (
@@ -197,9 +220,16 @@ export default function Finance() {
                   className="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
                 >
                   <span className="text-sm text-gray-600 dark:text-gray-400">{row.label}</span>
-                  <span className="text-sm font-semibold tabular-nums text-gray-900 dark:text-white">
-                    {row.value > 0 ? formatCurrency(row.value) : '—'}
-                  </span>
+                  <div className="text-right">
+                    <span className="text-sm font-semibold tabular-nums text-gray-900 dark:text-white">
+                      {row.value > 0 ? formatCurrency(row.value) : '—'}
+                    </span>
+                    {'forecast' in row && row.forecast > row.value && (
+                      <span className="ml-1.5 text-xs tabular-nums text-blue-500">
+                        → {formatCurrency(row.forecast)}
+                      </span>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
