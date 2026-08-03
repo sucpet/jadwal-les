@@ -224,9 +224,9 @@ export default function Finance() {
                     <span className="text-sm font-semibold tabular-nums text-gray-900 dark:text-white">
                       {row.value > 0 ? formatCurrency(row.value) : '—'}
                     </span>
-                    {'forecast' in row && row.forecast > row.value && (
+                    {'forecast' in row && (row.forecast ?? 0) > row.value && (
                       <span className="ml-1.5 text-xs tabular-nums text-blue-500">
-                        → {formatCurrency(row.forecast)}
+                        → {formatCurrency(row.forecast!)}
                       </span>
                     )}
                   </div>
