@@ -65,8 +65,16 @@ function db(query: PromiseLike<{ error: any }>) {
   query.then(({ error }) => { if (error) console.error('Supabase error:', error); });
 }
 
+async function getUserName(): Promise<string> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const meta = session?.user?.user_metadata;
+  return (meta?.name as string | undefined) ?? session?.user?.email?.split('@')[0] ?? '—';
+}
+
 function logActivity(action: 'create' | 'reschedule' | 'delete' | 'update', description: string) {
-  db(supabase.from('activity_log').insert({ id: generateId(), action, description, created_at: new Date().toISOString() }));
+  getUserName().then(user_name => {
+    db(supabase.from('activity_log').insert({ id: generateId(), action, description, user_name, created_at: new Date().toISOString() }));
+  });
 }
 
 const BACKUP_KEY = 'jadwal-les-last-backup';

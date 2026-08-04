@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Download, Trash2, AlertTriangle, CheckCircle2, Moon, Sun, Cloud, RefreshCw, RotateCcw, Languages } from 'lucide-react';
+import { Download, Trash2, AlertTriangle, CheckCircle2, Moon, Sun, Cloud, RefreshCw, RotateCcw, Languages, UserCircle2 } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { generateId } from '../utils/helpers';
 import { useTheme } from '../store/ThemeContext';
@@ -13,6 +13,26 @@ export default function Settings() {
   const { t, lang, setLang } = useLang();
   const confirm = useConfirm();
   const [status, setStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+
+  const [displayName, setDisplayName] = useState('');
+  const [displayNameSaving, setDisplayNameSaving] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const name = (session?.user?.user_metadata?.name as string | undefined) ?? '';
+      setDisplayName(name);
+    });
+  }, []);
+
+  const saveDisplayName = async () => {
+    const trimmed = displayName.trim();
+    if (!trimmed) return;
+    setDisplayNameSaving(true);
+    const { error } = await supabase.auth.updateUser({ data: { name: trimmed } });
+    setDisplayNameSaving(false);
+    if (error) setStatus({ type: 'error', msg: error.message });
+    else setStatus({ type: 'success', msg: 'Nama tampilan disimpan' });
+  };
 
   const [backupFiles, setBackupFiles] = useState<Array<{ name: string }>>([]);
   const [backupLoading, setBackupLoading] = useState(false);
@@ -110,10 +130,13 @@ export default function Settings() {
       if (error || !blob) throw new Error(t('set.downloadFail2'));
       const json = JSON.parse(await blob.text());
       const res = await applyBackup(json);
+      const { data: { session: sess } } = await supabase.auth.getSession();
+      const restoreName = (sess?.user?.user_metadata?.name as string | undefined) ?? sess?.user?.email?.split('@')[0] ?? '—';
       await supabase.from('activity_log').insert({
         id: generateId(),
         action: 'restore',
         description: `Pulihkan dari backup ${label} — ${res.teachers.length} laoshi, ${res.students.length} murid, ${res.packages.length} paket, ${res.sessions.length} sesi`,
+        user_name: restoreName,
         created_at: new Date().toISOString(),
       });
       setStatus({ type: 'success', msg: t('set.restoreOk', { t: res.teachers.length, s: res.students.length, p: res.packages.length, se: res.sessions.length }) });
@@ -153,6 +176,31 @@ export default function Settings() {
           <span className="text-sm">{status.msg}</span>
         </div>
       )}
+
+      {/* Nama Tampilan */}
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 space-y-3">
+        <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+          <UserCircle2 size={17} /> Nama Tampilan
+        </h2>
+        <p className="text-xs text-gray-500 dark:text-gray-400">Dipakai di activity log untuk menandai siapa yang melakukan perubahan.</p>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={displayName}
+            onChange={e => setDisplayName(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && saveDisplayName()}
+            placeholder="Nama kamu (contoh: Calvin)"
+            className="flex-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          <button
+            onClick={saveDisplayName}
+            disabled={displayNameSaving || !displayName.trim()}
+            className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+          >
+            {displayNameSaving ? 'Menyimpan...' : 'Simpan'}
+          </button>
+        </div>
+      </div>
 
       {/* Stats */}
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">

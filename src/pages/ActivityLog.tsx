@@ -9,6 +9,7 @@ interface LogRow {
   id: string;
   action: 'create' | 'reschedule' | 'delete' | 'restore' | 'update';
   description: string;
+  user_name?: string | null;
   created_at: string;
 }
 
@@ -106,9 +107,14 @@ export default function ActivityLog() {
                         <Icon size={11} /> {t(`log.action.${r.action}`)}
                       </span>
                       <span className="flex-1 text-sm text-gray-800 dark:text-gray-200 min-w-0 break-words">{r.description}</span>
-                      <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums flex-shrink-0">
-                        {format(parseISO(r.created_at), 'HH:mm')}
-                      </span>
+                      <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+                        <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">
+                          {format(parseISO(r.created_at), 'HH:mm')}
+                        </span>
+                        {r.user_name && (
+                          <span className="text-[10px] text-gray-400 dark:text-gray-500">{r.user_name}</span>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
