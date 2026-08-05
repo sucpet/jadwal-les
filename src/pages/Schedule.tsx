@@ -1435,7 +1435,7 @@ export default function Schedule() {
                         status: resolveStatus(d, f.endTime),
                       }));
                     }}
-                    className="w-full h-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full h-10 appearance-none border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
                 <div className="min-w-0">
@@ -1458,7 +1458,7 @@ export default function Schedule() {
                     type="time"
                     value={form.startTime}
                     onChange={e => setForm(f => ({ ...f, startTime: e.target.value }))}
-                    className="w-full h-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full h-10 appearance-none border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
                 <div>
@@ -1467,7 +1467,7 @@ export default function Schedule() {
                     type="time"
                     value={form.endTime}
                     onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))}
-                    className="w-full h-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full h-10 appearance-none border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
               </div>
