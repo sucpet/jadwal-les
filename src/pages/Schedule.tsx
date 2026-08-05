@@ -570,72 +570,89 @@ export default function Schedule() {
         </div>
       </div>
 
-      {/* Mobile day view */}
+      {/* Mobile day view — single-day time grid (mirrors desktop week grid, 1 column) */}
       {!bulkMode && viewMode === 'day' && (() => {
         const dayStr = format(currentDay, 'yyyy-MM-dd');
         const isToday = isSameDay(currentDay, today);
-        const daySessions = filteredSessions
-          .filter(s => s.date === dayStr)
-          .sort((a, b) => a.startTime.localeCompare(b.startTime));
+        const daySessions = filteredSessions.filter(s => isSameDay(parseISO(s.date), currentDay));
+        const layout = computeDayLayout(daySessions);
         return (
-          <div className={`md:hidden rounded-xl border overflow-hidden ${isToday ? 'border-indigo-300 dark:border-indigo-600' : 'border-gray-200 dark:border-gray-700'}`}>
-            <div className={`px-4 py-2.5 flex items-center gap-2 ${isToday ? 'bg-indigo-600' : 'bg-gray-50 dark:bg-gray-800/60'}`}>
-              <span className={`flex-1 text-sm font-medium ${isToday ? 'text-white' : 'text-gray-700 dark:text-gray-200'}`}>
-                {daySessions.length > 0 ? `${daySessions.length} sesi` : <span className="italic opacity-60">{t('sch.noSessions')}</span>}
-              </span>
-              <button
-                onClick={() => openAdd(dayStr)}
-                className={`p-1 rounded-lg ${isToday ? 'text-indigo-200 hover:bg-white/10' : 'text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+          <div className="md:hidden border border-gray-200 dark:border-gray-700 rounded-xl overflow-clip">
+            <div className="overflow-y-auto" style={{ maxHeight: 'calc(100svh - 210px)' }}>
+              <div
+                className="bg-white dark:bg-gray-800 relative"
+                style={{
+                  display: 'grid',
+                  gridTemplateRows: `repeat(${TIME_SLOTS.length}, ${ROW_H}px)`,
+                  gridTemplateColumns: '48px 1fr',
+                }}
               >
-                <Plus size={15} />
-              </button>
-            </div>
-            {daySessions.length > 0 && (
-              <div className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
-                {daySessions.map(s => {
-                  const student = data.students.find(st => st.id === s.studentId);
-                  const teacher = data.teachers.find(t => t.id === s.teacherId);
-                  const groupColor = student ? GROUP_COLORS[student.group] : '#6366f1';
-                  return (
-                    <div
-                      key={s.id}
-                      onClick={() => openEdit(s)}
-                      style={{ background: `${groupColor}22` }}
-                      className="flex items-center gap-3 px-4 py-3 cursor-pointer active:bg-gray-50 dark:active:bg-gray-700/50"
-                    >
-                      <div className="w-1 self-stretch rounded-full flex-shrink-0" style={{ background: teacher?.color ?? '#6366f1' }} />
-                      <span className="text-xs text-gray-500 dark:text-gray-400 w-[4.5rem] flex-shrink-0 tabular-nums">
-                        {s.startTime}–{s.endTime}
-                      </span>
-                      <span className="flex-1 text-sm font-medium text-gray-900 dark:text-white truncate min-w-0">
-                        {student?.name ?? '—'}
-                      </span>
-                      <button
-                        onClick={e => { e.stopPropagation(); shiftSessionWeeks(s, 1); }}
-                        title={t('sch.reschedTitle')}
-                        className="flex-shrink-0 text-[11px] font-medium px-1.5 py-1 rounded text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
+                {/* Time labels */}
+                {TIME_SLOTS.map((time, i) => (
+                  <div
+                    key={time}
+                    style={{ gridRow: i + 1, gridColumn: 1 }}
+                    className={`px-1.5 py-1 text-[11px] text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-900/50 flex items-start border-r border-gray-100 dark:border-gray-700${i < TIME_SLOTS.length - 1 ? ' border-b' : ''}`}
+                  >
+                    {time}
+                  </div>
+                ))}
+
+                {/* Background cells — tap to add */}
+                {TIME_SLOTS.map((time, i) => (
+                  <div
+                    key={time}
+                    style={{ gridRow: i + 1, gridColumn: 2 }}
+                    className={`cursor-pointer border-gray-100 dark:border-gray-700${isToday ? ' bg-indigo-50/30 dark:bg-indigo-900/10' : ''}${i < TIME_SLOTS.length - 1 ? ' border-b' : ''}`}
+                    onClick={() => openAdd(dayStr, time)}
+                  />
+                ))}
+
+                {/* Session overlay */}
+                <div
+                  style={{
+                    gridRow: `1 / ${TIME_SLOTS.length + 1}`,
+                    gridColumn: 2,
+                    position: 'relative',
+                    zIndex: 5,
+                    pointerEvents: 'none',
+                  }}
+                >
+                  {layout.map(({ session: s, colIndex, totalCols }) => {
+                    const topPx = Math.max(0, timeToPixels(s.startTime));
+                    const heightPx = Math.max(ROW_H / 2, timeToPixels(s.endTime) - timeToPixels(s.startTime) - 2);
+                    const widthPct = 100 / totalCols;
+                    const leftPct = (colIndex / totalCols) * 100;
+                    const student = data.students.find(st => st.id === s.studentId);
+                    const teacher = data.teachers.find(t => t.id === s.teacherId);
+                    const color = teacher?.color ?? '#6366f1';
+                    const groupColor = student ? GROUP_COLORS[student.group] : color;
+                    return (
+                      <div
+                        key={s.id}
+                        style={{
+                          position: 'absolute',
+                          top: `${topPx + 1}px`,
+                          height: `${heightPx}px`,
+                          left: `calc(${leftPct}% + 2px)`,
+                          width: `calc(${widthPct}% - 4px)`,
+                          pointerEvents: 'auto',
+                          background: `${groupColor}80`,
+                          color: '#fff',
+                          borderLeft: `4px solid ${color}`,
+                          opacity: s.status === 'completed' ? 0.6 : 1,
+                        }}
+                        className="rounded text-xs px-1 py-0.5 overflow-hidden active:opacity-70"
+                        onClick={e => { e.stopPropagation(); openEdit(s); }}
                       >
-                        {t('sch.plus1wkShort')}
-                      </button>
-                      <button
-                        onClick={e => { e.stopPropagation(); openQuick(s); }}
-                        title={t('sch.reschedule')}
-                        className="flex-shrink-0 p-1 rounded text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
-                      >
-                        <CalendarClock size={15} />
-                      </button>
-                      <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
-                        s.status === 'completed'
-                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                          : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
-                      }`}>
-                        {s.status === 'completed' ? t('status.completed') : t('status.scheduled')}
-                      </span>
-                    </div>
-                  );
-                })}
+                        <div className="font-medium truncate">{student?.name}</div>
+                        <div className="opacity-70 truncate">{s.startTime}–{s.endTime}</div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            )}
+            </div>
           </div>
         );
       })()}
