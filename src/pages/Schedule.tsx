@@ -1422,7 +1422,7 @@ export default function Schedule() {
               </div>
 
               <div className="grid grid-cols-2 gap-3 md:grid-cols-1">
-                <div>
+                <div className="min-w-0">
                   <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('common.date')}</label>
                   <input
                     type="date"
@@ -1438,7 +1438,7 @@ export default function Schedule() {
                     className="w-full h-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('sch.status')}</label>
                   <select
                     value={form.status}
