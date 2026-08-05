@@ -1421,21 +1421,34 @@ export default function Schedule() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('common.date')}</label>
-                <input
-                  type="date"
-                  value={form.date}
-                  onChange={e => {
-                    const d = e.target.value;
-                    setForm(f => ({
-                      ...f,
-                      date: d,
-                      status: resolveStatus(d, f.endTime),
-                    }));
-                  }}
-                  className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-1">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('common.date')}</label>
+                  <input
+                    type="date"
+                    value={form.date}
+                    onChange={e => {
+                      const d = e.target.value;
+                      setForm(f => ({
+                        ...f,
+                        date: d,
+                        status: resolveStatus(d, f.endTime),
+                      }));
+                    }}
+                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('sch.status')}</label>
+                  <select
+                    value={form.status}
+                    onChange={e => setForm(f => ({ ...f, status: e.target.value as LessonSession['status'] }))}
+                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="scheduled">{t('status.scheduled')}</option>
+                    <option value="completed" disabled={form.date > todayStr}>{t('status.completed')}</option>
+                  </select>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -1457,18 +1470,6 @@ export default function Schedule() {
                     className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('sch.status')}</label>
-                <select
-                  value={form.status}
-                  onChange={e => setForm(f => ({ ...f, status: e.target.value as LessonSession['status'] }))}
-                  className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="scheduled">{t('status.scheduled')}</option>
-                  <option value="completed" disabled={form.date > todayStr}>{t('status.completed')}</option>
-                </select>
               </div>
 
               {form.studentId && selectedStudent && (
