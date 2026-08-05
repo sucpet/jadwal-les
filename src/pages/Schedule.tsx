@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Plus, X, Check, Trash2, Clock, AlertTriangle, RefreshCw, ListChecks, CalendarClock, Search, Copy } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { addWeeks, subWeeks, startOfWeek, addDays, subDays, isSameDay, parseISO, format, startOfMonth, addMonths, subMonths, isSameMonth } from 'date-fns';
@@ -50,6 +50,16 @@ export default function Schedule() {
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
   const [currentDay, setCurrentDay] = useState(() => new Date());
   const [dayPanel, setDayPanel] = useState<string | null>(null);
+  const dayScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (viewMode !== 'day' || !dayScrollRef.current) return;
+    const isToday = format(currentDay, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
+    const scrollTo = isToday
+      ? Math.max(0, timeToPixels(format(new Date(), 'HH:mm')) - 120)
+      : 0;
+    dayScrollRef.current.scrollTop = scrollTo;
+  }, [viewMode, currentDay]);
   const [form, setForm] = useState({
     teacherId: data.teachers.find(te => te.isActive)?.id ?? '',
     studentId: '',
@@ -578,7 +588,7 @@ export default function Schedule() {
         const layout = computeDayLayout(daySessions);
         return (
           <div className="md:hidden border border-gray-200 dark:border-gray-700 rounded-xl overflow-clip">
-            <div className="overflow-y-auto" style={{ maxHeight: 'calc(100svh - 210px)' }}>
+            <div ref={dayScrollRef} className="overflow-y-auto" style={{ maxHeight: 'calc(100svh - 210px)' }}>
               <div
                 className="bg-white dark:bg-gray-800 relative"
                 style={{
