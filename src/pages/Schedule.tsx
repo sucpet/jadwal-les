@@ -740,7 +740,7 @@ export default function Schedule() {
 
       {/* Calendar grid — desktop only, hidden in bulk/month mode */}
       {/* overflow-clip: clips border-radius without creating a scroll container (so sticky header works) */}
-      <div className={`border border-gray-200 dark:border-gray-700 rounded-xl overflow-clip ${bulkMode || viewMode === 'month' || viewMode === 'day' ? 'hidden' : 'hidden md:block'}`}>
+      <div className={`border border-gray-200 dark:border-gray-700 rounded-xl overflow-clip ${bulkMode || viewMode === 'month' ? 'hidden' : 'hidden md:block'}`}>
         {/* Single scroll container — header + body share the same width so columns always align */}
         <div className="overflow-y-auto max-h-[748px]">
           {/* Sticky header */}
