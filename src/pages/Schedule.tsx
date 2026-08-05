@@ -401,7 +401,7 @@ export default function Schedule() {
               </button>
               <button
                 onClick={() => openAdd()}
-                className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700"
+                className="hidden md:flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700"
               >
                 <Plus size={16} /> {t('sch.addSession')}
               </button>
@@ -1617,6 +1617,16 @@ export default function Schedule() {
             </div>
           </div>
         </div>
+      )}
+      {/* FAB — mobile only, hidden in bulk mode */}
+      {!bulkMode && (
+        <button
+          onClick={() => openAdd()}
+          className="md:hidden fixed bottom-6 right-5 z-40 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-indigo-700 active:scale-95 transition-transform"
+          aria-label={t('sch.addSession')}
+        >
+          <Plus size={24} />
+        </button>
       )}
     </div>
   );
