@@ -1400,7 +1400,7 @@ export default function Schedule() {
                   <select
                     value={form.teacherId}
                     onChange={e => setForm(f => ({ ...f, teacherId: e.target.value, studentId: '' }))}
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg pl-3 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full h-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg pl-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
                     {[...data.teachers].filter(te => te.isActive || te.id === form.teacherId).sort((a, b) => a.name.localeCompare(b.name, 'id')).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
@@ -1410,7 +1410,7 @@ export default function Schedule() {
                   <select
                     value={form.studentId}
                     onChange={e => setForm(f => ({ ...f, studentId: e.target.value }))}
-                    className={`w-full border rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 ${showErrors && !form.studentId ? 'border-red-400 bg-red-50 dark:bg-red-900/20' : 'border-gray-300 dark:border-gray-600'}`}
+                    className={`w-full h-10 border rounded-lg px-3 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 ${showErrors && !form.studentId ? 'border-red-400 bg-red-50 dark:bg-red-900/20' : 'border-gray-300 dark:border-gray-600'}`}
                   >
                     <option value="">{t('common.selectStudent')}</option>
                     {[...availableStudents].sort((a, b) => a.name.localeCompare(b.name, 'id')).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -1435,7 +1435,7 @@ export default function Schedule() {
                         status: resolveStatus(d, f.endTime),
                       }));
                     }}
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full h-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
                 <div>
@@ -1443,7 +1443,7 @@ export default function Schedule() {
                   <select
                     value={form.status}
                     onChange={e => setForm(f => ({ ...f, status: e.target.value as LessonSession['status'] }))}
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full h-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
                     <option value="scheduled">{t('status.scheduled')}</option>
                     <option value="completed" disabled={form.date > todayStr}>{t('status.completed')}</option>
@@ -1458,7 +1458,7 @@ export default function Schedule() {
                     type="time"
                     value={form.startTime}
                     onChange={e => setForm(f => ({ ...f, startTime: e.target.value }))}
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full h-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
                 <div>
@@ -1467,7 +1467,7 @@ export default function Schedule() {
                     type="time"
                     value={form.endTime}
                     onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))}
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full h-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
               </div>
