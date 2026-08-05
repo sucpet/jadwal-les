@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight, Plus, X, Check, Trash2, Clock, AlertTriangle, RefreshCw, ListChecks, CalendarClock, Search, Copy } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
-import { addWeeks, subWeeks, startOfWeek, addDays, isSameDay, parseISO, format, startOfMonth, addMonths, subMonths, isSameMonth } from 'date-fns';
+import { addWeeks, subWeeks, startOfWeek, addDays, subDays, isSameDay, parseISO, format, startOfMonth, addMonths, subMonths, isSameMonth } from 'date-fns';
 import { useApp } from '../store/AppContext';
 import { useLang } from '../store/LanguageContext';
 import { useConfirm } from '../store/ConfirmContext';
@@ -46,8 +46,9 @@ export default function Schedule() {
   const [copyCount, setCopyCount] = useState('4');
   const [bulkStudentFilter, setBulkStudentFilter] = useState('');
   const [bulkMonth, setBulkMonth] = useState(() => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), 1); });
-  const [viewMode, setViewMode] = useState<'week' | 'month'>('month');
+  const [viewMode, setViewMode] = useState<'week' | 'month' | 'day'>('day');
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
+  const [currentDay, setCurrentDay] = useState(() => new Date());
   const [dayPanel, setDayPanel] = useState<string | null>(null);
   const [form, setForm] = useState({
     teacherId: data.teachers.find(te => te.isActive)?.id ?? '',
@@ -506,30 +507,54 @@ export default function Schedule() {
       {/* Navigation — hidden in bulk mode */}
       <div className={`flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 ${bulkMode ? 'hidden' : ''}`}>
         <button
-          onClick={() => viewMode === 'week' ? setCurrentWeek(w => subWeeks(w, 1)) : setCurrentMonth(m => subMonths(m, 1))}
+          onClick={() => {
+            if (viewMode === 'day') setCurrentDay(d => subDays(d, 1));
+            else if (viewMode === 'week') setCurrentWeek(w => subWeeks(w, 1));
+            else setCurrentMonth(m => subMonths(m, 1));
+          }}
           className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded dark:text-gray-300"
         >
           <ChevronLeft size={18} />
         </button>
         <span className="flex-1 text-center text-sm font-medium dark:text-gray-200 capitalize">
-          {viewMode === 'week'
+          {viewMode === 'day'
+            ? format(currentDay, 'EEEE, d MMMM yyyy', { locale })
+            : viewMode === 'week'
             ? `${format(weekStart, 'd MMMM', { locale })} – ${format(addDays(weekStart, 6), 'd MMMM yyyy', { locale })}`
             : format(currentMonth, 'MMMM yyyy', { locale })}
         </span>
         <button
-          onClick={() => { setCurrentWeek(new Date()); setCurrentMonth(new Date()); }}
+          onClick={() => { setCurrentWeek(new Date()); setCurrentMonth(new Date()); setCurrentDay(new Date()); }}
           className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline px-1"
         >
           {t('sch.today')}
         </button>
         <button
-          onClick={() => viewMode === 'week' ? setCurrentWeek(w => addWeeks(w, 1)) : setCurrentMonth(m => addMonths(m, 1))}
+          onClick={() => {
+            if (viewMode === 'day') setCurrentDay(d => addDays(d, 1));
+            else if (viewMode === 'week') setCurrentWeek(w => addWeeks(w, 1));
+            else setCurrentMonth(m => addMonths(m, 1));
+          }}
           className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded dark:text-gray-300"
         >
           <ChevronRight size={18} />
         </button>
-        {/* View mode toggle */}
-        <div className="flex items-center gap-0.5 bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5 ml-1">
+        {/* View mode toggle — mobile: Hari | Bulan, desktop: Minggu | Bulan */}
+        <div className="flex items-center gap-0.5 bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5 ml-1 md:hidden">
+          <button
+            onClick={() => setViewMode('day')}
+            className={`text-xs px-2.5 py-1 rounded transition-colors ${viewMode === 'day' ? 'bg-white dark:bg-gray-600 text-gray-800 dark:text-white shadow-sm font-medium' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
+          >
+            {t('sch.day')}
+          </button>
+          <button
+            onClick={() => setViewMode('month')}
+            className={`text-xs px-2.5 py-1 rounded transition-colors ${viewMode === 'month' ? 'bg-white dark:bg-gray-600 text-gray-800 dark:text-white shadow-sm font-medium' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
+          >
+            {t('sch.month')}
+          </button>
+        </div>
+        <div className="hidden md:flex items-center gap-0.5 bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5 ml-1">
           <button
             onClick={() => setViewMode('week')}
             className={`text-xs px-2.5 py-1 rounded transition-colors ${viewMode === 'week' ? 'bg-white dark:bg-gray-600 text-gray-800 dark:text-white shadow-sm font-medium' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
@@ -545,8 +570,78 @@ export default function Schedule() {
         </div>
       </div>
 
-      {/* Mobile week list — visible only on small screens, hidden in bulk/month mode */}
-      <div className={`md:hidden space-y-2 ${bulkMode || viewMode === 'month' ? 'hidden' : ''}`}>
+      {/* Mobile day view */}
+      {!bulkMode && viewMode === 'day' && (() => {
+        const dayStr = format(currentDay, 'yyyy-MM-dd');
+        const isToday = isSameDay(currentDay, today);
+        const daySessions = filteredSessions
+          .filter(s => s.date === dayStr)
+          .sort((a, b) => a.startTime.localeCompare(b.startTime));
+        return (
+          <div className={`md:hidden rounded-xl border overflow-hidden ${isToday ? 'border-indigo-300 dark:border-indigo-600' : 'border-gray-200 dark:border-gray-700'}`}>
+            <div className={`px-4 py-2.5 flex items-center gap-2 ${isToday ? 'bg-indigo-600' : 'bg-gray-50 dark:bg-gray-800/60'}`}>
+              <span className={`flex-1 text-sm font-medium ${isToday ? 'text-white' : 'text-gray-700 dark:text-gray-200'}`}>
+                {daySessions.length > 0 ? `${daySessions.length} sesi` : <span className="italic opacity-60">{t('sch.noSessions')}</span>}
+              </span>
+              <button
+                onClick={() => openAdd(dayStr)}
+                className={`p-1 rounded-lg ${isToday ? 'text-indigo-200 hover:bg-white/10' : 'text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+              >
+                <Plus size={15} />
+              </button>
+            </div>
+            {daySessions.length > 0 && (
+              <div className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
+                {daySessions.map(s => {
+                  const student = data.students.find(st => st.id === s.studentId);
+                  const teacher = data.teachers.find(t => t.id === s.teacherId);
+                  const groupColor = student ? GROUP_COLORS[student.group] : '#6366f1';
+                  return (
+                    <div
+                      key={s.id}
+                      onClick={() => openEdit(s)}
+                      style={{ background: `${groupColor}22` }}
+                      className="flex items-center gap-3 px-4 py-3 cursor-pointer active:bg-gray-50 dark:active:bg-gray-700/50"
+                    >
+                      <div className="w-1 self-stretch rounded-full flex-shrink-0" style={{ background: teacher?.color ?? '#6366f1' }} />
+                      <span className="text-xs text-gray-500 dark:text-gray-400 w-[4.5rem] flex-shrink-0 tabular-nums">
+                        {s.startTime}–{s.endTime}
+                      </span>
+                      <span className="flex-1 text-sm font-medium text-gray-900 dark:text-white truncate min-w-0">
+                        {student?.name ?? '—'}
+                      </span>
+                      <button
+                        onClick={e => { e.stopPropagation(); shiftSessionWeeks(s, 1); }}
+                        title={t('sch.reschedTitle')}
+                        className="flex-shrink-0 text-[11px] font-medium px-1.5 py-1 rounded text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
+                      >
+                        {t('sch.plus1wkShort')}
+                      </button>
+                      <button
+                        onClick={e => { e.stopPropagation(); openQuick(s); }}
+                        title={t('sch.reschedule')}
+                        className="flex-shrink-0 p-1 rounded text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
+                      >
+                        <CalendarClock size={15} />
+                      </button>
+                      <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
+                        s.status === 'completed'
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                          : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                      }`}>
+                        {s.status === 'completed' ? t('status.completed') : t('status.scheduled')}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* Mobile week list — visible only on small screens, hidden in bulk/month/day mode */}
+      <div className={`md:hidden space-y-2 ${bulkMode || viewMode !== 'week' ? 'hidden' : ''}`}>
         {weekDays.map((day, di) => {
           const dayStr = format(day, 'yyyy-MM-dd');
           const daySessions = filteredSessions
@@ -628,7 +723,7 @@ export default function Schedule() {
 
       {/* Calendar grid — desktop only, hidden in bulk/month mode */}
       {/* overflow-clip: clips border-radius without creating a scroll container (so sticky header works) */}
-      <div className={`border border-gray-200 dark:border-gray-700 rounded-xl overflow-clip ${bulkMode || viewMode === 'month' ? 'hidden' : 'hidden md:block'}`}>
+      <div className={`border border-gray-200 dark:border-gray-700 rounded-xl overflow-clip ${bulkMode || viewMode === 'month' || viewMode === 'day' ? 'hidden' : 'hidden md:block'}`}>
         {/* Single scroll container — header + body share the same width so columns always align */}
         <div className="overflow-y-auto max-h-[748px]">
           {/* Sticky header */}
