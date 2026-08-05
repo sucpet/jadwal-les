@@ -50,16 +50,31 @@ export default function Schedule() {
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
   const [currentDay, setCurrentDay] = useState(() => new Date());
   const [dayPanel, setDayPanel] = useState<string | null>(null);
+  const [nowPx, setNowPx] = useState(() => timeToPixels(format(new Date(), 'HH:mm')));
   const dayScrollRef = useRef<HTMLDivElement>(null);
+  const weekScrollRef = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef(0);
 
+  // Update current-time indicator every minute
+  useEffect(() => {
+    const tick = () => setNowPx(timeToPixels(format(new Date(), 'HH:mm')));
+    const id = setInterval(tick, 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Auto-scroll mobile day view
   useEffect(() => {
     if (viewMode !== 'day' || !dayScrollRef.current) return;
-    const isToday = format(currentDay, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
-    const scrollTo = isToday
-      ? Math.max(0, timeToPixels(format(new Date(), 'HH:mm')) - 120)
-      : 0;
-    dayScrollRef.current.scrollTop = scrollTo;
-  }, [viewMode, currentDay]);
+    const isToday = format(currentDay, 'yyyy-MM-dd') === todayStr;
+    dayScrollRef.current.scrollTop = isToday ? Math.max(0, nowPx - 120) : 0;
+  }, [viewMode, currentDay]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-scroll desktop week view
+  useEffect(() => {
+    if (viewMode === 'month' || !weekScrollRef.current) return;
+    const weekContainsToday = weekDays.some(d => isSameDay(d, today));
+    weekScrollRef.current.scrollTop = weekContainsToday ? Math.max(0, nowPx - 120) : 0;
+  }, [viewMode, currentWeek]); // eslint-disable-line react-hooks/exhaustive-deps
   const [form, setForm] = useState({
     teacherId: data.teachers.find(te => te.isActive)?.id ?? '',
     studentId: '',
@@ -587,7 +602,15 @@ export default function Schedule() {
         const daySessions = filteredSessions.filter(s => isSameDay(parseISO(s.date), currentDay));
         const layout = computeDayLayout(daySessions);
         return (
-          <div className="md:hidden border border-gray-200 dark:border-gray-700 rounded-xl overflow-clip">
+          <div
+            className="md:hidden border border-gray-200 dark:border-gray-700 rounded-xl overflow-clip"
+            onTouchStart={e => { touchStartX.current = e.touches[0].clientX; }}
+            onTouchEnd={e => {
+              const dx = e.changedTouches[0].clientX - touchStartX.current;
+              if (dx < -50) setCurrentDay(d => addDays(d, 1));
+              else if (dx > 50) setCurrentDay(d => subDays(d, 1));
+            }}
+          >
             <div ref={dayScrollRef} className="overflow-y-auto" style={{ maxHeight: 'calc(100svh - 210px)' }}>
               <div
                 className="bg-white dark:bg-gray-800 relative"
@@ -628,6 +651,16 @@ export default function Schedule() {
                     pointerEvents: 'none',
                   }}
                 >
+                  {/* Current time indicator */}
+                  {isToday && (
+                    <div
+                      style={{ position: 'absolute', top: nowPx, left: 0, right: 0, zIndex: 20, pointerEvents: 'none' }}
+                      className="flex items-center"
+                    >
+                      <div className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0" />
+                      <div className="flex-1 h-px bg-red-500" />
+                    </div>
+                  )}
                   {layout.map(({ session: s, colIndex, totalCols }) => {
                     const topPx = Math.max(0, timeToPixels(s.startTime));
                     const heightPx = Math.max(ROW_H / 2, timeToPixels(s.endTime) - timeToPixels(s.startTime) - 2);
@@ -752,7 +785,7 @@ export default function Schedule() {
       {/* overflow-clip: clips border-radius without creating a scroll container (so sticky header works) */}
       <div className={`border border-gray-200 dark:border-gray-700 rounded-xl overflow-clip ${bulkMode || viewMode === 'month' ? 'hidden' : 'hidden md:block'}`}>
         {/* Single scroll container — header + body share the same width so columns always align */}
-        <div className="overflow-y-auto max-h-[748px]">
+        <div ref={weekScrollRef} className="overflow-y-auto max-h-[748px]">
           {/* Sticky header */}
           <div
             className="sticky top-0 z-10 grid border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
@@ -833,6 +866,16 @@ export default function Schedule() {
                   pointerEvents: 'none',
                 }}
               >
+                {/* Current time indicator */}
+                {isSameDay(day, today) && (
+                  <div
+                    style={{ position: 'absolute', top: nowPx, left: 0, right: 0, zIndex: 20, pointerEvents: 'none' }}
+                    className="flex items-center"
+                  >
+                    <div className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0 -ml-1" />
+                    <div className="flex-1 h-px bg-red-500" />
+                  </div>
+                )}
                 {layout.map(({ session: s, colIndex, totalCols }) => {
                   const topPx = Math.max(0, timeToPixels(s.startTime));
                   const heightPx = Math.max(ROW_H / 2, timeToPixels(s.endTime) - timeToPixels(s.startTime) - 2);
