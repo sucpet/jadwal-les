@@ -50,7 +50,9 @@ export default function Schedule() {
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
   const [currentDay, setCurrentDay] = useState(() => new Date());
   const [dayPanel, setDayPanel] = useState<string | null>(null);
+  const gridMaxPx = TIME_SLOTS.length * ROW_H;
   const [nowPx, setNowPx] = useState(() => timeToPixels(format(new Date(), 'HH:mm')));
+  const showNowLine = nowPx >= 0 && nowPx <= gridMaxPx;
   const dayScrollRef = useRef<HTMLDivElement>(null);
   const weekScrollRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef(0);
@@ -652,7 +654,7 @@ export default function Schedule() {
                   }}
                 >
                   {/* Current time indicator */}
-                  {isToday && (
+                  {isToday && showNowLine && (
                     <div
                       style={{ position: 'absolute', top: nowPx, left: 0, right: 0, zIndex: 20, pointerEvents: 'none' }}
                       className="flex items-center"
@@ -867,7 +869,7 @@ export default function Schedule() {
                 }}
               >
                 {/* Current time indicator */}
-                {isSameDay(day, today) && (
+                {isSameDay(day, today) && showNowLine && (
                   <div
                     style={{ position: 'absolute', top: nowPx, left: 0, right: 0, zIndex: 20, pointerEvents: 'none' }}
                     className="flex items-center"
