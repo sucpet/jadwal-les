@@ -1421,7 +1421,7 @@ export default function Schedule() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-1">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="min-w-0">
                   <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('common.date')}</label>
                   <input
