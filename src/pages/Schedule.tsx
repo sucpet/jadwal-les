@@ -46,7 +46,9 @@ export default function Schedule() {
   const [copyCount, setCopyCount] = useState('4');
   const [bulkStudentFilter, setBulkStudentFilter] = useState('');
   const [bulkMonth, setBulkMonth] = useState(() => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), 1); });
-  const [viewMode, setViewMode] = useState<'week' | 'month' | 'day'>('day');
+  const [viewMode, setViewMode] = useState<'week' | 'month' | 'day'>(() =>
+    typeof window !== 'undefined' && window.innerWidth >= 768 ? 'week' : 'day'
+  );
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
   const [currentDay, setCurrentDay] = useState(() => new Date());
   const [dayPanel, setDayPanel] = useState<string | null>(null);
