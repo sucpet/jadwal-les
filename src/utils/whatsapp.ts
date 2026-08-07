@@ -19,8 +19,8 @@ export function isValidPhone(raw: string | undefined | null): boolean {
 }
 
 // Bangun link wa.me dengan pesan ter-encode. Return '' kalau nomor tidak valid.
-export function waLink(phone: string | undefined | null, message: string): string {
+export function waLink(phone: string | undefined | null, message?: string): string {
   const d = normalizePhone(phone);
   if (!isValidPhone(d)) return '';
-  return `https://wa.me/${d}?text=${encodeURIComponent(message)}`;
+  return message ? `https://wa.me/${d}?text=${encodeURIComponent(message)}` : `https://wa.me/${d}`;
 }

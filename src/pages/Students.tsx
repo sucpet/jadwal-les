@@ -1022,6 +1022,15 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
         </div>
 
         <div className="flex items-center gap-1">
+          {isValidPhone(student.phone) && (
+            <a
+              href={waLink(student.phone)}
+              target="_blank" rel="noopener noreferrer"
+              className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
+            >
+              <MessageCircle size={14} />
+            </a>
+          )}
           {student.isActive ? (
             <button onClick={() => setEditing(true)}
               className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
