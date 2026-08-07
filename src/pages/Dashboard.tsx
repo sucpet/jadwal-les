@@ -285,12 +285,11 @@ export default function Dashboard() {
                           <span className="ml-2 text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded">{t('common.package')}</span>
                         )}
                       </div>
-                      {session.status !== 'completed' && student && isValidPhone(student.phone) && (
+                      {student && isValidPhone(student.phone) && (
                         <a
-                          href={waLink(student.phone, t('wa.reminderMsg', {
-                            name: student.name,
-                            time: `${session.startTime}–${session.endTime}`,
-                          }))}
+                          href={session.status !== 'completed'
+                            ? waLink(student.phone, t('wa.reminderMsg', { name: student.name, time: `${session.startTime}–${session.endTime}` }))
+                            : waLink(student.phone)}
                           target="_blank" rel="noopener noreferrer"
                           title={t('wa.remind')}
                           className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 px-1.5 py-1 rounded-md flex-shrink-0"
