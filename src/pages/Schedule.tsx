@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Plus, X, Check, Trash2, Clock, AlertTriangle, RefreshCw, ListChecks, CalendarClock, Search, Copy } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, X, Check, Trash2, Clock, AlertTriangle, RefreshCw, ListChecks, CalendarClock, Search, Copy, MessageCircle } from 'lucide-react';
+import { waLink, isValidPhone } from '../utils/whatsapp';
 import { useSearchParams } from 'react-router-dom';
 import { addWeeks, subWeeks, startOfWeek, addDays, subDays, isSameDay, parseISO, format, startOfMonth, addMonths, subMonths, isSameMonth } from 'date-fns';
 import { useApp } from '../store/AppContext';
@@ -1392,9 +1393,23 @@ export default function Schedule() {
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md space-y-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-gray-900 dark:text-white">{editSession ? t('sch.editSession') : t('sch.addSession')}</h3>
-              <button onClick={() => setShowForm(false)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-400 rounded">
-                <X size={18} />
-              </button>
+              <div className="flex items-center gap-1">
+                {editSession && (() => {
+                  const student = data.students.find(s => s.id === editSession.studentId);
+                  return student && isValidPhone(student.phone) ? (
+                    <a
+                      href={waLink(student.phone)}
+                      target="_blank" rel="noopener noreferrer"
+                      className="p-1 hover:bg-green-50 dark:hover:bg-green-900/20 text-green-600 dark:text-green-400 rounded"
+                    >
+                      <MessageCircle size={18} />
+                    </a>
+                  ) : null;
+                })()}
+                <button onClick={() => setShowForm(false)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-400 rounded">
+                  <X size={18} />
+                </button>
+              </div>
             </div>
 
             <div className="space-y-3">
