@@ -1398,7 +1398,7 @@ export default function Schedule() {
                   const student = data.students.find(s => s.id === editSession.studentId);
                   return student && isValidPhone(student.phone) ? (
                     <a
-                      href={waLink(student.phone)}
+                      href={waLink(student.phone, t('wa.reminderMsg', { name: student.name, time: `${editSession.startTime}–${editSession.endTime}` }))}
                       target="_blank" rel="noopener noreferrer"
                       className="p-1 hover:bg-green-50 dark:hover:bg-green-900/20 text-green-600 dark:text-green-400 rounded"
                     >
