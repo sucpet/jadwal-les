@@ -1029,7 +1029,7 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
           {student.isActive ? (
             <>
               <button onClick={handleDeactivate}
-                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors">
                 <PowerOff size={14} />
               </button>
               <button onClick={() => setEditing(true)}
@@ -1148,17 +1148,6 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
             </>
           )}
 
-          {/* Tombol non-aktifkan — hanya untuk murid aktif */}
-          {student.isActive && (
-            <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
-              <button
-                onClick={handleDeactivate}
-                className="flex items-center gap-1.5 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20 px-2 py-1.5 rounded-lg transition-colors"
-              >
-                <PowerOff size={13} /> {t('stu.deactivateThis')}
-              </button>
-            </div>
-          )}
 
         </div>
       )}
