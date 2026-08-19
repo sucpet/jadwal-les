@@ -2,6 +2,7 @@ export interface Holiday {
   date: string;
   name: string;
   type?: 'holiday' | 'leave';
+  tentative?: boolean;
 }
 
 const API_BASE = 'https://tanggalmerah.upset.dev';
