@@ -867,7 +867,7 @@ function PaymentPanel({ student, billedAmount }: { student: Student; billedAmoun
 // ─── Student Card ─────────────────────────────────────────────────────────────
 
 function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?: boolean; highlight?: boolean }) {
-  const { data, updateStudent, deactivateStudent, deleteStudent, addPackage, updatePackage, deletePackage } = useApp();
+  const { data, updateStudent, deactivateStudent, addPackage, updatePackage, deletePackage } = useApp();
   const { t, locale, lang } = useLang();
   const confirm = useConfirm();
   const toast = useToast();
@@ -905,11 +905,6 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
   const handleSave = (updates: Omit<Student, 'id' | 'createdAt' | 'isActive'>) => {
     updateStudent(student.id, updates);
     setEditing(false);
-  };
-
-  const handleDelete = async () => {
-    const msg = t('stu.deleteConfirm', { name: student.name });
-    if (await confirm({ message: msg, danger: true })) { deleteStudent(student.id); toast.success(t('common.deleted')); }
   };
 
   const handleReactivate = () => {
@@ -1044,10 +1039,6 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
               <RotateCcw size={12} /> {t('stu.activate')}
             </button>
           )}
-          <button onClick={handleDelete}
-            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
-            <Trash2 size={14} />
-          </button>
           {student.isActive && (
             <button onClick={() => setExpanded(e => !e)}
               className="p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors ml-1">
