@@ -1027,10 +1027,16 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
             </a>
           )}
           {student.isActive ? (
-            <button onClick={() => setEditing(true)}
-              className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
-              <Pencil size={14} />
-            </button>
+            <>
+              <button onClick={handleDeactivate}
+                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                <PowerOff size={14} />
+              </button>
+              <button onClick={() => setEditing(true)}
+                className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
+                <Pencil size={14} />
+              </button>
+            </>
           ) : (
             <button
               onClick={handleReactivate}
