@@ -5,12 +5,13 @@ import { useApp } from '../store/AppContext';
 import { useLang } from '../store/LanguageContext';
 import { getTodaySessions, getPackageStatus } from '../utils/helpers';
 import { waLink, isValidPhone } from '../utils/whatsapp';
-import { getHoliday } from '../utils/holidays';
+import { useHolidays } from '../store/HolidayContext';
 import { Link } from 'react-router-dom';
 
 export default function Dashboard() {
   const { data } = useApp();
   const { t, locale } = useLang();
+  const { getHoliday } = useHolidays();
   const today = new Date();
   const todayStr    = format(today, 'yyyy-MM-dd');
   const todaySessions = getTodaySessions(data.sessions);

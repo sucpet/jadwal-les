@@ -7,6 +7,7 @@ import { ThemeProvider } from './store/ThemeContext';
 import { LanguageProvider } from './store/LanguageContext';
 import { ConfirmProvider } from './store/ConfirmContext';
 import { ToastProvider } from './store/ToastContext';
+import { HolidayProvider } from './store/HolidayContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/Layout';
 import Login from './pages/Login';
@@ -115,6 +116,7 @@ export default function App() {
       <LanguageProvider>
       <ConfirmProvider>
       <ToastProvider>
+      <HolidayProvider>
       {authLoading ? (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
           <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
@@ -147,6 +149,7 @@ export default function App() {
           </BrowserRouter>
         </AppProvider>
       )}
+      </HolidayProvider>
       </ToastProvider>
       </ConfirmProvider>
       </LanguageProvider>

@@ -10,7 +10,7 @@ import { useToast } from '../store/ToastContext';
 import type { LessonSession } from '../types';
 import { formatCurrency, getPackageStatus, effectiveRate, GROUP_COLORS } from '../utils/helpers';
 import { ROW_H, timeToPixels, computeDayLayout, addOneHour, shiftDateByWeeks, dayOfWeek, diffMinutes, addMinutes } from '../utils/calendar';
-import { getHoliday } from '../utils/holidays';
+import { useHolidays } from '../store/HolidayContext';
 
 const TIME_SLOTS = Array.from({ length: 28 }, (_, i) => {
   const hour = Math.floor(i / 2) + 8;
@@ -24,6 +24,7 @@ const DAY_LABELS_EN = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', '
 export default function Schedule() {
   const { data, addSession, updateSession, deleteSession } = useApp();
   const { t, locale, lang } = useLang();
+  const { getHoliday } = useHolidays();
   const confirm = useConfirm();
   const toast = useToast();
   const DAY_LABELS = lang === 'en' ? DAY_LABELS_EN : DAY_LABELS_ID;
