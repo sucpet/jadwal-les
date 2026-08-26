@@ -35,7 +35,7 @@ function applyStyle(ws: XLSXStyle.WorkSheet, r: number, c: number, s: object) {
   (ws[addr] as { s?: object }).s = s;
 }
 
-function exportCycleToExcel(cycle: CycleEntry, worksheets: { studentId: string; date: string; pages: number }[], t: TFunc, locale: Locale) {
+function exportCycleToExcel(cycle: CycleEntry, worksheets: { studentId: string; date: string; pages: number }[], t: TFunc, locale: Locale, xuYuanStudents: Student[]) {
   const COLS = 5;
 
   // ── Styles ──────────────────────────────────────────────────────────────────
@@ -172,6 +172,59 @@ function exportCycleToExcel(cycle: CycleEntry, worksheets: { studentId: string; 
 
     grandTotalWsPages += stuWsPages;
     grandTotalMinutes += stuMinutes;
+    grandTotalEarning += stuEarning;
+  }
+
+  // ── Students with worksheets only (no sessions in this cycle) ───────────────
+  const sessionStudentIds = new Set(cycle.studentGroups.map(g => g.student?.id).filter(Boolean));
+  const wsOnlyStudentMap = new Map<string, { date: string; pages: number }[]>();
+  for (const w of worksheets) {
+    if (w.date >= cycle.key && w.date <= cycleEnd && !sessionStudentIds.has(w.studentId)) {
+      if (!wsOnlyStudentMap.has(w.studentId)) wsOnlyStudentMap.set(w.studentId, []);
+      wsOnlyStudentMap.get(w.studentId)!.push({ date: w.date, pages: w.pages });
+    }
+  }
+  for (const [studentId, wsEntries] of [...wsOnlyStudentMap.entries()].sort((a, b) => {
+    const na = xuYuanStudents.find(s => s.id === a[0])?.name ?? '';
+    const nb = xuYuanStudents.find(s => s.id === b[0])?.name ?? '';
+    return na.localeCompare(nb, 'id');
+  })) {
+    const student = xuYuanStudents.find(s => s.id === studentId);
+    const grouped = wsEntries.reduce<{ date: string; pages: number }[]>((acc, w) => {
+      const ex = acc.find(e => e.date === w.date);
+      if (ex) ex.pages += w.pages;
+      else acc.push({ date: w.date, pages: w.pages });
+      return acc;
+    }, []).sort((a, b) => a.date.localeCompare(b.date));
+
+    const stuWsPages = grouped.reduce((sum, e) => sum + e.pages, 0);
+    const stuEarning = stuWsPages * WORKSHEET_PRICE;
+
+    for (const { date, pages } of grouped) {
+      rows.push([
+        student?.name ?? '—',
+        pages,
+        format(parseISO(date), 'd MMM yyyy', { locale }),
+        '',
+        pages * WORKSHEET_PRICE,
+      ]);
+      styleRow(ri, [sDataLeft, sDataRight, sDataLeft, sDataRight, sDataRight]);
+      ri++;
+    }
+
+    rows.push([
+      t('hours.totalRow', { name: student?.name ?? '—' }),
+      stuWsPages,
+      '',
+      '',
+      stuEarning,
+    ]);
+    styleRow(ri, [sSubLeft, sSubRight, sSubLeft, sSubRight, sSubRight]);
+    ri++;
+
+    rows.push([]); ri++;
+
+    grandTotalWsPages += stuWsPages;
     grandTotalEarning += stuEarning;
   }
 
@@ -356,7 +409,7 @@ export default function Hours() {
               </div>
               {cycle.studentGroups.length > 0 && (
                 <button
-                  onClick={() => exportCycleToExcel(cycle, data.worksheets, t, locale)}
+                  onClick={() => exportCycleToExcel(cycle, data.worksheets, t, locale, xuYuanStudents)}
                   className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${
                     cycle.isCurrent
                       ? 'border-white/30 text-white hover:bg-white/10'
