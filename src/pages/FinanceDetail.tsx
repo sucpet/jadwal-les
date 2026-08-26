@@ -147,7 +147,7 @@ export default function FinanceDetail() {
     const xuyuanAdj     = monthStr === '2026-06' ? XUYUAN_ADJ_2026_06 : 0;
     const totalXuYuan        = xuyuanRows.reduce((s, r) => s + r.income, 0) + xuyuanAdj;
     const totalXuYuanScheduled = xuyuanRows.reduce((s, r) => s + r.scheduledIncome, 0);
-    const totalXuYuanForecast  = totalXuYuan + totalXuYuanScheduled;
+    const totalXuYuanForecast  = totalXuYuan + totalXuYuanScheduled + totalWorksheet;
     const totalWorksheet = worksheetRows.reduce((s, r) => s + r.income, 0);
     const totalPrepaid  = prepaidRows.reduce((s, r) => s + r.packagePrice, 0);
     const totalPostpaid = postpaidRows.reduce((s, r) => s + r.income, 0);
@@ -248,35 +248,7 @@ export default function FinanceDetail() {
           </Section>
         )}
 
-        {/* XuYuan forecast — always shown when owner has XuYuan students */}
-        {xuyuanStudents.length > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 px-5 py-4">
-            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3">{t('fd.forecastTitle')}</p>
-            <div className="flex items-end justify-between">
-              <div className="space-y-1">
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {t('fd.forecastRealized')}&nbsp;
-                  <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(totalXuYuan)}</span>
-                </p>
-                {totalXuYuanScheduled > 0 && (
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {t('fd.forecastScheduled')}&nbsp;
-                    <span className="font-semibold text-blue-600 dark:text-blue-400">+{formatCurrency(totalXuYuanScheduled)}</span>
-                  </p>
-                )}
-                <p className="text-[11px] text-gray-400 dark:text-gray-500 pt-1">
-                  {t('fd.forecastCycle', { start: format(parseISO(xyCycleStart), 'd MMM'), end: format(parseISO(xyCycleEnd), 'd MMM yyyy') })}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-0.5">{t('fd.forecastProjected')}</p>
-                <p className="text-2xl font-bold tabular-nums text-blue-600 dark:text-blue-400">{formatCurrency(totalXuYuanForecast)}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Worksheet */}
+        {/* Worksheet — directly below XuYuan hours */}
         {worksheetRows.length > 0 && (
           <Section title={t('fin.rowWorksheet')} total={totalWorksheet}>
             <table className="w-full text-sm">
@@ -298,6 +270,40 @@ export default function FinanceDetail() {
               </tbody>
             </table>
           </Section>
+        )}
+
+        {/* XuYuan forecast — always shown when owner has XuYuan students */}
+        {xuyuanStudents.length > 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 px-5 py-4">
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3">{t('fd.forecastTitle')}</p>
+            <div className="flex items-end justify-between">
+              <div className="space-y-1">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {t('fd.forecastRealized')}&nbsp;
+                  <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(totalXuYuan)}</span>
+                </p>
+                {totalWorksheet > 0 && (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {t('fin.rowWorksheet')}&nbsp;
+                    <span className="font-semibold text-gray-900 dark:text-white">+{formatCurrency(totalWorksheet)}</span>
+                  </p>
+                )}
+                {totalXuYuanScheduled > 0 && (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {t('fd.forecastScheduled')}&nbsp;
+                    <span className="font-semibold text-blue-600 dark:text-blue-400">+{formatCurrency(totalXuYuanScheduled)}</span>
+                  </p>
+                )}
+                <p className="text-[11px] text-gray-400 dark:text-gray-500 pt-1">
+                  {t('fd.forecastCycle', { start: format(parseISO(xyCycleStart), 'd MMM'), end: format(parseISO(xyCycleEnd), 'd MMM yyyy') })}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-0.5">{t('fd.forecastProjected')}</p>
+                <p className="text-2xl font-bold tabular-nums text-blue-600 dark:text-blue-400">{formatCurrency(totalXuYuanForecast)}</p>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Prepaid packages */}
