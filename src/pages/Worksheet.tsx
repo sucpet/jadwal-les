@@ -164,32 +164,56 @@ export default function WorksheetPage() {
             </div>
 
             <div className="divide-y divide-gray-100 dark:divide-gray-700">
-              {entries.map(w => {
-                const student = data.students.find(s => s.id === w.studentId);
-                return (
-                  <div key={w.id} className="px-4 py-3 bg-white dark:bg-gray-800 flex items-center gap-2">
-                    <span className="text-xs text-gray-400 dark:text-gray-500 w-[4.5rem] flex-shrink-0 tabular-nums">
-                      {format(parseISO(w.date), 'd MMM yy', { locale })}
-                    </span>
-                    <span className="flex-1 text-sm font-medium text-gray-900 dark:text-white truncate min-w-0">
-                      {student?.name ?? '—'}
-                    </span>
-                    <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
-                      <FileText size={12} className="text-gray-400" />
-                      {t('ws.pagesUnit', { n: w.pages })}
-                    </span>
-                    <span className="text-sm font-semibold text-gray-900 dark:text-white tabular-nums flex-shrink-0">
-                      {formatRp(w.pages * WORKSHEET_PRICE)}
-                    </span>
-                    <button
-                      onClick={() => remove(w.id)}
-                      className="text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 flex-shrink-0"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+              {(() => {
+                // Group entries by student
+                const studentMap = new Map<string, typeof entries>();
+                for (const w of entries) {
+                  if (!studentMap.has(w.studentId)) studentMap.set(w.studentId, []);
+                  studentMap.get(w.studentId)!.push(w);
+                }
+                const studentGroups = [...studentMap.entries()]
+                  .map(([studentId, ws]) => ({
+                    student: data.students.find(s => s.id === studentId),
+                    ws: ws.sort((a, b) => b.date.localeCompare(a.date)),
+                    totalPages: ws.reduce((sum, w) => sum + w.pages, 0),
+                  }))
+                  .sort((a, b) => (a.student?.name ?? '').localeCompare(b.student?.name ?? '', 'id'));
+
+                return studentGroups.map(({ student, ws, totalPages }) => (
+                  <div key={student?.id ?? 'unknown'} className="px-4 py-3 bg-white dark:bg-gray-800">
+                    {/* Student header */}
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="flex-1 text-sm font-semibold text-gray-800 dark:text-gray-200">{student?.name ?? '—'}</span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">
+                        {t('ws.pagesUnit', { n: totalPages })} · {formatRp(totalPages * WORKSHEET_PRICE)}
+                      </span>
+                    </div>
+                    {/* Entry list */}
+                    <div className="space-y-1 pl-2 border-l-2 border-gray-100 dark:border-gray-700">
+                      {ws.map(w => (
+                        <div key={w.id} className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                          <span className="w-16 flex-shrink-0 tabular-nums">
+                            {format(parseISO(w.date), 'd MMM yy', { locale })}
+                          </span>
+                          <span className="flex items-center gap-1 flex-1">
+                            <FileText size={11} className="text-gray-400 flex-shrink-0" />
+                            {t('ws.pagesUnit', { n: w.pages })}
+                          </span>
+                          <span className="tabular-nums font-medium text-gray-700 dark:text-gray-300">
+                            {formatRp(w.pages * WORKSHEET_PRICE)}
+                          </span>
+                          <button
+                            onClick={() => remove(w.id)}
+                            className="text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 flex-shrink-0"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                );
-              })}
+                ));
+              })()}
             </div>
           </div>
         );
