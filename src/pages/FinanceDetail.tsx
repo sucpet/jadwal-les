@@ -147,8 +147,8 @@ export default function FinanceDetail() {
     const xuyuanAdj     = monthStr === '2026-06' ? XUYUAN_ADJ_2026_06 : 0;
     const totalXuYuan        = xuyuanRows.reduce((s, r) => s + r.income, 0) + xuyuanAdj;
     const totalXuYuanScheduled = xuyuanRows.reduce((s, r) => s + r.scheduledIncome, 0);
-    const totalXuYuanForecast  = totalXuYuan + totalXuYuanScheduled + totalWorksheet;
     const totalWorksheet = worksheetRows.reduce((s, r) => s + r.income, 0);
+    const totalXuYuanForecast  = totalXuYuan + totalXuYuanScheduled + totalWorksheet;
     const totalPrepaid  = prepaidRows.reduce((s, r) => s + r.packagePrice, 0);
     const totalPostpaid = postpaidRows.reduce((s, r) => s + r.income, 0);
     const totalPayments = paymentRows.reduce((s, r) => s + r.payment.amount, 0);
