@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
-import { Plus, Trash2, FileText, X, Check } from 'lucide-react';
+import { Plus, Trash2, FileText, X, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { useLang } from '../store/LanguageContext';
 import { useConfirm } from '../store/ConfirmContext';
@@ -19,6 +19,7 @@ export default function WorksheetPage() {
   const today = new Date().toISOString().slice(0, 10);
 
   const [showForm, setShowForm] = useState(false);
+  const [cycleIndex, setCycleIndex] = useState(0); // 0 = siklus terbaru
   const [form, setForm] = useState({
     studentId: xuYuanStudents[0]?.id ?? '',
     date: today,
@@ -49,8 +50,10 @@ export default function WorksheetPage() {
     if (!cycleMap.has(key)) cycleMap.set(key, []);
     cycleMap.get(key)!.push(w);
   }
-  const cycles = [...cycleMap.entries()].sort((a, b) => b[0].localeCompare(a[0]));
   const currentCycle = cycleStart(today);
+  if (!cycleMap.has(currentCycle)) cycleMap.set(currentCycle, []);
+  const cycles = [...cycleMap.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+  const cycle = cycles[cycleIndex] ?? cycles[0];
 
   return (
     <div className="max-w-xl mx-auto space-y-5">
@@ -133,62 +136,74 @@ export default function WorksheetPage() {
         </div>
       )}
 
-      {/* No data */}
-      {data.worksheets.length === 0 && !showForm && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-10 text-center text-gray-400 dark:text-gray-500">
-          <FileText size={32} className="mx-auto mb-2 opacity-40" />
-          <p className="text-sm">{t('ws.empty')}</p>
+      {/* Cycle navigator */}
+      {cycles.length > 0 && (
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setCycleIndex(i => Math.min(i + 1, cycles.length - 1))}
+            disabled={cycleIndex >= cycles.length - 1}
+            className="p-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <span className="font-semibold text-gray-900 dark:text-white min-w-48 text-center">
+            {cycle ? cycleLabel(cycle[0], locale) : '—'}
+            {cycle?.[0] === currentCycle && (
+              <span className="ml-2 text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-full">{t('common.running')}</span>
+            )}
+          </span>
+          <button
+            onClick={() => setCycleIndex(i => Math.max(i - 1, 0))}
+            disabled={cycleIndex === 0}
+            className="p-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <ChevronRight size={16} />
+          </button>
         </div>
       )}
 
-      {/* Cycles */}
-      {cycles.map(([key, entries]) => {
+      {/* Current cycle */}
+      {cycle && (() => {
+        const [key, entries] = cycle;
+        const isCurrent = key === currentCycle;
         const totalPages = entries.reduce((sum, w) => sum + w.pages, 0);
         const totalCost = totalPages * WORKSHEET_PRICE;
-        const isCurrent = key === currentCycle;
+
+        // Group by student
+        const studentMap = new Map<string, typeof entries>();
+        for (const w of entries) {
+          if (!studentMap.has(w.studentId)) studentMap.set(w.studentId, []);
+          studentMap.get(w.studentId)!.push(w);
+        }
+        const studentGroups = [...studentMap.entries()]
+          .map(([studentId, ws]) => ({
+            student: data.students.find(s => s.id === studentId),
+            ws: ws.sort((a, b) => b.date.localeCompare(a.date)),
+            totalPages: ws.reduce((sum, w) => sum + w.pages, 0),
+          }))
+          .sort((a, b) => (a.student?.name ?? '').localeCompare(b.student?.name ?? '', 'id'));
+
         return (
-          <div key={key} className={`rounded-xl border overflow-hidden ${isCurrent ? 'border-indigo-300 dark:border-indigo-600' : 'border-gray-200 dark:border-gray-700'}`}>
+          <div className={`rounded-xl border overflow-hidden ${isCurrent ? 'border-indigo-300 dark:border-indigo-600' : 'border-gray-200 dark:border-gray-700'}`}>
             <div className={`px-5 py-3.5 flex items-center justify-between ${isCurrent ? 'bg-indigo-600' : 'bg-white dark:bg-gray-800'}`}>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className={`font-semibold text-sm ${isCurrent ? 'text-white' : 'text-gray-900 dark:text-white'}`}>{cycleLabel(key)}</span>
-                  {isCurrent && <span className="text-xs bg-white/20 text-white px-2 py-0.5 rounded-full">{t('common.running')}</span>}
-                </div>
-                <div className={`text-xs mt-0.5 ${isCurrent ? 'text-indigo-200' : 'text-gray-500 dark:text-gray-400'}`}>
-                  {t('ws.cyclePages', { pages: totalPages, entries: entries.length })}
-                </div>
+              <div className={`text-sm ${isCurrent ? 'text-indigo-200' : 'text-gray-500 dark:text-gray-400'}`}>
+                {t('ws.cyclePages', { pages: totalPages, entries: entries.length })}
               </div>
               <div className={`text-xl font-bold tabular-nums ${isCurrent ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
                 {formatRp(totalCost)}
               </div>
             </div>
 
-            <div className="divide-y divide-gray-100 dark:divide-gray-700">
-              {(() => {
-                // Group entries by student
-                const studentMap = new Map<string, typeof entries>();
-                for (const w of entries) {
-                  if (!studentMap.has(w.studentId)) studentMap.set(w.studentId, []);
-                  studentMap.get(w.studentId)!.push(w);
-                }
-                const studentGroups = [...studentMap.entries()]
-                  .map(([studentId, ws]) => ({
-                    student: data.students.find(s => s.id === studentId),
-                    ws: ws.sort((a, b) => b.date.localeCompare(a.date)),
-                    totalPages: ws.reduce((sum, w) => sum + w.pages, 0),
-                  }))
-                  .sort((a, b) => (a.student?.name ?? '').localeCompare(b.student?.name ?? '', 'id'));
-
-                return studentGroups.map(({ student, ws, totalPages }) => (
+            {studentGroups.length > 0 ? (
+              <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                {studentGroups.map(({ student, ws, totalPages: stuPages }) => (
                   <div key={student?.id ?? 'unknown'} className="px-4 py-3 bg-white dark:bg-gray-800">
-                    {/* Student header */}
                     <div className="flex items-center gap-2 mb-2">
                       <span className="flex-1 text-sm font-semibold text-gray-800 dark:text-gray-200">{student?.name ?? '—'}</span>
                       <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">
-                        {t('ws.pagesUnit', { n: totalPages })} · {formatRp(totalPages * WORKSHEET_PRICE)}
+                        {t('ws.pagesUnit', { n: stuPages })} · {formatRp(stuPages * WORKSHEET_PRICE)}
                       </span>
                     </div>
-                    {/* Entry list */}
                     <div className="space-y-1 pl-2 border-l-2 border-gray-100 dark:border-gray-700">
                       {ws.map(w => (
                         <div key={w.id} className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
@@ -202,22 +217,23 @@ export default function WorksheetPage() {
                           <span className="tabular-nums font-medium text-gray-700 dark:text-gray-300">
                             {formatRp(w.pages * WORKSHEET_PRICE)}
                           </span>
-                          <button
-                            onClick={() => remove(w.id)}
-                            className="text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 flex-shrink-0"
-                          >
+                          <button onClick={() => remove(w.id)} className="text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 flex-shrink-0">
                             <Trash2 size={13} />
                           </button>
                         </div>
                       ))}
                     </div>
                   </div>
-                ));
-              })()}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="px-5 py-4 bg-white dark:bg-gray-800 text-sm text-gray-400 dark:text-gray-500 text-center">
+                {t('ws.empty')}
+              </div>
+            )}
           </div>
         );
-      })}
+      })()}
     </div>
   );
 }
