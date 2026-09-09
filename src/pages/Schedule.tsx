@@ -634,7 +634,10 @@ export default function Schedule() {
                     className="relative px-1.5 text-[11px] text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-900/50 border-r border-gray-100 dark:border-gray-700"
                   >
                     {i > 0 && (
-                      <span className="absolute top-0 right-1.5 -translate-y-1/2 leading-none">{time}</span>
+                      <div className="absolute top-0 inset-x-0 -translate-y-1/2 flex items-center justify-end">
+                        <span className="text-[11px] leading-none mr-1">{time}</span>
+                        <div className="w-[5px] h-px bg-gray-200 dark:bg-gray-600 flex-shrink-0" />
+                      </div>
                     )}
                   </div>
                 ))}
@@ -837,7 +840,10 @@ export default function Schedule() {
               className="relative px-2 text-xs text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-900/50 border-r border-gray-100 dark:border-gray-700"
             >
               {i > 0 && (
-                <span className="absolute top-0 right-2 -translate-y-1/2 leading-none">{time}</span>
+                <div className="absolute top-0 inset-x-0 -translate-y-1/2 flex items-center justify-end">
+                  <span className="text-xs leading-none mr-1">{time}</span>
+                  <div className="w-[5px] h-px bg-gray-200 dark:bg-gray-600 flex-shrink-0" />
+                </div>
               )}
             </div>
           ))}
