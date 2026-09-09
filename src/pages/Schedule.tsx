@@ -631,9 +631,11 @@ export default function Schedule() {
                   <div
                     key={time}
                     style={{ gridRow: i + 1, gridColumn: 1 }}
-                    className={`px-1.5 py-1 text-[11px] text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-900/50 flex items-start border-r border-gray-100 dark:border-gray-700${i < TIME_SLOTS.length - 1 ? ' border-b' : ''}`}
+                    className={`relative px-1.5 text-[11px] text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-900/50 border-r border-gray-100 dark:border-gray-700${i < TIME_SLOTS.length - 1 ? ' border-b' : ''}`}
                   >
-                    {time}
+                    {i > 0 && (
+                      <span className="absolute top-0 right-1.5 -translate-y-1/2 leading-none">{time}</span>
+                    )}
                   </div>
                 ))}
 
@@ -832,9 +834,11 @@ export default function Schedule() {
             <div
               key={time}
               style={{ gridRow: i + 1, gridColumn: 1 }}
-              className={`px-2 py-1 text-xs text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-900/50 flex items-start border-r border-gray-100 dark:border-gray-700${i < TIME_SLOTS.length - 1 ? ' border-b' : ''}`}
+              className={`relative px-2 text-xs text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-900/50 border-r border-gray-100 dark:border-gray-700${i < TIME_SLOTS.length - 1 ? ' border-b' : ''}`}
             >
-              {time}
+              {i > 0 && (
+                <span className="absolute top-0 right-2 -translate-y-1/2 leading-none">{time}</span>
+              )}
             </div>
           ))}
 
