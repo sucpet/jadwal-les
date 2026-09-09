@@ -636,7 +636,7 @@ export default function Schedule() {
                     {i > 0 && (
                       <div className="absolute top-0 inset-x-0 -translate-y-1/2 flex items-center justify-end">
                         <span className="text-[11px] leading-none mr-1">{time}</span>
-                        <div className="w-[5px] h-px bg-gray-200 dark:bg-gray-600 flex-shrink-0" />
+                        <div className="w-[7px] h-px bg-gray-200 dark:bg-gray-600 flex-shrink-0" />
                       </div>
                     )}
                   </div>
@@ -842,7 +842,7 @@ export default function Schedule() {
               {i > 0 && (
                 <div className="absolute top-0 inset-x-0 -translate-y-1/2 flex items-center justify-end">
                   <span className="text-xs leading-none mr-1">{time}</span>
-                  <div className="w-[5px] h-px bg-gray-200 dark:bg-gray-600 flex-shrink-0" />
+                  <div className="w-[7px] h-px bg-gray-200 dark:bg-gray-600 flex-shrink-0" />
                 </div>
               )}
             </div>
