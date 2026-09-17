@@ -933,7 +933,7 @@ export default function Schedule() {
           })}
 
           {/* Full-week now line */}
-          {weekContainsToday && showNowLine && (
+          {weekDays.some(d => isSameDay(d, today)) && showNowLine && (
             <div
               style={{
                 gridRow: `1 / ${TIME_SLOTS.length + 1}`,
