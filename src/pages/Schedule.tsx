@@ -882,16 +882,6 @@ export default function Schedule() {
                   pointerEvents: 'none',
                 }}
               >
-                {/* Current time indicator */}
-                {isSameDay(day, today) && showNowLine && (
-                  <div
-                    style={{ position: 'absolute', top: nowPx, left: 0, right: 0, zIndex: 20, pointerEvents: 'none' }}
-                    className="flex items-center"
-                  >
-                    <div className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0 -ml-1" />
-                    <div className="flex-1 h-px bg-red-500" />
-                  </div>
-                )}
                 {layout.map(({ session: s, colIndex, totalCols }) => {
                   const topPx = Math.max(0, timeToPixels(s.startTime));
                   const heightPx = Math.max(ROW_H / 2, timeToPixels(s.endTime) - timeToPixels(s.startTime) - 2);
@@ -941,6 +931,27 @@ export default function Schedule() {
               </div>
             );
           })}
+
+          {/* Full-week now line */}
+          {weekContainsToday && showNowLine && (
+            <div
+              style={{
+                gridRow: `1 / ${TIME_SLOTS.length + 1}`,
+                gridColumn: '2 / 9',
+                position: 'relative',
+                zIndex: 15,
+                pointerEvents: 'none',
+              }}
+            >
+              <div
+                style={{ position: 'absolute', top: nowPx, left: 0, right: 0 }}
+                className="flex items-center"
+              >
+                <div className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0 -ml-1" />
+                <div className="flex-1 h-px bg-red-500" />
+              </div>
+            </div>
+          )}
           </div>
         </div>
       </div>
