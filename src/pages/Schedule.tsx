@@ -742,8 +742,8 @@ export default function Schedule() {
                         className="rounded text-xs px-1 py-0.5 overflow-hidden active:opacity-70"
                         onClick={e => { e.stopPropagation(); openEdit(s); }}
                       >
-                        <div className="font-medium truncate">{student?.name}</div>
-                        <div className="opacity-70 truncate">{s.startTime}–{s.endTime}</div>
+                        <div className="font-medium break-words">{student?.name}</div>
+                        <div className="opacity-70">{s.startTime}–{s.endTime}</div>
                       </div>
                     );
                   })}
@@ -759,8 +759,8 @@ export default function Schedule() {
                         className="rounded text-xs px-1.5 py-0.5 overflow-hidden bg-amber-200 dark:bg-amber-800/60 border-l-4 border-amber-400 dark:border-amber-500 text-amber-900 dark:text-amber-100 active:opacity-70 cursor-pointer"
                         onClick={e => { e.stopPropagation(); openEditNote(n); }}
                       >
-                        <div className="font-semibold truncate">{n.note}</div>
-                        {!isAllDay && <div className="opacity-70 truncate">{n.startTime}–{n.endTime}</div>}
+                        <div className="font-semibold break-words">{n.note}</div>
+                        {!isAllDay && <div className="opacity-70">{n.startTime}–{n.endTime}</div>}
                       </div>
                     );
                   })}
@@ -974,8 +974,8 @@ export default function Schedule() {
                       onDragEnd={() => { setDraggingId(null); setDragOverCell(null); }}
                       title={`${student?.name} (${s.startTime}–${s.endTime}) — seret untuk jadwal ulang`}
                     >
-                      <div className="font-medium truncate pr-4">{student?.name}</div>
-                      <div className="opacity-60 truncate">{s.startTime}–{s.endTime}</div>
+                      <div className="font-medium break-words pr-4">{student?.name}</div>
+                      <div className="opacity-60">{s.startTime}–{s.endTime}</div>
                       <button
                         draggable={false}
                         onDragStart={e => e.preventDefault()}
@@ -1000,8 +1000,8 @@ export default function Schedule() {
                       className="rounded text-xs px-1 py-0.5 overflow-hidden bg-amber-200 dark:bg-amber-800/60 border-l-4 border-amber-400 dark:border-amber-500 text-amber-900 dark:text-amber-100 cursor-pointer hover:opacity-80"
                       onClick={e => { e.stopPropagation(); openEditNote(n); }}
                     >
-                      <div className="font-semibold truncate">{n.note}</div>
-                      {!isAllDay && <div className="opacity-70 truncate">{n.startTime}–{n.endTime}</div>}
+                      <div className="font-semibold break-words">{n.note}</div>
+                      {!isAllDay && <div className="opacity-70">{n.startTime}–{n.endTime}</div>}
                     </div>
                   );
                 })}
