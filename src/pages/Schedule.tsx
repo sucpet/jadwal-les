@@ -755,7 +755,7 @@ export default function Schedule() {
                     return (
                       <div
                         key={n.id}
-                        style={{ position: 'absolute', top: `${topPx + 1}px`, height: `${heightPx}px`, left: '2px', right: '2px', pointerEvents: 'auto', opacity: isAllDay ? 0.35 : 1 }}
+                        style={{ position: 'absolute', top: `${topPx + 1}px`, height: `${heightPx}px`, left: '2px', right: '2px', pointerEvents: 'auto' }}
                         className="rounded text-xs px-1.5 py-0.5 overflow-hidden bg-amber-200 dark:bg-amber-800/60 border-l-4 border-amber-400 dark:border-amber-500 text-amber-900 dark:text-amber-100 active:opacity-70 cursor-pointer"
                         onClick={e => { e.stopPropagation(); openEditNote(n); }}
                       >
@@ -996,7 +996,7 @@ export default function Schedule() {
                   return (
                     <div
                       key={n.id}
-                      style={{ position: 'absolute', top: `${topPx + 1}px`, height: `${heightPx}px`, left: '2px', right: '2px', pointerEvents: 'auto', opacity: isAllDay ? 0.35 : 1 }}
+                      style={{ position: 'absolute', top: `${topPx + 1}px`, height: `${heightPx}px`, left: '2px', right: '2px', pointerEvents: 'auto' }}
                       className="rounded text-xs px-1 py-0.5 overflow-hidden bg-amber-200 dark:bg-amber-800/60 border-l-4 border-amber-400 dark:border-amber-500 text-amber-900 dark:text-amber-100 cursor-pointer hover:opacity-80"
                       onClick={e => { e.stopPropagation(); openEditNote(n); }}
                     >
