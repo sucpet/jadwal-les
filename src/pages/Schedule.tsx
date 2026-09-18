@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Plus, X, Check, Trash2, Clock, AlertTriangle, RefreshCw, ListChecks, CalendarClock, Search, Copy, MessageCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, X, Check, Trash2, Clock, AlertTriangle, RefreshCw, ListChecks, CalendarClock, Search, Copy, MessageCircle, StickyNote } from 'lucide-react';
 import { waLink, isValidPhone } from '../utils/whatsapp';
 import { useSearchParams } from 'react-router-dom';
 import { addWeeks, subWeeks, startOfWeek, addDays, subDays, isSameDay, parseISO, format, startOfMonth, addMonths, subMonths, isSameMonth } from 'date-fns';
@@ -7,7 +7,7 @@ import { useApp } from '../store/AppContext';
 import { useLang } from '../store/LanguageContext';
 import { useConfirm } from '../store/ConfirmContext';
 import { useToast } from '../store/ToastContext';
-import type { LessonSession } from '../types';
+import type { LessonSession, ScheduleNote } from '../types';
 import { formatCurrency, getPackageStatus, effectiveRate, GROUP_COLORS } from '../utils/helpers';
 import { ROW_H, timeToPixels, computeDayLayout, addOneHour, shiftDateByWeeks, dayOfWeek, diffMinutes, addMinutes } from '../utils/calendar';
 import { useHolidays } from '../store/HolidayContext';
@@ -22,7 +22,7 @@ const DAY_LABELS_ID = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Mi
 const DAY_LABELS_EN = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 export default function Schedule() {
-  const { data, addSession, updateSession, deleteSession } = useApp();
+  const { data, addSession, updateSession, deleteSession, addScheduleNote, updateScheduleNote, deleteScheduleNote } = useApp();
   const { t, locale, lang } = useLang();
   const { getHoliday } = useHolidays();
   const confirm = useConfirm();
@@ -39,6 +39,11 @@ export default function Schedule() {
   const [recurring, setRecurring] = useState(false);
   const [recurringCount, setRecurringCount] = useState('1');
   const [editSession, setEditSession] = useState<LessonSession | null>(null);
+  const [showNoteForm, setShowNoteForm] = useState(false);
+  const [editNote, setEditNote] = useState<ScheduleNote | null>(null);
+  const [noteForm, setNoteForm] = useState({ date: '', startTime: '09:00', endTime: '10:00', note: '' });
+  const [noteErrors, setNoteErrors] = useState(false);
+  const [slotPick, setSlotPick] = useState<{ date: string; time: string } | null>(null);
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [rescheduleWeeks, setRescheduleWeeks] = useState('1');
@@ -150,6 +155,35 @@ export default function Schedule() {
       worksheetPages: session.worksheetPages ?? 0,
     });
     setShowForm(true);
+  };
+
+  const openAddNote = (date?: string, time?: string) => {
+    setNoteErrors(false);
+    setEditNote(null);
+    setNoteForm({ date: date ?? todayStr, startTime: time ?? '09:00', endTime: time ? addOneHour(time) : '10:00', note: '' });
+    setShowNoteForm(true);
+  };
+  const openEditNote = (note: ScheduleNote) => {
+    setNoteErrors(false);
+    setEditNote(note);
+    setNoteForm({ date: note.date, startTime: note.startTime, endTime: note.endTime, note: note.note });
+    setShowNoteForm(true);
+  };
+  const saveNote = () => {
+    if (!noteForm.note.trim() || !noteForm.date) { setNoteErrors(true); return; }
+    if (editNote) {
+      updateScheduleNote(editNote.id, { date: noteForm.date, startTime: noteForm.startTime, endTime: noteForm.endTime, note: noteForm.note.trim() });
+    } else {
+      addScheduleNote({ date: noteForm.date, startTime: noteForm.startTime, endTime: noteForm.endTime, note: noteForm.note.trim() });
+    }
+    setShowNoteForm(false);
+  };
+  const removeNote = async (id: string) => {
+    if (await confirm({ message: 'Hapus catatan ini?', danger: true })) {
+      deleteScheduleNote(id);
+      toast.success(t('common.deleted'));
+      setShowNoteForm(false);
+    }
   };
 
   const save = () => {
@@ -406,6 +440,12 @@ export default function Schedule() {
                 <ListChecks size={16} /> {t('sch.selectSessions')}
               </button>
               <button
+                onClick={() => openAddNote()}
+                className="hidden md:flex items-center gap-1.5 bg-amber-500 text-white text-sm px-3 py-2 rounded-lg hover:bg-amber-600"
+              >
+                <StickyNote size={16} /> Catatan
+              </button>
+              <button
                 onClick={() => openAdd()}
                 className="hidden md:flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700"
               >
@@ -648,7 +688,7 @@ export default function Schedule() {
                     key={time}
                     style={{ gridRow: i + 1, gridColumn: 2 }}
                     className={`cursor-pointer border-gray-100 dark:border-gray-700${isToday ? ' bg-indigo-50/30 dark:bg-indigo-900/10' : ''}${i < TIME_SLOTS.length - 1 ? ' border-b' : ''}`}
-                    onClick={() => openAdd(dayStr, time)}
+                    onClick={() => setSlotPick({ date: dayStr, time })}
                   />
                 ))}
 
@@ -701,6 +741,22 @@ export default function Schedule() {
                       >
                         <div className="font-medium truncate">{student?.name}</div>
                         <div className="opacity-70 truncate">{s.startTime}–{s.endTime}</div>
+                      </div>
+                    );
+                  })}
+                  {/* Schedule notes — day view */}
+                  {data.scheduleNotes.filter(n => n.date === dayStr).map(n => {
+                    const topPx = Math.max(0, timeToPixels(n.startTime));
+                    const heightPx = Math.max(ROW_H / 2, timeToPixels(n.endTime) - timeToPixels(n.startTime) - 2);
+                    return (
+                      <div
+                        key={n.id}
+                        style={{ position: 'absolute', top: `${topPx + 1}px`, height: `${heightPx}px`, left: '2px', right: '2px', pointerEvents: 'auto' }}
+                        className="rounded text-xs px-1.5 py-0.5 overflow-hidden bg-amber-100 dark:bg-amber-900/40 border-l-4 border-amber-400 dark:border-amber-500 text-amber-800 dark:text-amber-200 active:opacity-70 cursor-pointer"
+                        onClick={e => { e.stopPropagation(); openEditNote(n); }}
+                      >
+                        <div className="font-medium truncate">{n.note}</div>
+                        <div className="opacity-70 truncate">{n.startTime}–{n.endTime}</div>
                       </div>
                     );
                   })}
@@ -859,7 +915,7 @@ export default function Schedule() {
                   key={`${time}-${di}`}
                   style={{ gridRow: i + 1, gridColumn: di + 2 }}
                   className={`cursor-pointer transition-colors border-gray-100 dark:border-gray-700${isDropTarget ? ' bg-indigo-200/60 dark:bg-indigo-500/30 ring-1 ring-inset ring-indigo-400' : ' hover:bg-gray-50 dark:hover:bg-gray-700/30'}${isSameDay(day, today) && !isDropTarget ? ' bg-indigo-50/30 dark:bg-indigo-900/10' : ''}${i < TIME_SLOTS.length - 1 ? ' border-b' : ''}${di < 6 ? ' border-r' : ''}`}
-                  onClick={() => openAdd(dayStr, time)}
+                  onClick={() => setSlotPick({ date: dayStr, time })}
                   onDragOver={draggingId ? (e => { e.preventDefault(); if (dragOverCell !== cellKey) setDragOverCell(cellKey); }) : undefined}
                   onDrop={draggingId ? (e => { e.preventDefault(); dropOnCell(dayStr, time); }) : undefined}
                 />
@@ -927,8 +983,23 @@ export default function Schedule() {
                       </button>
                     </div>
                   );
-                })}
-              </div>
+                  {/* Schedule notes — week view */}
+                  {data.scheduleNotes.filter(n => n.date === format(day, 'yyyy-MM-dd')).map(n => {
+                    const topPx = Math.max(0, timeToPixels(n.startTime));
+                    const heightPx = Math.max(ROW_H / 2, timeToPixels(n.endTime) - timeToPixels(n.startTime) - 2);
+                    return (
+                      <div
+                        key={n.id}
+                        style={{ position: 'absolute', top: `${topPx + 1}px`, height: `${heightPx}px`, left: '2px', right: '2px', pointerEvents: 'auto' }}
+                        className="rounded text-xs px-1 py-0.5 overflow-hidden bg-amber-100 dark:bg-amber-900/40 border-l-4 border-amber-400 dark:border-amber-500 text-amber-800 dark:text-amber-200 cursor-pointer hover:opacity-80"
+                        onClick={e => { e.stopPropagation(); openEditNote(n); }}
+                      >
+                        <div className="font-medium truncate">{n.note}</div>
+                        <div className="opacity-70 truncate">{n.startTime}–{n.endTime}</div>
+                      </div>
+                    );
+                  })}
+                </div>
             );
           })}
 
@@ -1408,6 +1479,107 @@ export default function Schedule() {
           </div>
         );
       })()}
+
+      {/* Slot picker — session or note */}
+      {slotPick && (
+        <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4" onClick={() => setSlotPick(null)}>
+          <div className="bg-white dark:bg-gray-800 w-full sm:max-w-xs rounded-t-2xl sm:rounded-2xl shadow-xl p-5 space-y-3" onClick={e => e.stopPropagation()}>
+            <p className="text-xs text-gray-400 dark:text-gray-500">{format(parseISO(slotPick.date), 'EEEE, d MMM yyyy', { locale })} · {slotPick.time}</p>
+            <button
+              onClick={() => { setSlotPick(null); openAdd(slotPick.date, slotPick.time); }}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-left"
+            >
+              <Plus size={18} className="text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+              <div>
+                <div className="text-sm font-medium text-gray-900 dark:text-white">{t('sch.addSession')}</div>
+                <div className="text-xs text-gray-400 dark:text-gray-500">Tambah sesi les dengan murid</div>
+              </div>
+            </button>
+            <button
+              onClick={() => { setSlotPick(null); openAddNote(slotPick.date, slotPick.time); }}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-amber-50 dark:hover:bg-amber-900/20 text-left"
+            >
+              <StickyNote size={18} className="text-amber-500 flex-shrink-0" />
+              <div>
+                <div className="text-sm font-medium text-gray-900 dark:text-white">Tambah Catatan</div>
+                <div className="text-xs text-gray-400 dark:text-gray-500">Blok waktu tanpa murid</div>
+              </div>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Note Form Modal */}
+      {showNoteForm && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setShowNoteForm(false)}>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-sm space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <StickyNote size={18} className="text-amber-500" />
+                <h3 className="font-semibold text-gray-900 dark:text-white">{editNote ? 'Edit Catatan' : 'Tambah Catatan'}</h3>
+              </div>
+              <button onClick={() => setShowNoteForm(false)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-400 rounded">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('common.date')}</label>
+                <input
+                  type="date"
+                  value={noteForm.date}
+                  onChange={e => setNoteForm(f => ({ ...f, date: e.target.value }))}
+                  className="w-full h-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('sch.start')}</label>
+                  <input
+                    type="time"
+                    value={noteForm.startTime}
+                    onChange={e => setNoteForm(f => ({ ...f, startTime: e.target.value }))}
+                    className="w-full h-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('sch.end')}</label>
+                  <input
+                    type="time"
+                    value={noteForm.endTime}
+                    onChange={e => setNoteForm(f => ({ ...f, endTime: e.target.value }))}
+                    className="w-full h-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Catatan</label>
+                <input
+                  type="text"
+                  value={noteForm.note}
+                  onChange={e => setNoteForm(f => ({ ...f, note: e.target.value }))}
+                  onKeyDown={e => e.key === 'Enter' && saveNote()}
+                  placeholder="Contoh: Libur nasional, Meeting, dll."
+                  className={`w-full border rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 ${noteErrors && !noteForm.note.trim() ? 'border-red-400' : 'border-gray-300 dark:border-gray-600'}`}
+                />
+                {noteErrors && !noteForm.note.trim() && <p className="text-xs text-red-500 mt-1">Catatan tidak boleh kosong</p>}
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <button onClick={saveNote} className="flex-1 flex items-center justify-center gap-1.5 bg-amber-500 text-white text-sm px-4 py-2 rounded-lg hover:bg-amber-600">
+                <Check size={16} /> {t('common.save')}
+              </button>
+              {editNote && (
+                <button onClick={() => removeNote(editNote.id)} className="flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
+                  <Trash2 size={15} />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Session Form Modal */}
       {showForm && (

@@ -86,6 +86,15 @@ export interface Payment {
   createdAt: string;
 }
 
+export interface ScheduleNote {
+  id: string;
+  date: string;       // YYYY-MM-DD
+  startTime: string;  // HH:MM
+  endTime: string;    // HH:MM
+  note: string;
+  createdAt: string;
+}
+
 export interface AppData {
   teachers: Teacher[];
   students: Student[];
@@ -93,4 +102,5 @@ export interface AppData {
   sessions: LessonSession[];
   worksheets: Worksheet[];
   payments: Payment[];
+  scheduleNotes: ScheduleNote[];
 }

@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import type { AppData, Teacher, Student, SessionPackage, LessonSession, Worksheet, Payment, BillingType, StudentGroup, PackagePricingType } from '../types';
+import type { AppData, Teacher, Student, SessionPackage, LessonSession, Worksheet, Payment, ScheduleNote, BillingType, StudentGroup, PackagePricingType } from '../types';
 import { generateId, effectiveRate, effectiveHonor, formatCurrency } from '../utils/helpers';
 import { supabase } from '../lib/supabase';
 import { format, parseISO } from 'date-fns';
@@ -8,7 +8,7 @@ import { id as localeId } from 'date-fns/locale';
 
 const fmtLogDate = (d: string) => format(parseISO(d), 'd MMM', { locale: localeId });
 
-const defaultData: AppData = { teachers: [], students: [], packages: [], sessions: [], worksheets: [], payments: [] };
+const defaultData: AppData = { teachers: [], students: [], packages: [], sessions: [], worksheets: [], payments: [], scheduleNotes: [] };
 
 // ─── DB row types (snake_case) ────────────────────────────────────────────────
 interface DbTeacher  { id: string; name: string; color: string; honor_per_session: number; pending_honor?: number | null; pending_honor_effective_date?: string | null; is_owner: boolean; is_active?: boolean | null; created_at: string; }
@@ -16,7 +16,8 @@ interface DbStudent  { id: string; teacher_id: string; name: string; billing_typ
 interface DbPackage  { id: string; student_id: string; teacher_id: string; total_sessions: number; pricing_type: string; price_per_session: number; package_price?: number; start_date: string; notes?: string; created_at: string; }
 interface DbSession   { id: string; student_id: string; teacher_id: string; date: string; start_time: string; end_time: string; status: string; notes?: string; worksheet_pages?: number; rate_snapshot?: number | null; honor_snapshot?: number | null; created_at: string; }
 interface DbWorksheet { id: string; student_id: string; date: string; pages: number; created_at: string; }
-interface DbPayment   { id: string; student_id: string; date: string; amount: number; note?: string | null; created_at: string; }
+interface DbPayment      { id: string; student_id: string; date: string; amount: number; note?: string | null; created_at: string; }
+interface DbScheduleNote { id: string; date: string; start_time: string; end_time: string; note: string; created_at: string; }
 
 // ─── Mappers DB → App ─────────────────────────────────────────────────────────
 const mapTeacher  = (r: DbTeacher):  Teacher        => ({ id: r.id, name: r.name, color: r.color, honorPerSession: r.honor_per_session ?? 100000, pendingHonor: r.pending_honor ?? undefined, pendingHonorEffectiveDate: r.pending_honor_effective_date ?? undefined, isOwner: r.is_owner ?? false, isActive: r.is_active ?? true, createdAt: r.created_at });
@@ -31,8 +32,10 @@ const toDbPackage = (p: SessionPackage) => ({ id: p.id, student_id: p.studentId,
 const toDbSession = (s: LessonSession)  => ({ id: s.id, student_id: s.studentId, teacher_id: s.teacherId, date: s.date, start_time: s.startTime, end_time: s.endTime, status: s.status, notes: s.notes ?? null, worksheet_pages: s.worksheetPages ?? 0, rate_snapshot: s.rateSnapshot ?? null, honor_snapshot: s.honorSnapshot ?? null, created_at: s.createdAt });
 const mapWorksheet  = (r: DbWorksheet): Worksheet => ({ id: r.id, studentId: r.student_id, date: r.date, pages: r.pages, createdAt: r.created_at });
 const toDbWorksheet = (w: Worksheet) => ({ id: w.id, student_id: w.studentId, date: w.date, pages: w.pages, created_at: w.createdAt });
-const mapPayment  = (r: DbPayment): Payment => ({ id: r.id, studentId: r.student_id, date: r.date, amount: r.amount, note: r.note ?? undefined, createdAt: r.created_at });
-const toDbPayment = (p: Payment) => ({ id: p.id, student_id: p.studentId, date: p.date, amount: p.amount, note: p.note ?? null, created_at: p.createdAt });
+const mapPayment      = (r: DbPayment): Payment => ({ id: r.id, studentId: r.student_id, date: r.date, amount: r.amount, note: r.note ?? undefined, createdAt: r.created_at });
+const toDbPayment     = (p: Payment) => ({ id: p.id, student_id: p.studentId, date: p.date, amount: p.amount, note: p.note ?? null, created_at: p.createdAt });
+const mapScheduleNote = (r: DbScheduleNote): ScheduleNote => ({ id: r.id, date: r.date, startTime: r.start_time, endTime: r.end_time, note: r.note, createdAt: r.created_at });
+const toDbScheduleNote = (n: ScheduleNote) => ({ id: n.id, date: n.date, start_time: n.startTime, end_time: n.endTime, note: n.note, created_at: n.createdAt });
 
 // ─── Context type ─────────────────────────────────────────────────────────────
 interface AppContextType {
@@ -57,6 +60,9 @@ interface AppContextType {
   deleteWorksheet: (id: string) => void;
   addPayment:    (p: Omit<Payment, 'id' | 'createdAt'>) => Payment;
   deletePayment: (id: string) => void;
+  addScheduleNote:    (n: Omit<ScheduleNote, 'id' | 'createdAt'>) => ScheduleNote;
+  updateScheduleNote: (id: string, updates: Partial<ScheduleNote>) => void;
+  deleteScheduleNote: (id: string) => void;
 }
 
 // Force lazy Supabase query to execute and log any error
@@ -102,13 +108,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     async function loadAll() {
-      const [t, s, p, se, ws, pay] = await Promise.all([
+      const [t, s, p, se, ws, pay, sn] = await Promise.all([
         supabase.from('teachers').select('*').order('created_at'),
         supabase.from('students').select('*').order('created_at'),
         supabase.from('packages').select('*').order('created_at'),
         supabase.from('sessions').select('*').order('created_at'),
         supabase.from('worksheets').select('*').order('created_at'),
         supabase.from('payments').select('*').order('created_at'),
+        supabase.from('schedule_notes').select('*').order('created_at'),
       ]);
       if (cancelled) return;
       const loaded: AppData = {
@@ -118,6 +125,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         sessions: (se.data ?? []).map(mapSession),
         worksheets: (ws.data ?? []).map(mapWorksheet),
         payments: (pay.data ?? []).map(mapPayment),
+        scheduleNotes: (sn.data ?? []).map(mapScheduleNote),
       };
       setData(loaded);
       setLoading(false);
@@ -167,6 +175,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ({ new: r }) => setData(d => ({ ...d, payments: [...d.payments.filter(p => p.id !== (r as DbPayment).id), mapPayment(r as DbPayment)] })))
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'payments' },
         ({ old: r }) => setData(d => ({ ...d, payments: d.payments.filter(p => p.id !== (r as DbPayment).id) })))
+      // schedule_notes
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'schedule_notes' },
+        ({ new: r }) => setData(d => ({ ...d, scheduleNotes: [...d.scheduleNotes.filter(n => n.id !== (r as DbScheduleNote).id), mapScheduleNote(r as DbScheduleNote)] })))
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'schedule_notes' },
+        ({ new: r }) => setData(d => ({ ...d, scheduleNotes: d.scheduleNotes.map(n => n.id === (r as DbScheduleNote).id ? mapScheduleNote(r as DbScheduleNote) : n) })))
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'schedule_notes' },
+        ({ old: r }) => setData(d => ({ ...d, scheduleNotes: d.scheduleNotes.filter(n => n.id !== (r as DbScheduleNote).id) })))
       .subscribe();
 
     return () => {
@@ -611,6 +626,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // ─── Schedule Notes ───────────────────────────────────────────────────────
+  const addScheduleNote = (n: Omit<ScheduleNote, 'id' | 'createdAt'>): ScheduleNote => {
+    const note: ScheduleNote = { ...n, id: generateId(), createdAt: new Date().toISOString() };
+    setData(d => ({ ...d, scheduleNotes: [...d.scheduleNotes, note] }));
+    db(supabase.from('schedule_notes').insert(toDbScheduleNote(note)));
+    logActivity('create', `Tambah catatan jadwal — ${fmtLogDate(note.date)} ${note.startTime}–${note.endTime}: "${note.note}"`);
+    return note;
+  };
+  const updateScheduleNote = (id: string, updates: Partial<ScheduleNote>) => {
+    const old = data.scheduleNotes.find(n => n.id === id);
+    setData(d => ({ ...d, scheduleNotes: d.scheduleNotes.map(n => n.id === id ? { ...n, ...updates } : n) }));
+    if (old) {
+      const merged = { ...old, ...updates };
+      db(supabase.from('schedule_notes').update(toDbScheduleNote(merged)).eq('id', id));
+      logActivity('update', `Ubah catatan jadwal — ${fmtLogDate(merged.date)} ${merged.startTime}–${merged.endTime}: "${merged.note}"`);
+    }
+  };
+  const deleteScheduleNote = (id: string) => {
+    const old = data.scheduleNotes.find(n => n.id === id);
+    setData(d => ({ ...d, scheduleNotes: d.scheduleNotes.filter(n => n.id !== id) }));
+    db(supabase.from('schedule_notes').delete().eq('id', id));
+    if (old) logActivity('delete', `Hapus catatan jadwal — ${fmtLogDate(old.date)} ${old.startTime}–${old.endTime}: "${old.note}"`);
+  };
+
   return (
     <AppContext.Provider value={{
       data, loading,
@@ -620,6 +659,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addSession, updateSession, deleteSession,
       addWorksheet, updateWorksheet, deleteWorksheet,
       addPayment, deletePayment,
+      addScheduleNote, updateScheduleNote, deleteScheduleNote,
     }}>
       {children}
     </AppContext.Provider>
