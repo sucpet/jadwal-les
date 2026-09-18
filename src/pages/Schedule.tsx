@@ -41,7 +41,7 @@ export default function Schedule() {
   const [editSession, setEditSession] = useState<LessonSession | null>(null);
   const [showNoteForm, setShowNoteForm] = useState(false);
   const [editNote, setEditNote] = useState<ScheduleNote | null>(null);
-  const [noteForm, setNoteForm] = useState({ date: '', startTime: '09:00', endTime: '10:00', note: '' });
+  const [noteForm, setNoteForm] = useState({ date: '', startTime: '09:00', endTime: '10:00', note: '', allDay: false });
   const [noteErrors, setNoteErrors] = useState(false);
   const [slotPick, setSlotPick] = useState<{ date: string; time: string } | null>(null);
   const [bulkMode, setBulkMode] = useState(false);
@@ -160,21 +160,24 @@ export default function Schedule() {
   const openAddNote = (date?: string, time?: string) => {
     setNoteErrors(false);
     setEditNote(null);
-    setNoteForm({ date: date ?? todayStr, startTime: time ?? '09:00', endTime: time ? addOneHour(time) : '10:00', note: '' });
+    setNoteForm({ date: date ?? todayStr, startTime: time ?? '09:00', endTime: time ? addOneHour(time) : '10:00', note: '', allDay: false });
     setShowNoteForm(true);
   };
   const openEditNote = (note: ScheduleNote) => {
     setNoteErrors(false);
     setEditNote(note);
-    setNoteForm({ date: note.date, startTime: note.startTime, endTime: note.endTime, note: note.note });
+    const allDay = note.startTime === '00:00' && note.endTime === '23:59';
+    setNoteForm({ date: note.date, startTime: note.startTime, endTime: note.endTime, note: note.note, allDay });
     setShowNoteForm(true);
   };
   const saveNote = () => {
     if (!noteForm.note.trim() || !noteForm.date) { setNoteErrors(true); return; }
+    const startTime = noteForm.allDay ? '00:00' : noteForm.startTime;
+    const endTime   = noteForm.allDay ? '23:59' : noteForm.endTime;
     if (editNote) {
-      updateScheduleNote(editNote.id, { date: noteForm.date, startTime: noteForm.startTime, endTime: noteForm.endTime, note: noteForm.note.trim() });
+      updateScheduleNote(editNote.id, { date: noteForm.date, startTime, endTime, note: noteForm.note.trim() });
     } else {
-      addScheduleNote({ date: noteForm.date, startTime: noteForm.startTime, endTime: noteForm.endTime, note: noteForm.note.trim() });
+      addScheduleNote({ date: noteForm.date, startTime, endTime, note: noteForm.note.trim() });
     }
     setShowNoteForm(false);
   };
@@ -746,17 +749,18 @@ export default function Schedule() {
                   })}
                   {/* Schedule notes — day view */}
                   {data.scheduleNotes.filter(n => n.date === dayStr).map(n => {
-                    const topPx = Math.max(0, timeToPixels(n.startTime));
-                    const heightPx = Math.max(ROW_H / 2, timeToPixels(n.endTime) - timeToPixels(n.startTime) - 2);
+                    const isAllDay = n.startTime === '00:00' && n.endTime === '23:59';
+                    const topPx = isAllDay ? 0 : Math.max(0, timeToPixels(n.startTime));
+                    const heightPx = isAllDay ? TIME_SLOTS.length * ROW_H : Math.max(ROW_H / 2, timeToPixels(n.endTime) - timeToPixels(n.startTime) - 2);
                     return (
                       <div
                         key={n.id}
-                        style={{ position: 'absolute', top: `${topPx + 1}px`, height: `${heightPx}px`, left: '2px', right: '2px', pointerEvents: 'auto' }}
-                        className="rounded text-xs px-1.5 py-0.5 overflow-hidden bg-amber-100 dark:bg-amber-900/40 border-l-4 border-amber-400 dark:border-amber-500 text-amber-800 dark:text-amber-200 active:opacity-70 cursor-pointer"
+                        style={{ position: 'absolute', top: `${topPx + 1}px`, height: `${heightPx}px`, left: '2px', right: '2px', pointerEvents: 'auto', opacity: isAllDay ? 0.35 : 1 }}
+                        className="rounded text-xs px-1.5 py-0.5 overflow-hidden bg-amber-200 dark:bg-amber-800/60 border-l-4 border-amber-400 dark:border-amber-500 text-amber-900 dark:text-amber-100 active:opacity-70 cursor-pointer"
                         onClick={e => { e.stopPropagation(); openEditNote(n); }}
                       >
-                        <div className="font-medium truncate">{n.note}</div>
-                        <div className="opacity-70 truncate">{n.startTime}–{n.endTime}</div>
+                        <div className="font-semibold truncate">{n.note}</div>
+                        {!isAllDay && <div className="opacity-70 truncate">{n.startTime}–{n.endTime}</div>}
                       </div>
                     );
                   })}
@@ -986,17 +990,18 @@ export default function Schedule() {
                 })}
                 {/* Schedule notes — week view */}
                 {data.scheduleNotes.filter(n => n.date === format(day, 'yyyy-MM-dd')).map(n => {
-                  const topPx = Math.max(0, timeToPixels(n.startTime));
-                  const heightPx = Math.max(ROW_H / 2, timeToPixels(n.endTime) - timeToPixels(n.startTime) - 2);
+                  const isAllDay = n.startTime === '00:00' && n.endTime === '23:59';
+                  const topPx = isAllDay ? 0 : Math.max(0, timeToPixels(n.startTime));
+                  const heightPx = isAllDay ? TIME_SLOTS.length * ROW_H : Math.max(ROW_H / 2, timeToPixels(n.endTime) - timeToPixels(n.startTime) - 2);
                   return (
                     <div
                       key={n.id}
-                      style={{ position: 'absolute', top: `${topPx + 1}px`, height: `${heightPx}px`, left: '2px', right: '2px', pointerEvents: 'auto' }}
-                      className="rounded text-xs px-1 py-0.5 overflow-hidden bg-amber-100 dark:bg-amber-900/40 border-l-4 border-amber-400 dark:border-amber-500 text-amber-800 dark:text-amber-200 cursor-pointer hover:opacity-80"
+                      style={{ position: 'absolute', top: `${topPx + 1}px`, height: `${heightPx}px`, left: '2px', right: '2px', pointerEvents: 'auto', opacity: isAllDay ? 0.35 : 1 }}
+                      className="rounded text-xs px-1 py-0.5 overflow-hidden bg-amber-200 dark:bg-amber-800/60 border-l-4 border-amber-400 dark:border-amber-500 text-amber-900 dark:text-amber-100 cursor-pointer hover:opacity-80"
                       onClick={e => { e.stopPropagation(); openEditNote(n); }}
                     >
-                      <div className="font-medium truncate">{n.note}</div>
-                      <div className="opacity-70 truncate">{n.startTime}–{n.endTime}</div>
+                      <div className="font-semibold truncate">{n.note}</div>
+                      {!isAllDay && <div className="opacity-70 truncate">{n.startTime}–{n.endTime}</div>}
                     </div>
                   );
                 })}
@@ -1525,35 +1530,48 @@ export default function Schedule() {
             </div>
 
             <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('common.date')}</label>
-                <input
-                  type="date"
-                  value={noteForm.date}
-                  onChange={e => setNoteForm(f => ({ ...f, date: e.target.value }))}
-                  className="w-full h-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('sch.start')}</label>
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('common.date')}</label>
                   <input
-                    type="time"
-                    value={noteForm.startTime}
-                    onChange={e => setNoteForm(f => ({ ...f, startTime: e.target.value }))}
+                    type="date"
+                    value={noteForm.date}
+                    onChange={e => setNoteForm(f => ({ ...f, date: e.target.value }))}
                     className="w-full h-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('sch.end')}</label>
+                <label className="flex items-center gap-1.5 cursor-pointer select-none pt-5">
                   <input
-                    type="time"
-                    value={noteForm.endTime}
-                    onChange={e => setNoteForm(f => ({ ...f, endTime: e.target.value }))}
-                    className="w-full h-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    type="checkbox"
+                    checked={noteForm.allDay}
+                    onChange={e => setNoteForm(f => ({ ...f, allDay: e.target.checked }))}
+                    className="w-4 h-4 accent-amber-500"
                   />
-                </div>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">All Day</span>
+                </label>
               </div>
+              {!noteForm.allDay && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('sch.start')}</label>
+                    <input
+                      type="time"
+                      value={noteForm.startTime}
+                      onChange={e => setNoteForm(f => ({ ...f, startTime: e.target.value }))}
+                      className="w-full h-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('sch.end')}</label>
+                    <input
+                      type="time"
+                      value={noteForm.endTime}
+                      onChange={e => setNoteForm(f => ({ ...f, endTime: e.target.value }))}
+                      className="w-full h-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Catatan</label>
                 <input
