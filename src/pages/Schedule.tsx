@@ -983,23 +983,24 @@ export default function Schedule() {
                       </button>
                     </div>
                   );
-                  {/* Schedule notes — week view */}
-                  {data.scheduleNotes.filter(n => n.date === format(day, 'yyyy-MM-dd')).map(n => {
-                    const topPx = Math.max(0, timeToPixels(n.startTime));
-                    const heightPx = Math.max(ROW_H / 2, timeToPixels(n.endTime) - timeToPixels(n.startTime) - 2);
-                    return (
-                      <div
-                        key={n.id}
-                        style={{ position: 'absolute', top: `${topPx + 1}px`, height: `${heightPx}px`, left: '2px', right: '2px', pointerEvents: 'auto' }}
-                        className="rounded text-xs px-1 py-0.5 overflow-hidden bg-amber-100 dark:bg-amber-900/40 border-l-4 border-amber-400 dark:border-amber-500 text-amber-800 dark:text-amber-200 cursor-pointer hover:opacity-80"
-                        onClick={e => { e.stopPropagation(); openEditNote(n); }}
-                      >
-                        <div className="font-medium truncate">{n.note}</div>
-                        <div className="opacity-70 truncate">{n.startTime}–{n.endTime}</div>
-                      </div>
-                    );
-                  })}
-                </div>
+                })}
+                {/* Schedule notes — week view */}
+                {data.scheduleNotes.filter(n => n.date === format(day, 'yyyy-MM-dd')).map(n => {
+                  const topPx = Math.max(0, timeToPixels(n.startTime));
+                  const heightPx = Math.max(ROW_H / 2, timeToPixels(n.endTime) - timeToPixels(n.startTime) - 2);
+                  return (
+                    <div
+                      key={n.id}
+                      style={{ position: 'absolute', top: `${topPx + 1}px`, height: `${heightPx}px`, left: '2px', right: '2px', pointerEvents: 'auto' }}
+                      className="rounded text-xs px-1 py-0.5 overflow-hidden bg-amber-100 dark:bg-amber-900/40 border-l-4 border-amber-400 dark:border-amber-500 text-amber-800 dark:text-amber-200 cursor-pointer hover:opacity-80"
+                      onClick={e => { e.stopPropagation(); openEditNote(n); }}
+                    >
+                      <div className="font-medium truncate">{n.note}</div>
+                      <div className="opacity-70 truncate">{n.startTime}–{n.endTime}</div>
+                    </div>
+                  );
+                })}
+              </div>
             );
           })}
 
