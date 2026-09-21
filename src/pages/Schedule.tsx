@@ -60,18 +60,22 @@ export default function Schedule() {
   const [currentDay, setCurrentDay] = useState(() => new Date());
   const [dayPanel, setDayPanel] = useState<string | null>(null);
   const gridMaxPx = TIME_SLOTS.length * ROW_H;
-  const [nowPx, setNowPx] = useState(() => timeToPixels(format(new Date(), 'HH:mm')));
+  const nowPxFromDate = (d: Date) => {
+    const totalMinutes = (d.getHours() - 8) * 60 + d.getMinutes() + d.getSeconds() / 60;
+    return (totalMinutes / 30) * ROW_H;
+  };
+  const [nowPx, setNowPx] = useState(() => nowPxFromDate(new Date()));
   const showNowLine = nowPx >= 0 && nowPx <= gridMaxPx;
   const dayScrollRef = useRef<HTMLDivElement>(null);
   const weekScrollRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef(0);
 
-  // Update current-time indicator every minute
+  // Update current-time indicator every 10 seconds (includes seconds for pixel accuracy)
   useEffect(() => {
-    const tick = () => setNowPx(timeToPixels(format(new Date(), 'HH:mm')));
-    const id = setInterval(tick, 60_000);
+    const tick = () => setNowPx(nowPxFromDate(new Date()));
+    const id = setInterval(tick, 10_000);
     return () => clearInterval(id);
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-scroll mobile day view
   useEffect(() => {
