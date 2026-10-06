@@ -56,7 +56,7 @@ Tests only cover the pure functions in `src/utils/`. There are no component test
 - `pages/Students.tsx`
 
 **Database**
-- The base schema is not in the repo. `migrations/*.sql` holds only the incremental `alter`s, dated by filename. They are applied manually to Supabase because the repo has no migration runner.
+- `migrations/0000-base-schema.sql` is a `pg_dump --schema-only` snapshot of the `public` schema: tables, RLS policies, and grants. The other `migrations/*.sql` files are incremental `alter`s, dated by filename. All of them are applied manually to Supabase because the repo has no migration runner. After changing the schema, refresh the snapshot by re-running `pg_dump` against the Session pooler URI (the direct host is IPv6-only).
 
 **Scripts**
 - `scripts/seed-data.mjs` generates `scripts/import-data.json`. That file is imported through the Settings page (restore/import JSON).
