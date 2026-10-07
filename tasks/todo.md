@@ -10,17 +10,17 @@
   - Verify: npm test / lint / build; screenshot desktop + HP
   - Files: src/types/index.ts, src/store/AppContext.tsx, src/pages/Teachers.tsx, src/pages/Dashboard.tsx, src/utils/lessonPlan.ts (+ test), src/i18n/translations.ts
 
-- [ ] 3. Bot + secrets (developer)
+- [x] 3. Bot + secrets (developer)
   - Acceptance: bot ada; TELEGRAM_BOT_TOKEN + TELEGRAM_WEBHOOK_SECRET di Supabase secrets
   - Verify: `supabase secrets list` menampilkan nama (bukan nilai)
   - Files: —
 
-- [ ] 4. Fn telegram-webhook + setWebhook
+- [x] 4. Fn telegram-webhook + setWebhook
   - Acceptance: /start <token valid> menyimpan chat_id; token palsu/kedaluwarsa ditolak; tanpa secret → 401; callback tombol set lesson_plan_done_at
   - Verify: curl tanpa secret → 401; uji /start dari Telegram
   - Files: supabase/functions/telegram-webhook/index.ts, supabase/config.toml
 
-- [ ] 5. App: Hubungkan Telegram di Settings
+- [x] 5. App: Hubungkan Telegram di Settings
   - Acceptance: tombol membuat token & membuka bot; status "Terhubung" tampil setelah Start
   - Verify: alur manual dengan akun Claude (guru [TEST])
   - Files: src/pages/Settings.tsx, src/i18n/translations.ts

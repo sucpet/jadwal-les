@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Download, Trash2, AlertTriangle, CheckCircle2, Moon, Sun, Cloud, RefreshCw, RotateCcw, Languages, UserCircle2 } from 'lucide-react';
+import { Download, Trash2, AlertTriangle, CheckCircle2, Moon, Sun, Cloud, RefreshCw, RotateCcw, Languages, UserCircle2, Send } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { generateId } from '../utils/helpers';
 import { useTheme } from '../store/ThemeContext';
@@ -202,6 +202,8 @@ export default function Settings() {
         </div>
       </div>
 
+      <TelegramLink />
+
       {/* Stats */}
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
         <h2 className="font-semibold text-gray-900 dark:text-white mb-3">{t('set.summary')}</h2>
@@ -323,6 +325,74 @@ export default function Settings() {
           <Trash2 size={16} /> {t('set.deleteAll')}
         </button>
       </div>
+    </div>
+  );
+}
+
+// ─── Hubungkan Telegram (pengingat lesson plan XuYuan) ────────────────────────
+// Guru dicocokkan lewat teachers.email = email akun login. Token sekali pakai (15 menit)
+// dibaca Edge Function telegram-webhook saat guru menekan Start di bot.
+// Dua langkah (buat link → buka) karena iOS PWA memblokir window.open setelah await.
+
+const TELEGRAM_BOT = 'Kumamon26Bot';
+
+function TelegramLink() {
+  const { data } = useApp();
+  const { t } = useLang();
+  const [email, setEmail] = useState<string | null>(null);
+  const [link, setLink] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => setEmail(session?.user?.email?.toLowerCase() ?? ''));
+  }, []);
+
+  const teacher = email ? data.teachers.find(te => te.email === email) : undefined;
+
+  const createLink = async () => {
+    if (!teacher) return;
+    setBusy(true);
+    setError(false);
+    const token = Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('');
+    const { error } = await supabase.from('telegram_link_tokens').insert({ token, teacher_id: teacher.id });
+    setBusy(false);
+    if (error) { setError(true); return; }
+    setLink(`https://t.me/${TELEGRAM_BOT}?start=${token}`);
+  };
+
+  if (email === null) return null;
+
+  return (
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 space-y-3">
+      <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+        <Send size={16} /> {t('tg.title')}
+      </h2>
+      <p className="text-xs text-gray-500 dark:text-gray-400">{t('tg.desc')}</p>
+      {!teacher ? (
+        <p className="text-sm text-amber-700 dark:text-amber-400">{t('tg.noTeacher', { email })}</p>
+      ) : (
+        <div className="space-y-2">
+          {teacher.telegramChatId && (
+            <p className="text-sm text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+              <CheckCircle2 size={15} /> {t('tg.connected', { name: teacher.name })}
+            </p>
+          )}
+          {link ? (
+            <a href={link} target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-sky-500 text-white text-sm rounded-lg hover:bg-sky-600">
+              <Send size={14} /> {t('tg.open')}
+            </a>
+          ) : (
+            <button onClick={createLink} disabled={busy}
+              className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+              {teacher.telegramChatId ? t('tg.reconnect') : t('tg.connect')}
+            </button>
+          )}
+          {link && <p className="text-xs text-gray-400">{t('tg.openHint')}</p>}
+          {error && <p className="text-xs text-red-500">{t('tg.error')}</p>}
+        </div>
+      )}
     </div>
   );
 }
