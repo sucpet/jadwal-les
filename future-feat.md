@@ -37,7 +37,6 @@ Berdasarkan analisis codebase + riset dari repo publik:
 
 ## 📅 Jadwal & Kehadiran
 
-- **Status batal + alasan** — ganti "hapus sesi" dengan status `cancelled` disertai alasan (murid absen, guru berhalangan, dll). Sesi yang dibatalkan tetap tercatat di histori dan **tidak mengurangi slot paket**. *(TutorBird, LearnSpeed, Trakist)*
 - **Sesi make-up / pengganti** — saat sesi dibatalkan, tandai "perlu make-up". Saat sesi pengganti dijadwalkan, link ke sesi aslinya. Dashboard tampilkan berapa make-up masih outstanding. *(TutorBird, Trakist)*
 - **Kehadiran** — tracking hadir/tidak hadir per sesi, hitung persentase kehadiran per murid. *(AzimKrishna)*
 - **Tampilan bulan di kalender** — toggle antara tampilan minggu (sudah ada) dan tampilan bulan. Berguna untuk melihat kepadatan jadwal sebulan penuh. *(standar semua referensi kalender)*
@@ -48,9 +47,7 @@ Berdasarkan analisis codebase + riset dari repo publik:
 
 ## 💰 Keuangan & Pembayaran
 
-- **Status pembayaran per murid/siklus** — tandai apakah tagihan sudah "lunas" atau belum per bulan/siklus. Dashboard tampilkan siapa yang belum bayar. *(AzimKrishna, Trakist, TutorBird)*
-- **Cetak invoice PDF** — generate PDF tagihan per murid per bulan/siklus: daftar sesi, total jam, harga, total tagihan. Bisa di-share ke ortu via WhatsApp. Versi PNG per bulan untuk murid postpaid sudah ada (tombol Invoice di kartu murid, `getStudentInvoice` di helpers.ts); sisa: siklus XuYuan & paket. *(AzimKrishna, TutorBird, LearnSpeed)*
-- **Reminder tagihan overdue** — notifikasi otomatis ke admin kalau invoice belum "lunas" setelah N hari. *(TutorBird)*
+- **Cetak invoice PDF** — generate PDF tagihan per murid per bulan: daftar sesi, total jam, harga, total tagihan. Bisa di-share ke ortu via WhatsApp. Versi PNG per bulan untuk murid postpaid sudah ada (tombol Invoice di kartu murid, `getStudentInvoice` di helpers.ts); sisa: paket. *(AzimKrishna, TutorBird, LearnSpeed)*
 - **Laporan pendapatan P&L** — grafik revenue per bulan, per guru, per kelompok murid, bandingkan antar bulan. *(TutorBird, LearnSpeed)*
 - **Hitung honor guru** — hitung otomatis honor bulanan masing-masing guru berdasarkan sesi × rate. *(TutorBird, LearnSpeed)*
 - **Expense tracking** — catat biaya (materi, transport) terhadap pendapatan untuk melihat profit bersih. *(TutorBird)*
@@ -96,5 +93,4 @@ Berdasarkan analisis codebase + riset dari repo publik:
 |---|---|
 | Catatan per sesi | `notes` di `LessonSession` sudah ada di DB dan TypeScript, tinggal tambah UI |
 | Laporan pendapatan | Ambil logika dari `src/pages/Finance.tsx` (snapshot harga, paket diakui di bulan beli, murid lembaga saat bayar) |
-| Status `cancelled` | Perlu migrasi DB: tambah enum value `cancelled` ke kolom `status` |
 | Backup restore | File backup sudah ada di Supabase Storage bucket `backups/` |

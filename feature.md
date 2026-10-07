@@ -41,6 +41,9 @@ Export rekap keuangan/jam per laoshi untuk dikirim ke lembaga/orang tua.
 - **Rekap per murid** (kartu ringkasan total sesi/dibayar/tunggakan) — tidak diperlukan.
 - **"Selesaikan semua sesi hari ini"** (bulk complete) — tidak diperlukan.
 - **Grafik di Dashboard** (tren pendapatan / jam per laoshi) — tidak diperlukan.
+- **Status `cancelled` untuk sesi** — tidak diperlukan; sesi batal langsung dihapus (tercatat di Log Aktivitas).
+- **Status lunas murid postpaid** (catat pembayaran, reminder overdue) — tidak diperlukan.
+- **Invoice murid XuYuan** (per siklus 26–25) — tidak diperlukan.
 
 ---
 
