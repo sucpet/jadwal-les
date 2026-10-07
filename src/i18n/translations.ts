@@ -12,6 +12,9 @@ export const translations: Record<Lang, Record<string, string>> = {
     'common.sessions_n': '{n} sesi',
     'common.tentativeDate': '(tanggal tentatif)',
     'status.completed': 'Selesai',
+    'lp.toggle': 'Tandai lesson plan XuYuan sudah diisi',
+    'lp.done': 'Lesson plan ✓',
+    'lp.pending': 'Lesson plan',
     'status.scheduled': 'Terjadwal',
 
     // nav
@@ -129,6 +132,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     'teach.addTitle': 'Tambah Laoshi Baru',
     'teach.name': 'Nama Laoshi',
     'teach.namePlaceholder': 'Contoh: WenWen',
+    'teach.email': 'Email akun login',
+    'teach.emailHint': 'Sama dengan email login laoshi. Dipakai untuk Hubungkan Telegram.',
     'teach.nameRequired': 'Nama laoshi wajib diisi',
     'teach.color': 'Warna',
     'teach.empty': 'Belum ada laoshi. Tambahkan laoshi pertama.',
@@ -415,6 +420,9 @@ export const translations: Record<Lang, Record<string, string>> = {
     'common.sessions_n': '{n} sessions',
     'common.tentativeDate': '(tentative date)',
     'status.completed': 'Completed',
+    'lp.toggle': 'Mark XuYuan lesson plan as filled',
+    'lp.done': 'Lesson plan ✓',
+    'lp.pending': 'Lesson plan',
     'status.scheduled': 'Scheduled',
 
     // nav
@@ -532,6 +540,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     'teach.addTitle': 'Add New Laoshi',
     'teach.name': 'Laoshi Name',
     'teach.namePlaceholder': 'e.g. WenWen',
+    'teach.email': 'Login email',
+    'teach.emailHint': 'Same as the laoshi\'s login email. Used to connect Telegram.',
     'teach.nameRequired': 'Laoshi name is required',
     'teach.color': 'Color',
     'teach.empty': 'No laoshi yet. Add your first laoshi.',

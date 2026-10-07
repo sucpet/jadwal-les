@@ -26,3 +26,4 @@ TSD.md
 *.njsproj
 *.sln
 *.sw?
+supabase/.temp/

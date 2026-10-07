@@ -7,6 +7,8 @@ export interface Teacher {
   pendingHonorEffectiveDate?: string; // YYYY-MM-DD, tanggal pendingHonor mulai berlaku
   isOwner: boolean;
   isActive: boolean;
+  email?: string;          // email akun login guru (untuk Hubungkan Telegram)
+  telegramChatId?: number; // diisi Edge Function setelah guru /start bot
   createdAt: string;
 }
 
@@ -64,6 +66,7 @@ export interface LessonSession {
   worksheetPages?: number;
   rateSnapshot?: number; // ratePerSession murid saat sesi selesai (postpaid only)
   honorSnapshot?: number; // honorPerSession guru saat sesi selesai (dibekukan)
+  lessonPlanDoneAt?: string; // ISO; lesson plan XuYuan sudah diisi (stop pengingat Telegram)
   createdAt: string;
 }
 

@@ -16,11 +16,13 @@ export default function Teachers() {
   const [editId, setEditId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [color, setColor] = useState(TEACHER_COLORS[0]);
+  const [email, setEmail] = useState('');
   const [showErrors, setShowErrors] = useState(false);
 
   const openAdd = () => {
     setEditId(null);
     setName('');
+    setEmail('');
     setColor(TEACHER_COLORS[data.teachers.length % TEACHER_COLORS.length]);
     setShowErrors(false);
     setShowForm(true);
@@ -31,6 +33,7 @@ export default function Teachers() {
     if (!t) return;
     setEditId(id);
     setName(t.name);
+    setEmail(t.email ?? '');
     setColor(t.color);
     setShowErrors(false);
     setShowForm(true);
@@ -39,7 +42,7 @@ export default function Teachers() {
   const save = () => {
     if (!name.trim()) { setShowErrors(true); return; }
     if (editId) {
-      updateTeacher(editId, { name: name.trim(), color });
+      updateTeacher(editId, { name: name.trim(), color, email: email.trim().toLowerCase() || undefined });
     } else {
       addTeacher(name.trim(), color);
     }
@@ -95,6 +98,20 @@ export default function Teachers() {
               <p className="text-xs text-red-500 mt-1">{t('teach.nameRequired')}</p>
             )}
           </div>
+          {editId && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('teach.email')}</label>
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && save()}
+                placeholder="dsr5dl@example.invalid"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              <p className="text-xs text-gray-400 mt-1">{t('teach.emailHint')}</p>
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('teach.color')}</label>
             <div className="flex gap-2 flex-wrap">

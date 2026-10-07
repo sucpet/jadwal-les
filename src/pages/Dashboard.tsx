@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { format, parseISO, differenceInDays, addDays } from 'date-fns';
-import { Clock, AlertTriangle, CheckCircle2, Calendar, UserX, CalendarClock, ChevronLeft, ChevronRight, CalendarX, MessageCircle } from 'lucide-react';
+import { Clock, AlertTriangle, CheckCircle2, Calendar, UserX, CalendarClock, ChevronLeft, ChevronRight, CalendarX, MessageCircle, ClipboardCheck } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { useLang } from '../store/LanguageContext';
 import { getTodaySessions, getPackageStatus } from '../utils/helpers';
 import { waLink, isValidPhone } from '../utils/whatsapp';
+import { isXuYuanSession } from '../utils/lessonPlan';
 import { useHolidays } from '../store/HolidayContext';
 import { Link } from 'react-router-dom';
 
 export default function Dashboard() {
-  const { data } = useApp();
+  const { data, updateSession } = useApp();
   const { t, locale } = useLang();
   const { getHoliday } = useHolidays();
   const today = new Date();
@@ -305,6 +306,21 @@ export default function Dashboard() {
                       }`}>
                         {session.status === 'completed' ? t('status.completed') : t('status.scheduled')}
                       </div>
+                      {isXuYuanSession(session, data.students) && (
+                        <button
+                          onClick={() => updateSession(session.id, { lessonPlanDoneAt: session.lessonPlanDoneAt ? undefined : new Date().toISOString() })}
+                          aria-pressed={!!session.lessonPlanDoneAt}
+                          title={t('lp.toggle')}
+                          className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border flex-shrink-0 ${
+                            session.lessonPlanDoneAt
+                              ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
+                              : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800'
+                          }`}
+                        >
+                          <ClipboardCheck size={12} />
+                          {session.lessonPlanDoneAt ? t('lp.done') : t('lp.pending')}
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
