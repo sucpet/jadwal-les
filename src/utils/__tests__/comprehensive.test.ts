@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { ROW_H, timeToPixels, computeDayLayout, addOneHour, shiftDateByWeeks, dayOfWeek, diffMinutes, addMinutes } from '../calendar';
 import { xuYuanCycleStart, xuYuanCycleLabel, durationMinutes, formatDuration, formatRp } from '../xuyuan';
 import { groupByMonth, groupByXuYuanCycle, totalDurationLabel, getPackageAttributedSessions } from '../student-groups';
-import { getPackageStatus, getMonthlyRevenue, effectiveRate, effectiveHonor } from '../helpers';
+import { getPackageStatus, getStudentInvoice, effectiveRate, effectiveHonor } from '../helpers';
 import type { LessonSession, SessionPackage, Student } from '../../types';
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
@@ -548,60 +548,26 @@ describe('getPackageStatus — isExpiringSoon', () => {
   });
 });
 
-// ─── helpers.ts — getMonthlyRevenue ──────────────────────────────────────────
+// ─── helpers.ts — getStudentInvoice ──────────────────────────────────────────
 
-describe('getMonthlyRevenue', () => {
-  it('per-session student → uses ratePerSession', () => {
-    const student = makeStudent({ billingType: 'per-session', ratePerSession: 200_000 });
+describe('getStudentInvoice', () => {
+  const student = makeStudent({ billingType: 'per-session', ratePerSession: 150_000, pendingRate: 175_000, pendingRateEffectiveDate: '2026-01-20' });
+
+  it('month filter, status filter, sort, snapshot vs effective rate', () => {
     const sessions = [
-      makeSession({ date: '2026-01-10', status: 'completed' }),
-      makeSession({ id: 's2', date: '2026-01-15', status: 'completed' }),
+      makeSession({ id: 'late', date: '2026-01-25', status: 'scheduled' }),                    // pending rate berlaku → 175k
+      makeSession({ id: 'snap', date: '2026-01-05', rateSnapshot: 120_000 }),                  // snapshot menang
+      makeSession({ id: 'norm', date: '2026-01-12' }),                                         // harga lama → 150k
+      makeSession({ id: 'feb',  date: '2026-02-01' }),                                         // beda bulan
+      makeSession({ id: 'oth',  date: '2026-01-12', studentId: 'other' }),                     // murid lain
     ];
-    const revenue = getMonthlyRevenue(sessions, [student], [], 'tea1', 2026, 0);
-    expect(revenue).toBe(400_000);
+    const inv = getStudentInvoice(student, sessions, '2026-01');
+    expect(inv.lines.map(l => l.session.id)).toEqual(['snap', 'norm', 'late']);
+    expect(inv.lines.map(l => l.amount)).toEqual([120_000, 150_000, 175_000]);
+    expect(inv.total).toBe(445_000);
   });
 
-  it('only completed sessions count', () => {
-    const student = makeStudent({ billingType: 'per-session', ratePerSession: 200_000 });
-    const sessions = [
-      makeSession({ id: 'a', date: '2026-01-10', status: 'completed' }),
-      makeSession({ id: 'b', date: '2026-01-15', status: 'scheduled' }), // not counted
-    ];
-    const revenue = getMonthlyRevenue(sessions, [student], [], 'tea1', 2026, 0);
-    expect(revenue).toBe(200_000);
-  });
-
-  it('wrong month sessions are excluded', () => {
-    const student = makeStudent({ billingType: 'per-session', ratePerSession: 200_000 });
-    const sessions = [
-      makeSession({ id: 'a', date: '2026-01-10', status: 'completed' }), // Jan
-      makeSession({ id: 'b', date: '2026-02-10', status: 'completed' }), // Feb — excluded
-    ];
-    const revenue = getMonthlyRevenue(sessions, [student], [], 'tea1', 2026, 0); // month=0 = January
-    expect(revenue).toBe(200_000);
-  });
-
-  it('different teacher sessions are excluded', () => {
-    const student = makeStudent({ billingType: 'per-session', ratePerSession: 200_000 });
-    const sessions = [
-      makeSession({ id: 'a', date: '2026-01-10', status: 'completed', teacherId: 'tea1' }),
-      makeSession({ id: 'b', date: '2026-01-15', status: 'completed', teacherId: 'tea2' }),
-    ];
-    const revenue = getMonthlyRevenue(sessions, [student], [], 'tea1', 2026, 0);
-    expect(revenue).toBe(200_000);
-  });
-
-  it('package student uses pricePerSession from package', () => {
-    const student = makeStudent({ billingType: 'package', ratePerSession: 150_000 });
-    const pkg = makePackage({ pricePerSession: 145_000 });
-    const sessions = [makeSession({ date: '2026-01-10', status: 'completed' })];
-    const revenue = getMonthlyRevenue(sessions, [student], [pkg], 'tea1', 2026, 0);
-    expect(revenue).toBe(145_000);
-  });
-
-  it('unknown student → 0 contribution', () => {
-    const sessions = [makeSession({ date: '2026-01-10', status: 'completed', studentId: 'unknown' })];
-    const revenue = getMonthlyRevenue(sessions, [], [], 'tea1', 2026, 0);
-    expect(revenue).toBe(0);
+  it('no sessions → empty, total 0', () => {
+    expect(getStudentInvoice(student, [], '2026-01')).toEqual({ lines: [], total: 0 });
   });
 });

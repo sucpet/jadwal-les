@@ -128,31 +128,16 @@ export function getTodaySessions(sessions: LessonSession[]): LessonSession[] {
     .sort((a, b) => a.startTime.localeCompare(b.startTime));
 }
 
-export function getMonthlyRevenue(
-  sessions: LessonSession[],
-  students: Student[],
-  packages: SessionPackage[],
-  teacherId: string,
-  year: number,
-  month: number // 0-indexed
-): number {
-  const monthStr = `${year}-${String(month + 1).padStart(2, '0')}`;
-  const teacherSessions = sessions.filter(
-    s => s.teacherId === teacherId && s.date.startsWith(monthStr) && s.status === 'completed'
-  );
-
-  return teacherSessions.reduce((total, session) => {
-    const student = students.find(s => s.id === session.studentId);
-    if (!student) return total;
-
-    if (student.billingType === 'per-session') {
-      return total + student.ratePerSession;
-    }
-
-    // For package students, use the package rate
-    const pkg = packages.find(p => p.studentId === student.id);
-    return total + (pkg?.pricePerSession ?? student.ratePerSession);
-  }, 0);
+/**
+ * Rincian tagihan murid postpaid untuk satu bulan kalender (YYYY-MM).
+ * Sama dengan Finance: sesi selesai + terjadwal, harga = snapshot ?? harga berlaku.
+ */
+export function getStudentInvoice(student: Student, sessions: LessonSession[], monthStr: string) {
+  const lines = sessions
+    .filter(s => s.studentId === student.id && s.date.startsWith(monthStr) && (s.status === 'completed' || s.status === 'scheduled'))
+    .sort((a, b) => (a.date + a.startTime).localeCompare(b.date + b.startTime))
+    .map(session => ({ session, amount: session.rateSnapshot ?? effectiveRate(student, session.date) }));
+  return { lines, total: lines.reduce((sum, l) => sum + l.amount, 0) };
 }
 
 // Warna kelompok murid — sesuai badge di halaman Murid (blue/purple/emerald-500)

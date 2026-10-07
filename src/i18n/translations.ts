@@ -320,6 +320,14 @@ export const translations: Record<Lang, Record<string, string>> = {
     'stu.addPkgLink': 'Tambah Paket',
     'stu.noPkg': 'Belum ada paket. Tambahkan paket pertama.',
     'stu.lessonHistory': 'Riwayat Les',
+    'inv.button': 'Invoice bulanan',
+    'inv.time': 'Jam',
+    'inv.amount': 'Biaya',
+    'inv.sessions': 'Jumlah sesi',
+    'inv.empty': 'Tidak ada sesi di bulan ini.',
+    'inv.close': 'Tutup',
+    'inv.saving': 'Menyimpan…',
+    'inv.downloadFail': 'Gagal membuat gambar invoice.',
     'stu.noSessionsRecorded': 'Belum ada sesi tercatat.',
 
     // schedule
@@ -715,6 +723,14 @@ export const translations: Record<Lang, Record<string, string>> = {
     'stu.addPkgLink': 'Add Package',
     'stu.noPkg': 'No package yet. Add the first one.',
     'stu.lessonHistory': 'Lesson History',
+    'inv.button': 'Monthly invoice',
+    'inv.time': 'Time',
+    'inv.amount': 'Amount',
+    'inv.sessions': 'Sessions',
+    'inv.empty': 'No sessions this month.',
+    'inv.close': 'Close',
+    'inv.saving': 'Saving…',
+    'inv.downloadFail': 'Failed to create invoice image.',
     'stu.noSessionsRecorded': 'No sessions recorded yet.',
 
     // schedule

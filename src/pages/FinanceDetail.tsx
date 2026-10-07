@@ -26,6 +26,8 @@ export default function FinanceDetail() {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
+  // Hook harus sebelum early return (owner / teacher tidak ada) — pindah guru tanpa remount bikin crash
+  const [showReceipt, setShowReceipt] = useState(false);
 
   const monthStr = format(month, 'yyyy-MM');
   const teacher = data.teachers.find(t => t.id === teacherId);
@@ -500,7 +502,6 @@ export default function FinanceDetail() {
   }
 
   // ── Non-owner breakdown ──────────────────────────────────────────────────────
-  const [showReceipt, setShowReceipt] = useState(false);
   const honorOf = (sessions: typeof data.sessions) =>
     sessions.reduce((sum, s) => sum + (s.honorSnapshot ?? effectiveHonor(teacher, s.date)), 0);
 
@@ -689,7 +690,7 @@ function ReceiptModal({
         <div className="flex gap-2">
           <button
             onClick={onClose}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-gray-600 text-gray-300 hover:bg-gray-800 text-sm"
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-gray-600 bg-gray-900 text-gray-300 hover:bg-gray-800 text-sm"
           >
             <X size={14} /> Close
           </button>

@@ -49,7 +49,7 @@ Berdasarkan analisis codebase + riset dari repo publik:
 ## 💰 Keuangan & Pembayaran
 
 - **Status pembayaran per murid/siklus** — tandai apakah tagihan sudah "lunas" atau belum per bulan/siklus. Dashboard tampilkan siapa yang belum bayar. *(AzimKrishna, Trakist, TutorBird)*
-- **Cetak invoice PDF** — generate PDF tagihan per murid per bulan/siklus: daftar sesi, total jam, harga, total tagihan. Bisa di-share ke ortu via WhatsApp. `getMonthlyRevenue` di helpers.ts sudah ada sebagai fondasi. *(AzimKrishna, TutorBird, LearnSpeed)*
+- **Cetak invoice PDF** — generate PDF tagihan per murid per bulan/siklus: daftar sesi, total jam, harga, total tagihan. Bisa di-share ke ortu via WhatsApp. Versi PNG per bulan untuk murid postpaid sudah ada (tombol Invoice di kartu murid, `getStudentInvoice` di helpers.ts); sisa: siklus XuYuan & paket. *(AzimKrishna, TutorBird, LearnSpeed)*
 - **Reminder tagihan overdue** — notifikasi otomatis ke admin kalau invoice belum "lunas" setelah N hari. *(TutorBird)*
 - **Laporan pendapatan P&L** — grafik revenue per bulan, per guru, per kelompok murid, bandingkan antar bulan. *(TutorBird, LearnSpeed)*
 - **Hitung honor guru** — hitung otomatis honor bulanan masing-masing guru berdasarkan sesi × rate. *(TutorBird, LearnSpeed)*
@@ -95,6 +95,6 @@ Berdasarkan analisis codebase + riset dari repo publik:
 | Fitur | Catatan |
 |---|---|
 | Catatan per sesi | `notes` di `LessonSession` sudah ada di DB dan TypeScript, tinggal tambah UI |
-| Laporan pendapatan | `getMonthlyRevenue` di `src/utils/helpers.ts` sudah ada, belum dipakai di halaman |
+| Laporan pendapatan | Ambil logika dari `src/pages/Finance.tsx` (snapshot harga, paket diakui di bulan beli, murid lembaga saat bayar) |
 | Status `cancelled` | Perlu migrasi DB: tambah enum value `cancelled` ke kolom `status` |
 | Backup restore | File backup sudah ada di Supabase Storage bucket `backups/` |
