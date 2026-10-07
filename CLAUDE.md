@@ -63,6 +63,8 @@ Tests only cover the pure functions in `src/utils/`. There are no component test
 - `pg_cron` job `lesson-plan-reminder` (`*/5 14-16 * * *` UTC = 21:00–23:55 WIB) calls the reminder via `pg_net`; its secret lives in Vault (`lesson_plan_cron_secret`) and must equal the function secret `LESSON_PLAN_CRON_SECRET`.
 - Teachers are matched to login accounts by `teachers.email` = `auth.email()`. `sessions.lesson_plan_done_at` is set from either the Dashboard toggle or the Telegram button.
 - The XuYuan filter in `lesson-plan-reminder` duplicates `src/utils/lessonPlan.ts`; change both together.
+- Only the latest reminder message keeps its buttons: `swap_reminder_msg()` atomically swaps `teachers.telegram_reminder_msg_id` and the function clears the replaced message's keyboard.
+- To test outside the window: set secret `REMINDER_START=00:00` and `cron.alter_job(... schedule := '* * * * *')`; revert with `supabase secrets unset REMINDER_START` and schedule `*/5 14-16 * * *`.
 - `scripts/setup-telegram.sh` (run by the developer in their own terminal) stores the bot token and registers the webhook.
 
 **Scripts**

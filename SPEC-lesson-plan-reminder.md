@@ -13,6 +13,7 @@ Guru XuYuan harus mengisi lesson plan di GSheet milik XuYuan pada hari yang sama
 2. Guru login, lalu menekan **Hubungkan Telegram** di Settings. Bot terbuka lewat link `t.me/<bot>?start=<token>`, lalu guru menekan Start. Chat Telegram itu tersimpan sebagai milik guru tersebut.
 3. Mulai pukul 21:00 WIB sampai 23:59 WIB, setiap 5 menit: untuk setiap guru yang punya sesi XuYuan hari ini yang jam selesainya sudah lewat dan belum ditandai, bot mengirim satu pesan berisi daftar sesi itu. Setiap sesi punya tombol **Sudah diisi**.
 4. Guru menekan tombol di Telegram atau toggle di Dashboard. Sesi itu tidak diingatkan lagi.
+5. Hanya pesan pengingat terakhir yang punya tombol. Saat pesan baru terkirim, tombol di pesan sebelumnya dihapus (`teachers.telegram_reminder_msg_id`). Kalau semua sesi sudah ditandai, tombol di pesan terakhir juga dihapus.
 
 ## Tech Stack
 
