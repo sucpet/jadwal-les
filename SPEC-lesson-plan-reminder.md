@@ -1,6 +1,6 @@
 # Spec: Pengingat Lesson Plan XuYuan via Telegram
 
-Status: **DISETUJUI** (2026-10-07). Cara deploy belum dipilih.
+Status: **SELESAI** (2026-10-07). Deploy lewat Supabase CLI (`--use-api`).
 
 ## Objective
 

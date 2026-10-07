@@ -58,6 +58,13 @@ Tests only cover the pure functions in `src/utils/`. There are no component test
 **Database**
 - `migrations/0000-base-schema.sql` is a `pg_dump --schema-only` snapshot of the `public` schema: tables, RLS policies, and grants. The other `migrations/*.sql` files are incremental `alter`s, dated by filename. All of them are applied manually to Supabase because the repo has no migration runner. After changing the schema, refresh the snapshot by re-running `pg_dump` against the Session pooler URI (the direct host is IPv6-only).
 
+**Telegram lesson plan reminder** (`SPEC-lesson-plan-reminder.md`)
+- Edge Functions in `supabase/functions/`, deployed with `supabase functions deploy <name> --project-ref vuyvfuthefgplmwfzzmt --use-api --no-verify-jwt` (no Docker). Both authenticate by header secret instead of JWT: `telegram-webhook` checks Telegram's `X-Telegram-Bot-Api-Secret-Token`, `lesson-plan-reminder` checks `x-cron-secret`.
+- `pg_cron` job `lesson-plan-reminder` (`*/5 14-16 * * *` UTC = 21:00–23:55 WIB) calls the reminder via `pg_net`; its secret lives in Vault (`lesson_plan_cron_secret`) and must equal the function secret `LESSON_PLAN_CRON_SECRET`.
+- Teachers are matched to login accounts by `teachers.email` = `auth.email()`. `sessions.lesson_plan_done_at` is set from either the Dashboard toggle or the Telegram button.
+- The XuYuan filter in `lesson-plan-reminder` duplicates `src/utils/lessonPlan.ts`; change both together.
+- `scripts/setup-telegram.sh` (run by the developer in their own terminal) stores the bot token and registers the webhook.
+
 **Scripts**
 - `scripts/seed-data.mjs` generates `scripts/import-data.json`. That file is imported through the Settings page (restore/import JSON).
 

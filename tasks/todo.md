@@ -25,12 +25,12 @@
   - Verify: alur manual dengan akun Claude (guru [TEST])
   - Files: src/pages/Settings.tsx, src/i18n/translations.ts
 
-- [ ] 6. Fn lesson-plan-reminder + pg_cron
+- [x] 6. Fn lesson-plan-reminder + pg_cron
   - Acceptance: 21:00–23:59 WIB tiap 5 menit kirim ke guru dengan sesi pending; di luar jam → no-op
   - Verify: invoke manual dengan parameter waktu uji; cek cron.job
   - Files: supabase/functions/lesson-plan-reminder/index.ts, migrations/2026-10-07-lesson-plan-cron.sql
 
-- [ ] 7. Uji end-to-end + bersihkan data [TEST]
+- [x] 7. Uji end-to-end + bersihkan data [TEST]
   - Acceptance: pesan masuk, tombol menghentikan, data [TEST] terhapus
   - Verify: Telegram + query DB
   - Files: —
