@@ -25,7 +25,12 @@ export function pastSessions(sessions: LessonSession[], studentId: string, today
 
 export const hasLessonPlan = (s: LessonSession) => !!s.lessonPlan?.trim();
 
+// Halaman Lesson Plan mulai dipakai 2026-10-08. Sesi sebelumnya tetap tampil & bisa diisi,
+// tapi tidak dihitung "belum diisi" (kalau dihitung, semua riwayat lama jadi badge kuning).
+export const LESSON_PLAN_START = '2026-10-08';
+export const needsLessonPlan = (s: LessonSession) => s.date >= LESSON_PLAN_START && !hasLessonPlan(s);
+
 // Ringkasan per murid untuk daftar: jumlah sesi lampau, berapa yang belum diisi, tanggal sesi terakhir.
 export function lessonPlanSummary(past: LessonSession[]) {
-  return { total: past.length, empty: past.filter(s => !hasLessonPlan(s)).length, lastDate: past[0]?.date };
+  return { total: past.length, empty: past.filter(needsLessonPlan).length, lastDate: past[0]?.date };
 }

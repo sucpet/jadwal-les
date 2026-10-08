@@ -6,7 +6,7 @@ import { useApp } from '../store/AppContext';
 import { useLang } from '../store/LanguageContext';
 import { STUDENT_GROUPS } from '../types';
 import type { LessonSession, Student } from '../types';
-import { isLessonPlanStudent, pastSessions, lessonPlanSummary, hasLessonPlan } from '../utils/lessonPlan';
+import { isLessonPlanStudent, pastSessions, lessonPlanSummary, needsLessonPlan } from '../utils/lessonPlan';
 
 // Lesson plan murid non-XuYuan: catatan "apa yang dipelajari" per sesi (SPEC-lesson-plan-page.md).
 // HP: daftar murid → detail (?student=<id>). Desktop: dua kolom.
@@ -226,7 +226,7 @@ function LessonPlanEntry({ session }: { session: LessonSession }) {
     timer.current = setTimeout(() => setJustSaved(false), 2000);
   };
 
-  const empty = !hasLessonPlan({ ...session, lessonPlan: draft });
+  const empty = needsLessonPlan({ ...session, lessonPlan: draft });
   return (
     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 space-y-2">
       <div className="flex items-center justify-between gap-2 text-sm">

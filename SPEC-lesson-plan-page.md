@@ -134,3 +134,4 @@ Ikuti pola yang ada: string UI lewat `t()`, `formatDate`/`date-fns` dengan `loca
 
 1. Murid non-aktif disembunyikan.
 2. Pengisian lesson plan tidak dicatat di Log Aktivitas.
+3. Hanya sesi mulai **2026-10-08** (hari fitur dirilis) yang dihitung "belum diisi" dan diberi garis kuning (`LESSON_PLAN_START`). Sesi lama tetap tampil dan bisa diisi.

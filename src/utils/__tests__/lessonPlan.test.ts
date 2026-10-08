@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { pendingLessonPlans, pastSessions, lessonPlanSummary, isLessonPlanStudent } from '../lessonPlan';
+import { pendingLessonPlans, pastSessions, lessonPlanSummary, isLessonPlanStudent, LESSON_PLAN_START } from '../lessonPlan';
 import type { LessonSession, Student } from '../../types';
 
 const stu = (id: string, group: Student['group']): Student =>
@@ -40,9 +40,16 @@ describe('lesson plan page helpers', () => {
     expect(pastSessions(sessions, 'xy', '2026-10-07', '12:00').map(s => s.id)).toEqual(['todayDone', 'blank', 'old']);
   });
 
-  it('lessonPlanSummary: whitespace counts as empty', () => {
-    const past = pastSessions(sessions, 'xy', '2026-10-07', '12:00');
-    expect(lessonPlanSummary(past)).toEqual({ total: 3, empty: 2, lastDate: '2026-10-07' });
+  it('lessonPlanSummary: only sessions from LESSON_PLAN_START count as empty; whitespace = empty', () => {
+    expect(LESSON_PLAN_START).toBe('2026-10-08');
+    // Semua sesi fixture sebelum tanggal mulai → tidak ada yang dihitung belum diisi.
+    expect(lessonPlanSummary(pastSessions(sessions, 'xy', '2026-10-07', '12:00'))).toEqual({ total: 3, empty: 0, lastDate: '2026-10-07' });
+    const after = [
+      ses('a', { date: '2026-10-08', lessonPlan: '  ' }),
+      ses('b', { date: '2026-10-09', lessonPlan: 'bab 5' }),
+      ses('c', { date: '2026-10-10' }),
+    ];
+    expect(lessonPlanSummary(pastSessions(after, 'xy', '2026-10-11', '00:00'))).toEqual({ total: 3, empty: 2, lastDate: '2026-10-10' });
     expect(lessonPlanSummary([])).toEqual({ total: 0, empty: 0, lastDate: undefined });
   });
 
