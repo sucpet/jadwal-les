@@ -46,7 +46,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
       {children}
       {opts && (
         <div className="fixed inset-0 z-[60] bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => close(false)}>
-          <div className="bg-white dark:bg-gray-800 w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl shadow-xl p-5 space-y-4" onClick={e => e.stopPropagation()}>
+          <div className="bg-white dark:bg-gray-800 w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl shadow-xl p-5 pb-[max(1.25rem,var(--safe-b))] sm:pb-5 space-y-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-start gap-3">
               {opts.danger && (
                 <div className="w-9 h-9 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center flex-shrink-0">

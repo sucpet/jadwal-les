@@ -14,20 +14,30 @@ export default function MonthSelector({ month, onChange }: { month: Date; onChan
 
   useEffect(() => {
     if (!open) return;
-    const handler = (e: MouseEvent) => {
+    const handler = (e: PointerEvent) => {
       if (
         pickerRef.current && !pickerRef.current.contains(e.target as Node) &&
         btnRef.current && !btnRef.current.contains(e.target as Node)
       ) setOpen(false);
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    // Picker memakai posisi fixed dari saat dibuka, jadi tutup saja kalau halaman di-scroll / di-resize.
+    const close = () => setOpen(false);
+    document.addEventListener('pointerdown', handler);
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('resize', close);
+    return () => {
+      document.removeEventListener('pointerdown', handler);
+      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('resize', close);
+    };
   }, [open]);
 
   const handleOpen = () => {
     if (btnRef.current) {
       const r = btnRef.current.getBoundingClientRect();
-      setPos({ top: r.bottom + 8, left: r.left + r.width / 2 });
+      const half = 112 + 8; // setengah lebar picker (w-56) + jarak tepi layar
+      const center = Math.min(Math.max(r.left + r.width / 2, half), window.innerWidth - half);
+      setPos({ top: r.bottom + 8, left: center });
     }
     setPickerYear(month.getFullYear());
     setOpen(v => !v);

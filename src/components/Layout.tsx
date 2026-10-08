@@ -84,7 +84,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Top bar */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center gap-3 sticky top-0 z-10">
+      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] flex items-center gap-3 sticky top-0 z-10">
         <div className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center">
           <BookOpen size={16} className="text-white" />
         </div>
@@ -126,18 +126,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </nav>
 
         {/* Main content */}
-        <main className="flex-1 p-4 md:p-6 pb-24 md:pb-6 overflow-auto">{children}</main>
+        <main className="flex-1 min-w-0 p-4 md:p-6 pb-[calc(var(--nav-h)+2rem)] md:pb-6 overflow-auto">{children}</main>
       </div>
 
       {/* Bottom nav mobile — 4 main items + "Lainnya" */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex pb-[var(--safe-b)]">
         {mainNavItems.map(({ to, icon: Icon, key }) => {
           const active = to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
           return (
             <Link
               key={to}
               to={to}
-              className={`flex-1 flex flex-col items-center py-2 gap-0.5 text-xs font-medium ${
+              className={`flex-1 h-14 flex flex-col items-center justify-center gap-0.5 text-xs font-medium ${
                 active ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400'
               }`}
             >
@@ -148,7 +148,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         })}
         <button
           onClick={() => setShowMore(v => !v)}
-          className={`flex-1 flex flex-col items-center py-2 gap-0.5 text-xs font-medium ${
+          className={`flex-1 h-14 flex flex-col items-center justify-center gap-0.5 text-xs font-medium ${
             isMoreActive || showMore ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400'
           }`}
         >
@@ -161,7 +161,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {showMore && (
         <div className="md:hidden fixed inset-0 z-40" onClick={() => setShowMore(false)}>
           <div
-            className="absolute bottom-14 inset-x-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-xl"
+            className="absolute bottom-[var(--nav-h)] inset-x-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-xl"
             onClick={e => e.stopPropagation()}
           >
             <div className="grid grid-cols-4 py-1">

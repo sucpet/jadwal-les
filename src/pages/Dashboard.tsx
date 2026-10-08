@@ -281,8 +281,8 @@ export default function Dashboard() {
                         <Clock size={14} />
                         <span>{session.startTime}–{session.endTime}</span>
                       </div>
-                      <div className="flex-1">
-                        <span className="font-medium text-gray-900 dark:text-white">{student?.name ?? '—'}</span>
+                      <div className="flex-1 min-w-0">
+                        <span className="font-medium text-gray-900 dark:text-white break-words">{student?.name ?? '—'}</span>
                         {student?.billingType === 'package' && (
                           <span className="ml-2 text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded">{t('common.package')}</span>
                         )}
@@ -299,6 +299,8 @@ export default function Dashboard() {
                           <MessageCircle size={14} />
                         </a>
                       )}
+                      {/* Status + lesson plan: ditumpuk di HP supaya tidak melebihi lebar kartu */}
+                      <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1 flex-shrink-0">
                       <div className={`text-xs px-2 py-0.5 rounded-full ${
                         session.status === 'completed'
                           ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
@@ -321,6 +323,7 @@ export default function Dashboard() {
                           {session.lessonPlanDoneAt ? t('lp.done') : t('lp.pending')}
                         </button>
                       )}
+                      </div>
                     </div>
                   ))}
                 </div>

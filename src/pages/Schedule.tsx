@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { ChevronLeft, ChevronRight, Plus, X, Check, Trash2, Clock, AlertTriangle, RefreshCw, ListChecks, CalendarClock, Search, Copy, MessageCircle, StickyNote } from 'lucide-react';
 import { waLink, isValidPhone } from '../utils/whatsapp';
 import { useSearchParams } from 'react-router-dom';
@@ -76,6 +76,28 @@ export default function Schedule() {
     const id = setInterval(tick, 10_000);
     return () => clearInterval(id);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Tinggi grid Hari (mobile) = sisa layar setelah konten di atasnya dan padding bawah main/halaman
+  // (padding main sudah termasuk tinggi bottom nav + safe area), supaya halaman sendiri tidak ikut scroll.
+  // Diukur dari DOM karena tinggi konten di atas grid berubah (filter Laoshi bisa 2 baris).
+  useLayoutEffect(() => {
+    const fit = () => {
+      const el = dayScrollRef.current;
+      const main = el?.closest('main');
+      if (!el || !main) return;
+      const pb = (x: Element) => parseFloat(getComputedStyle(x).paddingBottom) || 0;
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      const below = pb(main) + pb(main.firstElementChild!) + 2; // + border wrapper grid
+      let h = Math.max(240, Math.floor(window.innerHeight - top - below));
+      el.style.maxHeight = `${h}px`;
+      // Sisa selisih kecil (margin antar-blok, pembulatan): kecilkan grid sampai halaman pas satu layar.
+      const over = document.documentElement.scrollHeight - window.innerHeight;
+      if (over > 0 && over < 80 && h - over >= 240) { h -= over; el.style.maxHeight = `${h}px`; }
+    };
+    fit();
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  });
 
   // Auto-scroll mobile day view
   useEffect(() => {
@@ -425,7 +447,7 @@ export default function Schedule() {
     : [];
 
   return (
-    <div className="space-y-4 pb-32">
+    <div className={`space-y-4 ${viewMode === 'day' ? 'pb-0' : 'pb-16'} md:pb-32`}>
       <div className="flex items-center justify-between">
         {bulkMode ? (
           <button
@@ -594,9 +616,9 @@ export default function Schedule() {
         >
           <ChevronLeft size={18} />
         </button>
-        <span className="flex-1 text-center text-sm font-medium dark:text-gray-200 capitalize">
+        <span className="flex-1 min-w-0 truncate text-center text-sm font-medium dark:text-gray-200 capitalize">
           {viewMode === 'day'
-            ? format(currentDay, 'EEEE, d MMMM yyyy', { locale })
+            ? format(currentDay, 'EEE, d MMM', { locale })
             : viewMode === 'week'
             ? `${format(weekStart, 'd MMMM', { locale })} – ${format(addDays(weekStart, 6), 'd MMMM yyyy', { locale })}`
             : format(currentMonth, 'MMMM yyyy', { locale })}
@@ -664,7 +686,7 @@ export default function Schedule() {
               else if (dx > 50) setCurrentDay(d => subDays(d, 1));
             }}
           >
-            <div ref={dayScrollRef} className="overflow-y-auto" style={{ maxHeight: 'calc(100svh - 210px)' }}>
+            <div ref={dayScrollRef} className="overflow-y-auto overscroll-contain">
               <div
                 className="bg-white dark:bg-gray-800 relative"
                 style={{
@@ -1113,7 +1135,7 @@ export default function Schedule() {
       {dayPanel && (
         <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4" onClick={() => setDayPanel(null)}>
           <div
-            className="bg-white dark:bg-gray-800 w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl shadow-xl flex flex-col max-h-[80vh]"
+            className="bg-white dark:bg-gray-800 w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl shadow-xl flex flex-col max-h-[80dvh] pb-[var(--safe-b)] sm:pb-0"
             onClick={e => e.stopPropagation()}
           >
             {/* Header */}
@@ -1212,7 +1234,7 @@ export default function Schedule() {
 
       {/* Bulk action bar */}
       {bulkMode && selectedIds.size > 0 && (
-        <div className="fixed bottom-20 md:bottom-6 left-0 right-0 z-40 flex justify-center px-4 pointer-events-none">
+        <div className="fixed bottom-[calc(var(--nav-h)+1.5rem)] md:bottom-6 left-0 right-0 z-40 flex justify-center px-4 pointer-events-none">
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-4 w-full max-w-lg pointer-events-auto space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold text-gray-900 dark:text-white">{t('sch.sessionsSelected', { n: selectedIds.size })}</span>
@@ -1357,7 +1379,7 @@ export default function Schedule() {
         const sameDay = session.date === date;
         return (
           <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4" onClick={() => setPendingMove(null)}>
-            <div className="bg-white dark:bg-gray-800 w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl shadow-xl p-5 space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="bg-white dark:bg-gray-800 w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl shadow-xl p-5 pb-[max(1.25rem,var(--safe-b))] sm:pb-5 space-y-4" onClick={e => e.stopPropagation()}>
               <div className="flex items-center gap-2">
                 <CalendarClock size={18} className="text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
                 <h3 className="font-semibold text-gray-900 dark:text-white">{t('sch.rescheduleQ')}</h3>
@@ -1388,7 +1410,7 @@ export default function Schedule() {
         const student = data.students.find(s => s.id === quickTarget.studentId);
         return (
           <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4" onClick={() => setQuickTarget(null)}>
-            <div className="bg-white dark:bg-gray-800 w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl shadow-xl p-5 space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="bg-white dark:bg-gray-800 w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl shadow-xl p-5 pb-[max(1.25rem,var(--safe-b))] sm:pb-5 space-y-4" onClick={e => e.stopPropagation()}>
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
                   <CalendarClock size={18} className="text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
@@ -1493,7 +1515,7 @@ export default function Schedule() {
       {/* Slot picker — session or note */}
       {slotPick && (
         <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4" onClick={() => setSlotPick(null)}>
-          <div className="bg-white dark:bg-gray-800 w-full sm:max-w-xs rounded-t-2xl sm:rounded-2xl shadow-xl p-5 space-y-3" onClick={e => e.stopPropagation()}>
+          <div className="bg-white dark:bg-gray-800 w-full sm:max-w-xs rounded-t-2xl sm:rounded-2xl shadow-xl p-5 pb-[max(1.25rem,var(--safe-b))] sm:pb-5 space-y-3" onClick={e => e.stopPropagation()}>
             <p className="text-xs text-gray-400 dark:text-gray-500">{format(parseISO(slotPick.date), 'EEEE, d MMM yyyy', { locale })} · {slotPick.time}</p>
             <button
               onClick={() => { setSlotPick(null); openAdd(slotPick.date, slotPick.time); }}
@@ -1522,7 +1544,7 @@ export default function Schedule() {
       {/* Note Form Modal */}
       {showNoteForm && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setShowNoteForm(false)}>
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-sm space-y-4" onClick={e => e.stopPropagation()}>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-sm space-y-4 max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <StickyNote size={18} className="text-amber-500" />
@@ -1607,7 +1629,7 @@ export default function Schedule() {
       {/* Session Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setShowForm(false)}>
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md space-y-4" onClick={e => e.stopPropagation()}>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md space-y-4 max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-gray-900 dark:text-white">{editSession ? t('sch.editSession') : t('sch.addSession')}</h3>
               <div className="flex items-center gap-1">
@@ -1859,7 +1881,7 @@ export default function Schedule() {
       {!bulkMode && (
         <button
           onClick={() => openAdd()}
-          className="md:hidden fixed bottom-20 right-5 z-40 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-indigo-700 active:scale-95 transition-transform"
+          className="md:hidden fixed bottom-[calc(var(--nav-h)+1.5rem)] right-5 z-40 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-indigo-700 active:scale-95 transition-transform"
           aria-label={t('sch.addSession')}
         >
           <Plus size={24} />

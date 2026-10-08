@@ -1198,7 +1198,7 @@ function InvoiceModal({ student, onClose }: { student: Student; onClose: () => v
   // Portal ke body: kartu murid non-aktif pakai opacity-50 yang ikut membuat modal transparan.
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
-      <div className="w-full max-w-sm space-y-3" onClick={e => e.stopPropagation()}>
+      <div className="w-full max-w-sm space-y-3 max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain" onClick={e => e.stopPropagation()}>
         <div className="flex justify-center">
           <div className="bg-white dark:bg-gray-800 rounded-xl px-2 py-1.5"><MonthSelector month={month} onChange={setMonth} /></div>
         </div>

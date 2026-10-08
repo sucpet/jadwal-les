@@ -5,6 +5,16 @@
   box-sizing: border-box;
 }
 
+/* Tinggi bottom nav mobile termasuk area home indicator iPhone (safe area).
+   Satu sumber untuk semua elemen yang posisinya relatif ke nav: padding main, sheet "Lainnya", FAB, bulk bar. */
+:root {
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --nav-h: calc(3.5rem + var(--safe-b));
+}
+@media (min-width: 768px) {
+  :root { --nav-h: 0px; }
+}
+
 body {
   margin: 0;
   font-family: system-ui, -apple-system, sans-serif;
@@ -44,6 +54,16 @@ body {
 .dark .input.input-error {
   border-color: #f87171;
   background-color: rgba(239, 68, 68, 0.15);
+}
+
+/* iOS Safari auto-zoom saat fokus ke input < 16px, dan sering tetap ter-zoom setelah keyboard ditutup.
+   Di layar kecil semua field 16px. CSS ini di luar @layer sehingga menang atas utility text-sm. */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }
 
 .scrollbar-none {

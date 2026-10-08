@@ -45,7 +45,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={api}>
       {children}
-      <div className="fixed top-[66px] inset-x-0 z-[70] flex flex-col items-center gap-2 px-4 pointer-events-none">
+      <div className="fixed top-[calc(66px+env(safe-area-inset-top))] inset-x-0 z-[70] flex flex-col items-center gap-2 px-4 pointer-events-none">
         {toasts.map(t => {
           const { icon: Icon, cls } = META[t.type];
           return (

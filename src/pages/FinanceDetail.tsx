@@ -209,7 +209,7 @@ export default function FinanceDetail() {
         {/* XuYuan sessions table — only when there is session data */}
         {xuyuanRows.length > 0 && (
           <Section title={t('fin.sectionXuYuan')} total={totalXuYuan}>
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto"><table className="w-full text-sm">
               <thead>
                 <tr className="text-xs text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-700">
                   <th className="text-left pb-2 font-medium">{t('fin.colStudent')}</th>
@@ -246,14 +246,14 @@ export default function FinanceDetail() {
                   </tr>
                 )}
               </tbody>
-            </table>
+            </table></div>
           </Section>
         )}
 
         {/* Worksheet — directly below XuYuan hours */}
         {worksheetRows.length > 0 && (
           <Section title={t('fin.rowWorksheet')} total={totalWorksheet}>
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto"><table className="w-full text-sm">
               <thead>
                 <tr className="text-xs text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-700">
                   <th className="text-left pb-2 font-medium">{t('fin.colStudent')}</th>
@@ -270,7 +270,7 @@ export default function FinanceDetail() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           </Section>
         )}
 
@@ -311,7 +311,7 @@ export default function FinanceDetail() {
         {/* Prepaid packages */}
         {prepaidRows.length > 0 && (
           <Section title={t('fd.sectionPrepaid')} total={totalPrepaid}>
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto"><table className="w-full text-sm">
               <thead>
                 <tr className="text-xs text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-700">
                   <th className="text-left pb-2 font-medium">{t('fin.colStudent')}</th>
@@ -331,14 +331,14 @@ export default function FinanceDetail() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           </Section>
         )}
 
         {/* Postpaid */}
         {postpaidRows.length > 0 && (
           <Section title={t('fd.sectionPostpaid')} total={totalPostpaid}>
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto"><table className="w-full text-sm">
               <thead>
                 <tr className="text-xs text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-700">
                   <th className="text-left pb-2 font-medium">{t('fin.colStudent')}</th>
@@ -358,14 +358,14 @@ export default function FinanceDetail() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           </Section>
         )}
 
         {/* Dibayar lembaga */}
         {paymentRows.length > 0 && (
           <Section title={t('fd.sectionPayments')} total={totalPayments}>
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto"><table className="w-full text-sm">
               <thead>
                 <tr className="text-xs text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-700">
                   <th className="text-left pb-2 font-medium">{t('fin.colStudent')}</th>
@@ -384,14 +384,14 @@ export default function FinanceDetail() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           </Section>
         )}
 
         {/* Margin laoshi — selisih rate murid vs honor laoshi */}
         {laoshiMarginRows.length > 0 && (
           <Section title={t('fd.sectionMargin')} total={totalLaoshiMargin}>
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto"><table className="w-full text-sm">
               <thead>
                 <tr className="text-xs text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-700">
                   <th className="text-left pb-2 font-medium">{t('fin.colStudent')}</th>
@@ -446,7 +446,7 @@ export default function FinanceDetail() {
                   </React.Fragment>
                 ))}
               </tbody>
-            </table>
+            </table></div>
 
             {/* Forecast block */}
             <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex items-end justify-between">
@@ -554,7 +554,7 @@ export default function FinanceDetail() {
         {studentRows.length === 0 ? (
           <p className="text-sm text-gray-400 dark:text-gray-500 py-2">{t('fin.noSessionMonth')}</p>
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="w-full text-sm">
             <thead>
               <tr className="text-xs text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-700">
                 <th className="text-left pb-2 font-medium">{t('fin.colStudent')}</th>
@@ -577,7 +577,7 @@ export default function FinanceDetail() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
       </Section>
 
@@ -630,7 +630,7 @@ function ReceiptModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
-      <div className="w-full max-w-sm space-y-3" onClick={e => e.stopPropagation()}>
+      <div className="w-full max-w-sm space-y-3 max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain" onClick={e => e.stopPropagation()}>
         {/* Receipt card — always light, captured as image */}
         <div ref={receiptRef} className="bg-white rounded-2xl p-6 shadow-xl font-sans">
           {/* Header */}
