@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { AppData, Teacher, Student, SessionPackage, LessonSession, Worksheet, Payment, ScheduleNote, BillingType, StudentGroup, PackagePricingType } from '../types';
-import { generateId, effectiveRate, effectiveHonor, formatCurrency } from '../utils/helpers';
+import { generateId, effectiveRate, effectiveHonor, formatCurrency, expiredBackups } from '../utils/helpers';
 import { supabase } from '../lib/supabase';
 import { format, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
@@ -95,6 +95,12 @@ async function autoBackup(data: AppData): Promise<void> {
       .upload(`backup_${today}.json`, blob);
     if (!error) localStorage.setItem(BACKUP_KEY, today);
   } catch { /* best-effort, silently ignore */ }
+  // Retensi: hapus backup lebih dari 5 hari (sekali per hari per perangkat, ikut gate di atas).
+  try {
+    const { data: files } = await supabase.storage.from('backups').list('', { limit: 1000 });
+    const old = expiredBackups((files ?? []).map(f => f.name), today);
+    if (old.length) await supabase.storage.from('backups').remove(old);
+  } catch { /* best-effort */ }
 }
 
 const AppContext = createContext<AppContextType | null>(null);

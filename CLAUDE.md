@@ -33,7 +33,7 @@ Tests only cover the pure functions in `src/utils/`. There are no component test
   - Sessions whose end time has passed are auto-marked `completed`. This check runs every :00 and :30.
   - When a session completes, `rateSnapshot` (postpaid students only) and `honorSnapshot` are frozen.
   - `pendingRate` and `pendingHonor` are promoted once their effective date arrives.
-  - `autoBackup` uploads a JSON dump to the Supabase storage bucket `backups` once per day.
+  - `autoBackup` uploads a JSON dump to the Supabase storage bucket `backups` once per day, then deletes backups older than 5 days (`expiredBackups`, auto and manual). Bucket policies allow only `authenticated`.
 
 **Pricing rules (`src/utils/helpers.ts`)**
 - `effectiveRate` and `effectiveHonor` resolve scheduled price changes by date. Finance code should use the snapshots on completed sessions, falling back to these functions.

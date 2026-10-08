@@ -159,3 +159,15 @@ export const TEACHER_COLORS = [
 ];
 
 export { isBefore, isSameDay, parseISO, format };
+
+// Retensi backup di Supabase Storage: simpan BACKUP_KEEP_DAYS hari terakhir (termasuk hari ini),
+// otomatis (backup_YYYY-MM-DD.json) maupun manual (backup_YYYY-MM-DD_HH-MM.json).
+// Nama yang tidak berformat backup (mis. .emptyFolderPlaceholder) tidak disentuh.
+export const BACKUP_KEEP_DAYS = 5;
+export function expiredBackups(names: string[], today: string, keepDays = BACKUP_KEEP_DAYS): string[] {
+  const cutoff = format(addDays(parseISO(today), -(keepDays - 1)), 'yyyy-MM-dd');
+  return names.filter(n => {
+    const d = /^backup_(\d{4}-\d{2}-\d{2})/.exec(n)?.[1];
+    return !!d && d < cutoff;
+  });
+}

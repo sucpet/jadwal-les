@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { ROW_H, timeToPixels, computeDayLayout, addOneHour, shiftDateByWeeks, dayOfWeek, diffMinutes, addMinutes } from '../calendar';
 import { xuYuanCycleStart, xuYuanCycleLabel, durationMinutes, formatDuration, formatRp } from '../xuyuan';
 import { groupByMonth, groupByXuYuanCycle, totalDurationLabel, getPackageAttributedSessions } from '../student-groups';
-import { getPackageStatus, getStudentInvoice, effectiveRate, effectiveHonor } from '../helpers';
+import { getPackageStatus, getStudentInvoice, effectiveRate, effectiveHonor, expiredBackups } from '../helpers';
 import type { LessonSession, SessionPackage, Student } from '../../types';
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
@@ -569,5 +569,25 @@ describe('getStudentInvoice', () => {
 
   it('no sessions → empty, total 0', () => {
     expect(getStudentInvoice(student, [], '2026-01')).toEqual({ lines: [], total: 0 });
+  });
+});
+
+// ─── helpers.ts — expiredBackups ─────────────────────────────────────────────
+
+describe('expiredBackups', () => {
+  it('keeps the last 5 days incl. today (auto + manual), ignores non-backup files', () => {
+    const names = [
+      '.emptyFolderPlaceholder',
+      'backup_2026-10-03.json',           // > 5 hari → hapus
+      'backup_2026-10-03_23-59.json',     // manual, > 5 hari → hapus
+      'backup_2026-10-04.json',           // hari ke-5 → simpan
+      'backup_2026-10-04_08-00.json',
+      'backup_2026-10-08.json',           // hari ini
+      'catatan.txt',
+    ];
+    expect(expiredBackups(names, '2026-10-08')).toEqual(['backup_2026-10-03.json', 'backup_2026-10-03_23-59.json']);
+  });
+  it('handles month boundaries', () => {
+    expect(expiredBackups(['backup_2026-09-28.json', 'backup_2026-09-29.json'], '2026-10-03')).toEqual(['backup_2026-09-28.json']);
   });
 });
