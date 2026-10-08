@@ -34,3 +34,10 @@ export const needsLessonPlan = (s: LessonSession) => s.date >= LESSON_PLAN_START
 export function lessonPlanSummary(past: LessonSession[]) {
   return { total: past.length, empty: past.filter(needsLessonPlan).length, lastDate: past[0]?.date };
 }
+
+// Bulan (YYYY-MM) yang langsung terbuka di detail murid: bulan berjalan dan bulan sebelumnya.
+export function isRecentMonth(monthKey: string, today: string): boolean {
+  const [y, m] = today.split('-').map(Number);
+  const prev = m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`;
+  return monthKey >= prev;
+}

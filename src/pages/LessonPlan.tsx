@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
-import { ArrowLeft, Search, ChevronRight, AlertTriangle, CheckCircle2, NotebookPen } from 'lucide-react';
+import { ArrowLeft, Search, ChevronRight, ChevronDown, AlertTriangle, CheckCircle2, NotebookPen } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { useLang } from '../store/LanguageContext';
 import { STUDENT_GROUPS } from '../types';
 import type { LessonSession, Student } from '../types';
-import { isLessonPlanStudent, pastSessions, lessonPlanSummary, needsLessonPlan } from '../utils/lessonPlan';
+import { isLessonPlanStudent, pastSessions, lessonPlanSummary, needsLessonPlan, isRecentMonth } from '../utils/lessonPlan';
 
 // Lesson plan murid non-XuYuan: catatan "apa yang dipelajari" per sesi (SPEC-lesson-plan-page.md).
 // HP: daftar murid → detail (?student=<id>). Desktop: dua kolom.
@@ -150,7 +150,7 @@ export default function LessonPlan() {
     <div className="max-w-5xl mx-auto md:grid md:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] md:gap-6 md:items-start">
       <div className={selected ? 'hidden md:block' : ''}>{list}</div>
       {selected ? (
-        <StudentLessonPlan student={selected.student} past={selected.past} onBack={() => open(null)} />
+        <StudentLessonPlan key={selected.student.id} student={selected.student} past={selected.past} today={today} onBack={() => open(null)} />
       ) : (
         <div className="hidden md:flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 border border-dashed border-gray-300 dark:border-gray-700 rounded-xl py-24 mt-14">
           <NotebookPen size={28} className="mb-2 opacity-60" />
@@ -161,11 +161,20 @@ export default function LessonPlan() {
   );
 }
 
-function StudentLessonPlan({ student, past, onBack }: { student: Student; past: LessonSession[]; onBack: () => void }) {
+function StudentLessonPlan({ student, past, today, onBack }: { student: Student; past: LessonSession[]; today: string; onBack: () => void }) {
   const { data } = useApp();
   const { t, locale } = useLang();
   const teacher = data.teachers.find(te => te.id === student.teacherId);
   const groupLabel = STUDENT_GROUPS.find(g => g.value === student.group)?.label;
+  // Bulan berjalan + bulan lalu terbuka; bulan lebih lama tertutup. `toggled` = bulan yang dibalik user
+  // (tidak diingat: komponen di-key per murid, jadi reset tiap ganti murid).
+  const [toggled, setToggled] = useState<Set<string>>(new Set());
+  const isOpen = (key: string) => isRecentMonth(key, today) !== toggled.has(key);
+  const toggle = (key: string) => setToggled(prev => {
+    const next = new Set(prev);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    return next;
+  });
 
   // Kelompokkan per bulan; `past` sudah urut terbaru dulu.
   const months: { key: string; sessions: LessonSession[] }[] = [];
@@ -192,10 +201,16 @@ function StudentLessonPlan({ student, past, onBack }: { student: Student; past: 
 
       {months.map(({ key, sessions }) => (
         <section key={key} className="space-y-2">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+          <button
+            onClick={() => toggle(key)}
+            aria-expanded={isOpen(key)}
+            className="w-full flex items-center gap-1.5 py-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+          >
+            {isOpen(key) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             {format(parseISO(`${key}-01`), 'MMMM yyyy', { locale })}
-          </h3>
-          {sessions.map(s => <LessonPlanEntry key={s.id} session={s} />)}
+            <span className="font-normal normal-case tracking-normal text-gray-400 dark:text-gray-500">· {t('common.sessions_n', { n: sessions.length })}</span>
+          </button>
+          {isOpen(key) && sessions.map(s => <LessonPlanEntry key={s.id} session={s} />)}
         </section>
       ))}
     </div>

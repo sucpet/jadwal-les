@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { pendingLessonPlans, pastSessions, lessonPlanSummary, isLessonPlanStudent, LESSON_PLAN_START } from '../lessonPlan';
+import { pendingLessonPlans, pastSessions, lessonPlanSummary, isLessonPlanStudent, LESSON_PLAN_START, isRecentMonth } from '../lessonPlan';
 import type { LessonSession, Student } from '../../types';
 
 const stu = (id: string, group: Student['group']): Student =>
@@ -58,5 +58,17 @@ describe('lesson plan page helpers', () => {
     expect(isLessonPlanStudent(stu('b', 'wenwen_aizhongwen'))).toBe(true);
     expect(isLessonPlanStudent(stu('c', 'xuyuan'))).toBe(false);
     expect(isLessonPlanStudent({ ...stu('d', 'pribadi'), isActive: false })).toBe(false);
+  });
+});
+
+describe('isRecentMonth', () => {
+  it('current and previous month open, older closed', () => {
+    expect(isRecentMonth('2026-10', '2026-10-08')).toBe(true);
+    expect(isRecentMonth('2026-09', '2026-10-08')).toBe(true);
+    expect(isRecentMonth('2026-08', '2026-10-08')).toBe(false);
+  });
+  it('January wraps to previous December', () => {
+    expect(isRecentMonth('2026-12', '2027-01-03')).toBe(true);
+    expect(isRecentMonth('2026-11', '2027-01-03')).toBe(false);
   });
 });
