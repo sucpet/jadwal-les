@@ -93,7 +93,8 @@ async function autoBackup(data: AppData): Promise<void> {
     const { error } = await supabase.storage
       .from('backups')
       .upload(`backup_${today}.json`, blob);
-    if (!error) localStorage.setItem(BACKUP_KEY, today);
+    // File hari ini sudah ada (dibuat perangkat lain) juga dianggap selesai, supaya tidak dicoba ulang tiap app dibuka.
+    if (!error || /exists|duplicate/i.test(error.message)) localStorage.setItem(BACKUP_KEY, today);
   } catch { /* best-effort, silently ignore */ }
   // Retensi: hapus backup lebih dari 5 hari (sekali per hari per perangkat, ikut gate di atas).
   try {

@@ -39,7 +39,6 @@ export default function Settings() {
   const [backupSetupNeeded, setBackupSetupNeeded] = useState(false);
   const [manualBacking, setManualBacking] = useState(false);
   const [restoring, setRestoring] = useState<string | null>(null);
-  const lastBackupDate = localStorage.getItem('jadwal-les-last-backup');
 
   const loadBackupFiles = useCallback(async () => {
     setBackupLoading(true);
@@ -51,6 +50,8 @@ export default function Settings() {
     setBackupSetupNeeded(false);
     setBackupFiles((files ?? []).filter(f => f.name.endsWith('.json')));
   }, []);
+  // Backup terakhir diambil dari isi bucket (bukan localStorage per perangkat), jadi sama di semua perangkat.
+  const lastBackupDate = backupFiles[0]?.name.slice(7, 17);
 
   useEffect(() => { loadBackupFiles(); }, [loadBackupFiles]);
 
