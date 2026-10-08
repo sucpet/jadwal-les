@@ -34,6 +34,16 @@ Export rekap keuangan/jam per laoshi untuk dikirim ke lembaga/orang tua.
 - **Prasyarat:** library render (mis. html-to-image / canvas) — perlu dipastikan bisa self-contained (PWA offline).
 - **Effort:** sedang.
 
+### 4. Peran guru (akses terbatas) — WAJIB sebelum guru non-owner diberi akun
+Saat ini semua akun yang login bisa melihat dan mengubah **semua** data (RLS `auth_all ... USING (true)`): keuangan, honor semua guru, semua murid, pembayaran. Hanya aman karena pengguna sekarang cuma owner (Calvin, WenWen).
+
+- **Tujuan:** guru non-owner (mis. Angel) hanya melihat data miliknya: jadwal, murid, lesson plan sendiri. Tidak bisa melihat Keuangan, honor guru lain, atau data guru lain.
+- **Wajib di database, bukan cuma UI:** RLS per tabel berdasarkan peran (owner vs guru). Menyembunyikan menu saja tidak cukup karena data tetap bisa dibaca lewat API dengan sesi login.
+- **Fondasi yang sudah ada:** `teachers.email` (akun login ↔ guru) dan `teachers.is_owner`.
+- **Perlu keputusan:** apa saja yang boleh dilihat/diubah guru (tambah/edit sesi? data murid? worksheet?), dan apakah owner tetap = `is_owner` atau peran terpisah.
+- **Effort:** besar (semua tabel + filter di semua halaman + uji akses). Kerjakan lewat interview + spec sendiri.
+- **Sampai selesai:** jangan buat akun login untuk guru non-owner.
+
 ---
 
 ## ❌ Tidak jadi (sudah dipertimbangkan, di-skip)

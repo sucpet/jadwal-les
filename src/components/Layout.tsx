@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, BookOpen, GraduationCap, Settings, Timer, LogOut, FileText, Wallet, History, MoreHorizontal } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, GraduationCap, Settings, Timer, LogOut, FileText, Wallet, History, MoreHorizontal, NotebookPen } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../store/AppContext';
@@ -11,6 +11,7 @@ const navItems = [
   { to: '/teachers', icon: GraduationCap, key: 'nav.teachers' },
   { to: '/students', icon: Users, key: 'nav.students' },
   { to: '/schedule', icon: BookOpen, key: 'nav.schedule' },
+  { to: '/lesson-plan', icon: NotebookPen, key: 'nav.lessonPlan' },
   { to: '/worksheet', icon: FileText, key: 'nav.worksheet' },
   { to: '/hours', icon: Timer, key: 'nav.hours' },
   { to: '/finance', icon: Wallet, key: 'nav.finance' },

@@ -67,6 +67,7 @@ export interface LessonSession {
   rateSnapshot?: number; // ratePerSession murid saat sesi selesai (postpaid only)
   honorSnapshot?: number; // honorPerSession guru saat sesi selesai (dibekukan)
   lessonPlanDoneAt?: string; // ISO; lesson plan XuYuan sudah diisi (stop pengingat Telegram)
+  lessonPlan?: string;       // catatan "apa yang dipelajari" (murid non-XuYuan, halaman Lesson Plan)
   createdAt: string;
 }
 

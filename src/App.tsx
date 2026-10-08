@@ -19,6 +19,7 @@ const load = {
   teachers: () => import('./pages/Teachers'),
   students: () => import('./pages/Students'),
   schedule: () => import('./pages/Schedule'),
+  lessonPlan: () => import('./pages/LessonPlan'),
   hours: () => import('./pages/Hours'),
   worksheet: () => import('./pages/Worksheet'),
   finance: () => import('./pages/Finance'),
@@ -30,6 +31,7 @@ const Dashboard = lazy(load.dashboard);
 const Teachers = lazy(load.teachers);
 const Students = lazy(load.students);
 const Schedule = lazy(load.schedule);
+const LessonPlan = lazy(load.lessonPlan);
 const Settings = lazy(load.settings);
 const Hours = lazy(load.hours);
 const Worksheet = lazy(load.worksheet);
@@ -137,6 +139,7 @@ export default function App() {
                   <Route path="/teachers" element={<Teachers />} />
                   <Route path="/students" element={<Students />} />
                   <Route path="/schedule" element={<Schedule />} />
+                  <Route path="/lesson-plan" element={<LessonPlan />} />
                   <Route path="/hours" element={<Hours />} />
                   <Route path="/worksheet" element={<Worksheet />} />
                   <Route path="/finance" element={<Finance />} />
