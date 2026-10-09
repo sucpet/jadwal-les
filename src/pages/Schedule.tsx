@@ -208,7 +208,7 @@ export default function Schedule() {
     setShowNoteForm(false);
   };
   const removeNote = async (id: string) => {
-    if (await confirm({ message: 'Hapus catatan ini?', danger: true })) {
+    if (await confirm({ message: t('sch.deleteNoteConfirm'), danger: true })) {
       deleteScheduleNote(id);
       toast.success(t('common.deleted'));
       setShowNoteForm(false);
@@ -472,7 +472,7 @@ export default function Schedule() {
                 onClick={() => openAddNote()}
                 className="hidden md:flex items-center gap-1.5 bg-amber-500 text-white text-sm px-3 py-2 rounded-lg hover:bg-amber-600"
               >
-                <StickyNote size={16} /> Catatan
+                <StickyNote size={16} /> {t('sch.note')}
               </button>
               <button
                 onClick={() => openAdd()}
@@ -741,6 +741,23 @@ export default function Schedule() {
                       <div className="flex-1 h-px bg-red-500" />
                     </div>
                   )}
+                  {/* Schedule notes — day view (dirender sebelum sesi → tampil di belakang sesi) */}
+                  {data.scheduleNotes.filter(n => n.date === dayStr).map(n => {
+                    const isAllDay = n.startTime === '00:00' && n.endTime === '23:59';
+                    const topPx = isAllDay ? 0 : Math.max(0, timeToPixels(n.startTime));
+                    const heightPx = isAllDay ? TIME_SLOTS.length * ROW_H : Math.max(ROW_H / 2, timeToPixels(n.endTime) - timeToPixels(n.startTime) - 2);
+                    return (
+                      <div
+                        key={n.id}
+                        style={{ position: 'absolute', top: `${topPx + 1}px`, height: `${heightPx}px`, left: '2px', right: '2px', pointerEvents: 'auto' }}
+                        className="rounded text-xs px-1.5 py-0.5 overflow-hidden bg-amber-200 dark:bg-amber-800/60 border-l-4 border-amber-400 dark:border-amber-500 text-amber-900 dark:text-amber-100 active:opacity-70 cursor-pointer"
+                        onClick={e => { e.stopPropagation(); openEditNote(n); }}
+                      >
+                        <div className="font-semibold break-words">{n.note}</div>
+                        {!isAllDay && <div className="opacity-70">{n.startTime}–{n.endTime}</div>}
+                      </div>
+                    );
+                  })}
                   {layout.map(({ session: s, colIndex, totalCols }) => {
                     const topPx = Math.max(0, timeToPixels(s.startTime));
                     const heightPx = Math.max(ROW_H / 2, timeToPixels(s.endTime) - timeToPixels(s.startTime) - 2);
@@ -770,23 +787,6 @@ export default function Schedule() {
                       >
                         <div className="font-medium break-words">{student?.name}</div>
                         <div className="opacity-70">{s.startTime}–{s.endTime}</div>
-                      </div>
-                    );
-                  })}
-                  {/* Schedule notes — day view */}
-                  {data.scheduleNotes.filter(n => n.date === dayStr).map(n => {
-                    const isAllDay = n.startTime === '00:00' && n.endTime === '23:59';
-                    const topPx = isAllDay ? 0 : Math.max(0, timeToPixels(n.startTime));
-                    const heightPx = isAllDay ? TIME_SLOTS.length * ROW_H : Math.max(ROW_H / 2, timeToPixels(n.endTime) - timeToPixels(n.startTime) - 2);
-                    return (
-                      <div
-                        key={n.id}
-                        style={{ position: 'absolute', top: `${topPx + 1}px`, height: `${heightPx}px`, left: '2px', right: '2px', pointerEvents: 'auto' }}
-                        className="rounded text-xs px-1.5 py-0.5 overflow-hidden bg-amber-200 dark:bg-amber-800/60 border-l-4 border-amber-400 dark:border-amber-500 text-amber-900 dark:text-amber-100 active:opacity-70 cursor-pointer"
-                        onClick={e => { e.stopPropagation(); openEditNote(n); }}
-                      >
-                        <div className="font-semibold break-words">{n.note}</div>
-                        {!isAllDay && <div className="opacity-70">{n.startTime}–{n.endTime}</div>}
                       </div>
                     );
                   })}
@@ -968,6 +968,23 @@ export default function Schedule() {
                   pointerEvents: 'none',
                 }}
               >
+                {/* Schedule notes — week view (dirender sebelum sesi → tampil di belakang sesi) */}
+                {data.scheduleNotes.filter(n => n.date === format(day, 'yyyy-MM-dd')).map(n => {
+                  const isAllDay = n.startTime === '00:00' && n.endTime === '23:59';
+                  const topPx = isAllDay ? 0 : Math.max(0, timeToPixels(n.startTime));
+                  const heightPx = isAllDay ? TIME_SLOTS.length * ROW_H : Math.max(ROW_H / 2, timeToPixels(n.endTime) - timeToPixels(n.startTime) - 2);
+                  return (
+                    <div
+                      key={n.id}
+                      style={{ position: 'absolute', top: `${topPx + 1}px`, height: `${heightPx}px`, left: '2px', right: '2px', pointerEvents: 'auto' }}
+                      className="rounded text-xs px-1 py-0.5 overflow-hidden bg-amber-200 dark:bg-amber-800/60 border-l-4 border-amber-400 dark:border-amber-500 text-amber-900 dark:text-amber-100 cursor-pointer hover:opacity-80"
+                      onClick={e => { e.stopPropagation(); openEditNote(n); }}
+                    >
+                      <div className="font-semibold break-words">{n.note}</div>
+                      {!isAllDay && <div className="opacity-70">{n.startTime}–{n.endTime}</div>}
+                    </div>
+                  );
+                })}
                 {layout.map(({ session: s, colIndex, totalCols }) => {
                   const topPx = Math.max(0, timeToPixels(s.startTime));
                   const heightPx = Math.max(ROW_H / 2, timeToPixels(s.endTime) - timeToPixels(s.startTime) - 2);
@@ -1011,23 +1028,6 @@ export default function Schedule() {
                       >
                         <CalendarClock size={12} className="text-white" />
                       </button>
-                    </div>
-                  );
-                })}
-                {/* Schedule notes — week view */}
-                {data.scheduleNotes.filter(n => n.date === format(day, 'yyyy-MM-dd')).map(n => {
-                  const isAllDay = n.startTime === '00:00' && n.endTime === '23:59';
-                  const topPx = isAllDay ? 0 : Math.max(0, timeToPixels(n.startTime));
-                  const heightPx = isAllDay ? TIME_SLOTS.length * ROW_H : Math.max(ROW_H / 2, timeToPixels(n.endTime) - timeToPixels(n.startTime) - 2);
-                  return (
-                    <div
-                      key={n.id}
-                      style={{ position: 'absolute', top: `${topPx + 1}px`, height: `${heightPx}px`, left: '2px', right: '2px', pointerEvents: 'auto' }}
-                      className="rounded text-xs px-1 py-0.5 overflow-hidden bg-amber-200 dark:bg-amber-800/60 border-l-4 border-amber-400 dark:border-amber-500 text-amber-900 dark:text-amber-100 cursor-pointer hover:opacity-80"
-                      onClick={e => { e.stopPropagation(); openEditNote(n); }}
-                    >
-                      <div className="font-semibold break-words">{n.note}</div>
-                      {!isAllDay && <div className="opacity-70">{n.startTime}–{n.endTime}</div>}
                     </div>
                   );
                 })}
@@ -1524,7 +1524,7 @@ export default function Schedule() {
               <Plus size={18} className="text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
               <div>
                 <div className="text-sm font-medium text-gray-900 dark:text-white">{t('sch.addSession')}</div>
-                <div className="text-xs text-gray-400 dark:text-gray-500">Tambah sesi les dengan murid</div>
+                <div className="text-xs text-gray-400 dark:text-gray-500">{t('sch.addSessionDesc')}</div>
               </div>
             </button>
             <button
@@ -1533,8 +1533,8 @@ export default function Schedule() {
             >
               <StickyNote size={18} className="text-amber-500 flex-shrink-0" />
               <div>
-                <div className="text-sm font-medium text-gray-900 dark:text-white">Tambah Catatan</div>
-                <div className="text-xs text-gray-400 dark:text-gray-500">Blok waktu tanpa murid</div>
+                <div className="text-sm font-medium text-gray-900 dark:text-white">{t('sch.addNote')}</div>
+                <div className="text-xs text-gray-400 dark:text-gray-500">{t('sch.addNoteDesc')}</div>
               </div>
             </button>
           </div>
@@ -1548,7 +1548,7 @@ export default function Schedule() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <StickyNote size={18} className="text-amber-500" />
-                <h3 className="font-semibold text-gray-900 dark:text-white">{editNote ? 'Edit Catatan' : 'Tambah Catatan'}</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-white">{editNote ? t('sch.editNote') : t('sch.addNote')}</h3>
               </div>
               <button onClick={() => setShowNoteForm(false)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-400 rounded">
                 <X size={18} />
@@ -1573,7 +1573,7 @@ export default function Schedule() {
                     onChange={e => setNoteForm(f => ({ ...f, allDay: e.target.checked }))}
                     className="w-4 h-4 accent-amber-500"
                   />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">All Day</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">{t('sch.allDay')}</span>
                 </label>
               </div>
               {!noteForm.allDay && (
@@ -1599,16 +1599,16 @@ export default function Schedule() {
                 </div>
               )}
               <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Catatan</label>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('sch.note')}</label>
                 <input
                   type="text"
                   value={noteForm.note}
                   onChange={e => setNoteForm(f => ({ ...f, note: e.target.value }))}
                   onKeyDown={e => e.key === 'Enter' && saveNote()}
-                  placeholder="Contoh: Libur nasional, Meeting, dll."
+                  placeholder={t('sch.notePh')}
                   className={`w-full border rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 ${noteErrors && !noteForm.note.trim() ? 'border-red-400' : 'border-gray-300 dark:border-gray-600'}`}
                 />
-                {noteErrors && !noteForm.note.trim() && <p className="text-xs text-red-500 mt-1">Catatan tidak boleh kosong</p>}
+                {noteErrors && !noteForm.note.trim() && <p className="text-xs text-red-500 mt-1">{t('sch.noteRequired')}</p>}
               </div>
             </div>
 
