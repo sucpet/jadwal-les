@@ -53,7 +53,9 @@ interface AppContextType {
   updatePackage: (id: string, updates: Partial<SessionPackage>) => void;
   deletePackage: (id: string) => void;
   addSession:    (session: Omit<LessonSession, 'id' | 'createdAt'>) => LessonSession;
-  updateSession: (id: string, updates: Partial<LessonSession>) => void;
+  // silent: lewati log reschedule per sesi (pemanggil menulis satu log ringkas lewat logActivity)
+  updateSession: (id: string, updates: Partial<LessonSession>, opts?: { silent?: boolean }) => void;
+  logActivity: typeof logActivity;
   deleteSession: (id: string) => void;
   addWorksheet:    (w: Omit<Worksheet, 'id' | 'createdAt'>) => Worksheet;
   updateWorksheet: (id: string, updates: Partial<Worksheet>) => void;
@@ -527,7 +529,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     logActivity('create', `Tambah sesi — ${student?.name ?? '—'}, ${fmtLogDate(s.date)} ${s.startTime}–${s.endTime}`);
     return s;
   };
-  const updateSession = (id: string, updates: Partial<LessonSession>) => {
+  const updateSession = (id: string, updates: Partial<LessonSession>, opts?: { silent?: boolean }) => {
     // Capture/refresh rate+honor snapshots for completed sessions
     let finalUpdates = updates;
     const session = data.sessions.find(s => s.id === id);
@@ -571,7 +573,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const newDate  = finalUpdates.date      ?? old.date;
       const newStart = finalUpdates.startTime ?? old.startTime;
       const newEnd   = finalUpdates.endTime   ?? old.endTime;
-      if (newDate !== old.date || newStart !== old.startTime || newEnd !== old.endTime) {
+      if (!opts?.silent && (newDate !== old.date || newStart !== old.startTime || newEnd !== old.endTime)) {
         const student = data.students.find(st => st.id === old.studentId);
         logActivity('reschedule', `Reschedule — ${student?.name ?? '—'}: ${fmtLogDate(old.date)} ${old.startTime} → ${fmtLogDate(newDate)} ${newStart}`);
       }
@@ -676,6 +678,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addWorksheet, updateWorksheet, deleteWorksheet,
       addPayment, deletePayment,
       addScheduleNote, updateScheduleNote, deleteScheduleNote,
+      logActivity,
     }}>
       {children}
     </AppContext.Provider>

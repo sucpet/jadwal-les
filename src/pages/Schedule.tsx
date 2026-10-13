@@ -9,7 +9,7 @@ import { useConfirm } from '../store/ConfirmContext';
 import { useToast } from '../store/ToastContext';
 import type { LessonSession, ScheduleNote } from '../types';
 import { formatCurrency, getPackageStatus, effectiveRate, GROUP_COLORS } from '../utils/helpers';
-import { ROW_H, timeToPixels, computeDayLayout, addOneHour, shiftDateByWeeks, dayOfWeek, diffMinutes, addMinutes } from '../utils/calendar';
+import { ROW_H, timeToPixels, computeDayLayout, addOneHour, shiftDateByWeeks, dayOfWeek, diffMinutes, addMinutes, seriesMoves, moveToWeekday, type SessionMove } from '../utils/calendar';
 import { useHolidays } from '../store/HolidayContext';
 
 const TIME_SLOTS = Array.from({ length: 28 }, (_, i) => {
@@ -22,7 +22,7 @@ const DAY_LABELS_ID = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Mi
 const DAY_LABELS_EN = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 export default function Schedule() {
-  const { data, addSession, updateSession, deleteSession, addScheduleNote, updateScheduleNote, deleteScheduleNote } = useApp();
+  const { data, addSession, updateSession, deleteSession, addScheduleNote, updateScheduleNote, deleteScheduleNote, logActivity } = useApp();
   const { t, locale, lang } = useLang();
   const { getHoliday } = useHolidays();
   const confirm = useConfirm();
@@ -46,7 +46,8 @@ export default function Schedule() {
   const [slotPick, setSlotPick] = useState<{ date: string; time: string } | null>(null);
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [rescheduleWeeks, setRescheduleWeeks] = useState('1');
+  const [bulkDay, setBulkDay] = useState(''); // '' = hari tetap, '1'..'7' = Sen..Min
+  const [bulkTime, setBulkTime] = useState('09:00');
   const [bulkConfirm, setBulkConfirm] = useState<'cancel' | 'reschedule' | 'copy' | null>(null);
   const [copyWeeks, setCopyWeeks] = useState('1');
   const [copyIsRecurring, setCopyIsRecurring] = useState(false);
@@ -219,7 +220,7 @@ export default function Schedule() {
     if (!form.teacherId || !form.studentId || !form.date) { setShowErrors(true); return; }
     if (prepaidOverLimit) return;
     if (editSession) {
-      updateSession(editSession.id, {
+      const updates = {
         teacherId: form.teacherId,
         studentId: form.studentId,
         date: form.date,
@@ -228,7 +229,14 @@ export default function Schedule() {
         status: resolveStatus(form.date, form.endTime),
         notes: form.notes,
         worksheetPages: form.worksheetPages,
-      });
+      };
+      const moved = form.date !== editSession.date || form.startTime !== editSession.startTime;
+      const series = moved ? seriesMoves(data.sessions, editSession, form.date, form.startTime, form.endTime) : [];
+      if (series.length) {
+        setPendingMove({ session: editSession, date: form.date, startTime: form.startTime, endTime: form.endTime, updates, series });
+      } else {
+        updateSession(editSession.id, updates);
+      }
     } else {
       const dates = recurring
         ? Array.from({ length: recurringCountNum }, (_, i) => shiftDateByWeeks(form.date, i))
@@ -259,16 +267,42 @@ export default function Schedule() {
     toast.success(t('sch.rescheduled'));
   };
 
-  // Konfirmasi pindah sesi — dipakai oleh +1mgg (A) dan drag & drop (C)
-  const [pendingMove, setPendingMove] = useState<{ session: LessonSession; date: string; startTime: string; endTime: string } | null>(null);
+  // Pindah banyak sesi sekaligus (seluruh jadwal / bulk): satu log ringkas, bentrok & libur tetap disimpan tapi diperingatkan.
+  const applyMoves = (moves: SessionMove[], logMsg: string) => {
+    const ids = new Set(moves.map(m => m.id));
+    let clashes = 0;
+    for (const m of moves) {
+      const s = data.sessions.find(x => x.id === m.id);
+      if (!s) continue;
+      updateSession(m.id, { date: m.date, startTime: m.startTime, endTime: m.endTime, status: resolveStatus(m.date, m.endTime) }, { silent: true });
+      if (getHoliday(m.date) || data.sessions.some(o => !ids.has(o.id) && o.teacherId === s.teacherId && o.date === m.date && o.startTime < m.endTime && m.startTime < o.endTime)) clashes++;
+    }
+    logActivity('reschedule', logMsg);
+    toast.success(t('sch.bulkRescheduled', { n: moves.length }));
+    if (clashes) toast.error(t('sch.moveClashes', { n: clashes }));
+  };
+
+  // Konfirmasi pindah sesi — dipakai oleh +1mgg (A), drag & drop (C), jadwal ulang (B) dan form edit.
+  // series: sesi berikutnya di slot yang sama (opsi "Seluruh jadwal"); updates: field lain dari form edit.
+  const [pendingMove, setPendingMove] = useState<{ session: LessonSession; date: string; startTime: string; endTime: string; updates?: Partial<LessonSession>; series?: SessionMove[] } | null>(null);
   // Feature A — geser satu sesi N minggu, jam tetap
   const shiftSessionWeeks = (session: LessonSession, weeks: number) => {
     setPendingMove({ session, date: shiftDateByWeeks(session.date, weeks), startTime: session.startTime, endTime: session.endTime });
   };
-  const applyMove = () => {
+  const applyMove = (all = false) => {
     if (!pendingMove) return;
-    const { session, date, startTime, endTime } = pendingMove;
-    rescheduleTo(session, date, startTime, endTime);
+    const { session, date, startTime, endTime, updates, series } = pendingMove;
+    if (all && series?.length) {
+      if (updates) updateSession(session.id, updates, { silent: true });
+      const student = data.students.find(s => s.id === session.studentId);
+      const fmt = (d: string) => format(parseISO(d), 'EEE d MMM', { locale });
+      applyMoves([{ id: session.id, date, startTime, endTime }, ...series],
+        `Reschedule seluruh jadwal — ${student?.name ?? '—'} (${series.length + 1} sesi): ${fmt(session.date)} ${session.startTime} → ${fmt(date)} ${startTime} dst.`);
+    } else if (updates) {
+      updateSession(session.id, updates);
+    } else {
+      rescheduleTo(session, date, startTime, endTime);
+    }
     setPendingMove(null);
   };
 
@@ -281,7 +315,10 @@ export default function Schedule() {
   };
   const saveQuick = () => {
     if (!quickTarget) return;
-    rescheduleTo(quickTarget, quickForm.date, quickForm.startTime, quickForm.endTime);
+    const { date, startTime, endTime } = quickForm;
+    const series = seriesMoves(data.sessions, quickTarget, date, startTime, endTime);
+    if (series.length) setPendingMove({ session: quickTarget, date, startTime, endTime, series });
+    else rescheduleTo(quickTarget, date, startTime, endTime);
     setQuickTarget(null);
   };
 
@@ -294,7 +331,8 @@ export default function Schedule() {
     setDragOverCell(null);
     if (!s) return;
     if (s.date === dayStr && s.startTime === time) return;
-    setPendingMove({ session: s, date: dayStr, startTime: time, endTime: addMinutes(time, diffMinutes(s.startTime, s.endTime)) });
+    const endTime = addMinutes(time, diffMinutes(s.startTime, s.endTime));
+    setPendingMove({ session: s, date: dayStr, startTime: time, endTime, series: seriesMoves(data.sessions, s, dayStr, time, endTime) });
   };
 
   const exitBulkMode = () => {
@@ -334,17 +372,15 @@ export default function Schedule() {
     toast.success(t('sch.bulkCancelled', { n }));
   };
 
+  // Pindah sesi terpilih ke hari (di minggu yang sama) & jam mulai baru; durasi tiap sesi tetap.
   const bulkReschedule = () => {
-    const weeks = Math.max(1, Math.min(52, Number(rescheduleWeeks) || 1));
-    const n = selectedIds.size;
-    selectedIds.forEach(id => {
-      const s = data.sessions.find(s => s.id === id);
-      if (!s) return;
-      const newDate = shiftDateByWeeks(s.date, weeks);
-      updateSession(id, { ...s, date: newDate, status: resolveStatus(newDate, s.endTime) });
+    const weekday = bulkDay ? Number(bulkDay) : null;
+    const moves = [...selectedIds].flatMap(id => {
+      const s = data.sessions.find(x => x.id === id);
+      return s ? [{ id, date: moveToWeekday(s.date, weekday), startTime: bulkTime, endTime: addMinutes(bulkTime, diffMinutes(s.startTime, s.endTime)) }] : [];
     });
+    applyMoves(moves, `Reschedule ${moves.length} sesi → ${weekday ? DAY_LABELS_ID[weekday - 1] : 'hari tetap'} ${bulkTime}`);
     exitBulkMode();
-    toast.success(t('sch.bulkRescheduled', { n }));
   };
 
   const bulkCopy = () => {
@@ -1284,19 +1320,29 @@ export default function Schedule() {
 
             {bulkConfirm === 'reschedule' && (
               <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">{t('sch.shift')}</span>
-                  <input
-                    type="number"
-                    min="1"
-                    max="52"
-                    value={rescheduleWeeks}
-                    onChange={e => setRescheduleWeeks(e.target.value)}
-                    onKeyDown={e => (e.key === '-' || e.key === 'e') && e.preventDefault()}
-                    className="w-16 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                  <span className="text-sm text-gray-600 dark:text-gray-400">{t('sch.weeksAhead')}</span>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('sch.moveToDay')}</label>
+                    <select
+                      value={bulkDay}
+                      onChange={e => setBulkDay(e.target.value)}
+                      className="w-full h-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="">{t('sch.keepDay')}</option>
+                      {DAY_LABELS.map((d, i) => <option key={d} value={i + 1}>{d}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('sch.start')}</label>
+                    <input
+                      type="time"
+                      value={bulkTime}
+                      onChange={e => setBulkTime(e.target.value)}
+                      className="w-full h-10 appearance-none border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
                 </div>
+                <p className="text-xs text-gray-400 dark:text-gray-500">{t('sch.moveSameWeek')}</p>
                 <div className="flex gap-2">
                   <button onClick={() => setBulkConfirm(null)} className="flex-1 text-sm px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">
                     {t('sch.back')}
@@ -1392,13 +1438,26 @@ export default function Schedule() {
                   <span className="font-medium text-indigo-700 dark:text-indigo-300">{format(parseISO(date), 'EEE, d MMM yyyy', { locale })} {startTime}{sameDay && startTime !== session.startTime ? `–${endTime}` : ''}</span>
                 </div>
               </div>
+              {!!pendingMove.series?.length && (
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-600 dark:text-gray-300">{t('sch.seriesQ', { n: pendingMove.series.length })}</p>
+                  <button onClick={() => applyMove()} className="w-full text-sm px-3 py-2 rounded-lg border border-indigo-300 dark:border-indigo-700 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
+                    {t('sch.thisOnly')}
+                  </button>
+                  <button onClick={() => applyMove(true)} className="w-full flex items-center justify-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700">
+                    <CalendarClock size={15} /> {t('sch.allSeries', { n: pendingMove.series.length + 1 })}
+                  </button>
+                </div>
+              )}
               <div className="flex gap-2 pt-1">
                 <button onClick={() => setPendingMove(null)} className="flex-1 text-sm px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">
                   {t('common.cancel')}
                 </button>
-                <button onClick={applyMove} className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700">
-                  <Check size={15} /> {t('sch.yesReschedule')}
-                </button>
+                {!pendingMove.series?.length && (
+                  <button onClick={() => applyMove()} className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700">
+                    <Check size={15} /> {t('sch.yesReschedule')}
+                  </button>
+                )}
               </div>
             </div>
           </div>
