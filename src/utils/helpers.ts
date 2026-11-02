@@ -21,15 +21,13 @@ export function formatCurrency(amount: number): string {
  * Jika ada perubahan harga terjadwal dan tanggal sesi sudah mencapai
  * tanggal berlaku, pakai harga baru; selain itu pakai harga saat ini.
  */
-export function effectiveRate(student: Student, date: string): number {
-  if (
-    student.pendingRate != null &&
-    student.pendingRateEffectiveDate != null &&
-    date >= student.pendingRateEffectiveDate
-  ) {
-    return student.pendingRate;
-  }
-  return student.ratePerSession;
+export function effectiveRate(student: Student, date: string, sessions: LessonSession[]): number {
+  const rate = student.pendingRate != null && student.pendingRateEffectiveDate != null && date >= student.pendingRateEffectiveDate
+    ? student.pendingRate
+    : student.ratePerSession;
+  // Ongkos jalan ditanggung murid lain satu rumah (mis. kakak) kalau dia juga les di tanggal yang sama.
+  const payerSameDay = !!student.transportPayerId && sessions.some(s => s.studentId === student.transportPayerId && s.date === date);
+  return payerSameDay ? rate - (student.transportFee ?? 0) : rate;
 }
 
 /**
@@ -136,7 +134,7 @@ export function getStudentInvoice(student: Student, sessions: LessonSession[], m
   const lines = sessions
     .filter(s => s.studentId === student.id && s.date.startsWith(monthStr) && (s.status === 'completed' || s.status === 'scheduled'))
     .sort((a, b) => (a.date + a.startTime).localeCompare(b.date + b.startTime))
-    .map(session => ({ session, amount: session.rateSnapshot ?? effectiveRate(student, session.date) }));
+    .map(session => ({ session, amount: session.rateSnapshot ?? effectiveRate(student, session.date, sessions) }));
   return { lines, total: lines.reduce((sum, l) => sum + l.amount, 0) };
 }
 

@@ -154,7 +154,7 @@ export default function Finance() {
             } else {
               const studentSessions = monthSessionsAll.filter(s => s.studentId === student.id);
               const income = studentSessions.reduce(
-                (sum, s) => sum + (s.rateSnapshot ?? effectiveRate(student, s.date)), 0
+                (sum, s) => sum + (s.rateSnapshot ?? effectiveRate(student, s.date, data.sessions)), 0
               );
               if (income > 0) add(income);
             }
@@ -178,7 +178,7 @@ export default function Finance() {
                 (s.status === 'completed' || (postpaid && s.status === 'scheduled'))
               )
               .forEach(s => {
-                const m = (s.rateSnapshot ?? effectiveRate(student, s.date))
+                const m = (s.rateSnapshot ?? effectiveRate(student, s.date, data.sessions))
                         - (s.honorSnapshot ?? effectiveHonor(laoshi, s.date));
                 if (s.status === 'completed') incomeMarginRealized  += m;
                 else                          incomeMarginScheduled += m;

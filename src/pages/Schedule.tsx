@@ -1793,7 +1793,7 @@ export default function Schedule() {
                 <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-sm flex items-center gap-2">
                   <Clock size={14} className="text-gray-400 dark:text-gray-500" />
                   <span className="text-gray-600 dark:text-gray-300">
-                    {t('sch.cost')}: <strong>{formatCurrency(selectedStudent.billingType === 'per-session' && form.date ? effectiveRate(selectedStudent, form.date) : selectedStudent.ratePerSession)}</strong>
+                    {t('sch.cost')}: <strong>{formatCurrency(selectedStudent.billingType === 'per-session' && form.date ? effectiveRate(selectedStudent, form.date, data.sessions) : selectedStudent.ratePerSession)}</strong>
                     {selectedStudent.billingType === 'package' && t('sch.pkgSuffix')}
                   </span>
                 </div>

@@ -428,6 +428,10 @@ export const translations: Record<Lang, Record<string, string>> = {
     'sch.copyTimes': 'kali',
 
     // payments (murid dibayar lembaga)
+    'stu.transportPayer': 'Ongkos jalan ditanggung',
+    'stu.transportNone': '— Tidak ada —',
+    'stu.transportFee': 'Potongan ongkos',
+    'stu.transportDesc': 'Kalau murid ini les di hari yang sama dengan murid yang dipilih (mis. kakak, satu rumah), tarifnya dipotong ongkos jalan.',
     'pay.deferredToggle': 'Dibayar lembaga',
     'pay.deferredDesc': 'Pendapatan dicatat saat pembayaran diterima, bukan otomatis per bulan.',
     'pay.badge': 'Lembaga',
@@ -871,6 +875,10 @@ export const translations: Record<Lang, Record<string, string>> = {
     'sch.copyTimes': 'times',
 
     // payments (institution-paid students)
+    'stu.transportPayer': 'Travel fee paid by',
+    'stu.transportNone': '— None —',
+    'stu.transportFee': 'Travel fee discount',
+    'stu.transportDesc': 'When this student has a lesson on the same day as the selected student (e.g. sibling, same house), the rate is reduced by the travel fee.',
     'pay.deferredToggle': 'Paid by institution',
     'pay.deferredDesc': 'Income is recorded when payment is received, not automatically per month.',
     'pay.badge': 'Institution',

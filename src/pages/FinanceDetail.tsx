@@ -130,7 +130,7 @@ export default function FinanceDetail() {
       .map(student => {
         const sessions = monthSessionsAll.filter(s => s.studentId === student.id);
         const income = sessions.reduce(
-          (sum, s) => sum + (s.rateSnapshot ?? effectiveRate(student, s.date)), 0
+          (sum, s) => sum + (s.rateSnapshot ?? effectiveRate(student, s.date, data.sessions)), 0
         );
         return { student, sessions, income };
       })
@@ -176,9 +176,9 @@ export default function FinanceDetail() {
             s.studentId === student.id && s.date.startsWith(monthStr) && s.status === 'scheduled'
           );
           if (!completedSessions.length && !scheduledSessions.length) return [];
-          const rate          = completedSessions.reduce((sum, s) => sum + (s.rateSnapshot  ?? effectiveRate(student, s.date)), 0);
+          const rate          = completedSessions.reduce((sum, s) => sum + (s.rateSnapshot  ?? effectiveRate(student, s.date, data.sessions)), 0);
           const honor         = completedSessions.reduce((sum, s) => sum + (s.honorSnapshot ?? effectiveHonor(laoshi, s.date)), 0);
-          const scheduledRate  = scheduledSessions.reduce((sum, s) => sum + (s.rateSnapshot  ?? effectiveRate(student, s.date)), 0);
+          const scheduledRate  = scheduledSessions.reduce((sum, s) => sum + (s.rateSnapshot  ?? effectiveRate(student, s.date, data.sessions)), 0);
           const scheduledHonor = scheduledSessions.reduce((sum, s) => sum + (s.honorSnapshot ?? effectiveHonor(laoshi, s.date)), 0);
           return [{ student, completedSessions, scheduledSessions, rate, honor, margin: rate - honor, scheduledRate, scheduledHonor, scheduledMargin: scheduledRate - scheduledHonor }];
         });

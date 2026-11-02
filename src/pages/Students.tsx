@@ -71,6 +71,11 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
   // Dibayar lembaga (deferred revenue)
   const [deferredPayment, setDeferredPayment] = useState(initial?.deferredPayment ?? false);
 
+  // Ongkos jalan ditanggung murid lain satu rumah (postpaid)
+  const { data: appData } = useApp();
+  const [transportPayerId, setTransportPayerId] = useState(initial?.transportPayerId ?? '');
+  const [transportFee, setTransportFee] = useState(initial?.transportFee != null ? String(initial.transportFee) : '');
+
   // Package fields — only relevant for new prepaid students
   const [showErrors, setShowErrors] = useState(false);
   const [pricingType, setPricingType] = useState<PackagePricingType>('per-session');
@@ -109,7 +114,9 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
 
   // XuYuan & prepaid-new tidak perlu rate manual
   const rateValid = isXuYuan || (isPrepaid && isNew) ? true : form.ratePerSession;
-  const valid = form.name.trim() && form.teacherId && rateValid && pkgValid && !pendingInvalid;
+  const isPostpaid = !isXuYuan && !isPrepaid;
+  const transportInvalid = isPostpaid && !!transportPayerId && !(Number(transportFee) > 0);
+  const valid = form.name.trim() && form.teacherId && rateValid && pkgValid && !pendingInvalid && !transportInvalid;
 
   const handleSave = () => {
     if (!valid) { setShowErrors(true); return; }
@@ -120,6 +127,8 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
       pendingRate: hasPending ? pendingRateNum : undefined,
       pendingRateEffectiveDate: hasPending ? pendingDate : undefined,
       deferredPayment: isXuYuan ? false : deferredPayment,
+      transportPayerId: isPostpaid && transportPayerId ? transportPayerId : undefined,
+      transportFee: isPostpaid && transportPayerId ? Number(transportFee) : undefined,
     };
     const pkgData: InitialPackageData | undefined = (isNew && isPrepaid) ? {
       totalSessions: pkgSessions,
@@ -399,6 +408,30 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
             onChange={e => setForm(f => ({ ...f, ratePerSession: e.target.value }))}
             placeholder="145000" className="input w-full" />
           <p className="text-xs text-gray-400 mt-1">{t('stu.pkgManaged')}</p>
+        </div>
+      )}
+
+      {isPostpaid && (
+        <div className="grid grid-cols-2 gap-3">
+          <div className={transportPayerId ? '' : 'col-span-2'}>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('stu.transportPayer')}</label>
+            <select value={transportPayerId} onChange={e => setTransportPayerId(e.target.value)} className="input w-full">
+              <option value="">{t('stu.transportNone')}</option>
+              {appData.students
+                .filter(st => st.id !== initial?.id && (st.isActive || st.id === transportPayerId) && st.group !== 'xuyuan')
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map(st => <option key={st.id} value={st.id}>{st.name}</option>)}
+            </select>
+          </div>
+          {transportPayerId && (
+            <div>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('stu.transportFee')}</label>
+              <input type="number" min="0" onKeyDown={e => (e.key === '-' || e.key === 'e') && e.preventDefault()} value={transportFee}
+                onChange={e => setTransportFee(e.target.value)}
+                placeholder="25000" className={`input w-full ${showErrors && transportInvalid ? 'input-error' : ''}`} />
+            </div>
+          )}
+          <p className="col-span-2 text-xs text-gray-400 -mt-1">{t('stu.transportDesc')}</p>
         </div>
       )}
 

@@ -31,6 +31,8 @@ export interface Student {
   pendingRate?: number;              // harga baru yang menunggu berlaku (postpaid only)
   pendingRateEffectiveDate?: string; // YYYY-MM-DD, tanggal pendingRate mulai berlaku
   deferredPayment?: boolean;         // dibayar lembaga: pendapatan diakui saat pembayaran dicatat, bukan otomatis
+  transportPayerId?: string;         // murid lain (satu rumah) yang menanggung ongkos jalan kalau les di hari yang sama
+  transportFee?: number;             // ongkos jalan yang dipotong dari tarif saat itu terjadi
   group: StudentGroup;
   xuYuanType?: 'private' | 'semi-group';
   phone?: string;                    // No. WhatsApp (opsional), disimpan format 62xxx
