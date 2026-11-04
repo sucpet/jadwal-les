@@ -483,7 +483,8 @@ export default function Schedule() {
     : [];
 
   return (
-    <div className={`space-y-4 ${viewMode === 'day' ? 'pb-0' : 'pb-16'} md:pb-32`}>
+    // Ruang bawah ekstra hanya saat mode pilih (bar aksi melayang); pb-16 di HP untuk tombol + melayang
+    <div className={`space-y-4 ${bulkMode ? 'pb-16 md:pb-32' : viewMode === 'day' ? 'pb-0' : 'pb-16 md:pb-0'}`}>
       <div className="flex items-center justify-between">
         {bulkMode ? (
           <button
