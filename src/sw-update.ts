@@ -14,3 +14,16 @@ export function setupSwAutoUpdate(): void {
     if (document.visibilityState === 'visible') check();
   });
 }
+
+// Setelah deploy baru, chunk halaman versi lama sudah tidak ada (Vercel membalas index.html),
+// jadi import halaman gagal dan spinner berputar terus. Reload sekali untuk memuat versi terbaru;
+// jeda 10 detik mencegah reload berulang kalau memang offline/error lain.
+export function setupChunkReload(): void {
+  window.addEventListener('vite:preloadError', e => {
+    const last = Number(sessionStorage.getItem('chunk-reload-at') ?? 0);
+    if (Date.now() - last < 10_000) return;
+    e.preventDefault();
+    sessionStorage.setItem('chunk-reload-at', String(Date.now()));
+    location.reload();
+  });
+}
