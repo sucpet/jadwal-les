@@ -1196,14 +1196,34 @@ export default function Schedule() {
                 const daySessions = filteredSessions
                   .filter(s => s.date === dayPanel)
                   .sort((a, b) => a.startTime.localeCompare(b.startTime));
+                const dayNotes = data.scheduleNotes
+                  .filter(n => n.date === dayPanel)
+                  .sort((a, b) => a.startTime.localeCompare(b.startTime));
+                const notesList = dayNotes.map(n => (
+                  <div
+                    key={n.id}
+                    onClick={() => { setDayPanel(null); openEditNote(n); }}
+                    className="flex items-center gap-3 px-5 py-3 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/30 cursor-pointer border-b border-gray-100 dark:border-gray-700"
+                  >
+                    <StickyNote size={15} className="text-amber-500 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm text-gray-900 dark:text-white truncate">{n.note}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 tabular-nums">
+                        {n.startTime === '00:00' && n.endTime === '23:59' ? t('sch.allDay') : `${n.startTime} – ${n.endTime}`}
+                      </div>
+                    </div>
+                  </div>
+                ));
                 if (daySessions.length === 0) {
+                  if (dayNotes.length) return notesList;
                   return (
                     <div className="px-5 py-8 text-center text-sm text-gray-400 dark:text-gray-500 italic">
               {t('sch.noSessions')}
             </div>
                   );
                 }
-                return (
+                return (<>
+                  {notesList}
                   <div className="divide-y divide-gray-100 dark:divide-gray-700">
                     {daySessions.map(s => {
                       const student = data.students.find(st => st.id === s.studentId);
@@ -1252,15 +1272,21 @@ export default function Schedule() {
                       );
                     })}
                   </div>
-                );
+                </>);
               })()}
             </div>
 
             {/* Footer — add session */}
-            <div className="px-5 py-4 border-t border-gray-100 dark:border-gray-700 flex-shrink-0">
+            <div className="px-5 py-4 border-t border-gray-100 dark:border-gray-700 flex-shrink-0 flex gap-2">
+              <button
+                onClick={() => { setDayPanel(null); openAddNote(dayPanel); }}
+                className="flex-1 flex items-center justify-center gap-2 border border-amber-300 dark:border-amber-700 text-amber-600 dark:text-amber-400 text-sm px-4 py-2.5 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-900/20"
+              >
+                <StickyNote size={16} /> {t('sch.addNote')}
+              </button>
               <button
                 onClick={() => { setDayPanel(null); openAdd(dayPanel); }}
-                className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white text-sm px-4 py-2.5 rounded-xl hover:bg-indigo-700"
+                className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 text-white text-sm px-4 py-2.5 rounded-xl hover:bg-indigo-700"
               >
                 <Plus size={16} /> {t('sch.addSession')}
               </button>
