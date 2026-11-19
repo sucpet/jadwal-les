@@ -1119,8 +1119,10 @@ export default function Schedule() {
                   const daySessions = filteredSessions
                     .filter(s => s.date === dayStr)
                     .sort((a, b) => a.startTime.localeCompare(b.startTime));
-                  const visibleSessions = daySessions.slice(0, 3);
-                  const overflow = daySessions.length - 3;
+                  const dayNotes = data.scheduleNotes.filter(n => n.date === dayStr);
+                  // Catatan ikut jatah 3 baris; sisanya masuk "+n"
+                  const visibleSessions = daySessions.slice(0, Math.max(0, 3 - dayNotes.length));
+                  const overflow = daySessions.length - visibleSessions.length;
                   return (
                     <div
                       key={di}
@@ -1137,6 +1139,14 @@ export default function Schedule() {
                       </div>
                       {/* Session indicators — visual only, detail via panel */}
                       <div className="space-y-0.5">
+                        {dayNotes.map(n => (
+                          <div key={n.id} className="w-full block rounded overflow-hidden leading-tight pointer-events-none bg-amber-100 dark:bg-amber-900/40 border-l-2 border-amber-400">
+                            <span className="sm:hidden flex items-center justify-center py-0.5">
+                              <StickyNote size={9} className="text-amber-600 dark:text-amber-400" />
+                            </span>
+                            <span className="hidden sm:block text-xs text-amber-800 dark:text-amber-200 px-1.5 py-0.5 truncate">{n.note}</span>
+                          </div>
+                        ))}
                         {visibleSessions.map(s => {
                           const teacher = data.teachers.find(t => t.id === s.teacherId);
                           const color = teacher?.color ?? '#6366f1';
