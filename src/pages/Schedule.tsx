@@ -82,7 +82,17 @@ export default function Schedule() {
   // (padding main sudah termasuk tinggi bottom nav + safe area), supaya halaman sendiri tidak ikut scroll.
   // Diukur dari DOM karena tinggi konten di atas grid berubah (filter Laoshi bisa 2 baris).
   useLayoutEffect(() => {
+    const fitWeek = () => {
+      // Grid minggu (desktop) ikut sisa tinggi layar, jadi saat zoom out area kalender ikut memanjang
+      const el = weekScrollRef.current;
+      const main = el?.closest('main');
+      if (!el || !main || !el.offsetParent) return;
+      const pb = (x: Element) => parseFloat(getComputedStyle(x).paddingBottom) || 0;
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      el.style.maxHeight = `${Math.max(400, Math.floor(window.innerHeight - top - pb(main) - pb(main.firstElementChild!) - 2))}px`;
+    };
     const fit = () => {
+      fitWeek();
       const el = dayScrollRef.current;
       const main = el?.closest('main');
       if (!el || !main) return;
