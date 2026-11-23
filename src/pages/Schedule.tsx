@@ -69,9 +69,6 @@ export default function Schedule() {
   const showNowLine = nowPx >= 0 && nowPx <= gridMaxPx;
   const dayScrollRef = useRef<HTMLDivElement>(null);
   const weekScrollRef = useRef<HTMLDivElement>(null);
-  // Tinggi slot grid minggu (desktop), dihitung supaya 08:00–22:00 muat satu layar
-  const [wRowH, setWRowH] = useState(ROW_H);
-  const wpx = (time: string) => timeToPixels(time) * wRowH / ROW_H;
   const touchStartX = useRef(0);
 
   // Update current-time indicator every 10 seconds (includes seconds for pixel accuracy)
@@ -85,20 +82,7 @@ export default function Schedule() {
   // (padding main sudah termasuk tinggi bottom nav + safe area), supaya halaman sendiri tidak ikut scroll.
   // Diukur dari DOM karena tinggi konten di atas grid berubah (filter Laoshi bisa 2 baris).
   useLayoutEffect(() => {
-    const fitWeek = () => {
-      const el = weekScrollRef.current;
-      const main = el?.closest('main');
-      if (!el || !main || !el.offsetParent) return; // tersembunyi (HP / bulan / bulk)
-      const pb = (x: Element) => parseFloat(getComputedStyle(x).paddingBottom) || 0;
-      const top = el.getBoundingClientRect().top + window.scrollY;
-      const header = (el.firstElementChild as HTMLElement).offsetHeight;
-      const avail = window.innerHeight - top - pb(main) - pb(main.firstElementChild!) - 2 - header;
-      // Minimal 18px/slot supaya nama murid tetap terbaca; layar terlalu pendek → kembali scroll
-      el.style.maxHeight = `${Math.max(240, avail + header)}px`;
-      setWRowH(Math.min(ROW_H, Math.max(18, Math.floor(avail / TIME_SLOTS.length))));
-    };
     const fit = () => {
-      fitWeek();
       const el = dayScrollRef.current;
       const main = el?.closest('main');
       if (!el || !main) return;
@@ -127,7 +111,7 @@ export default function Schedule() {
   useEffect(() => {
     if (viewMode === 'month' || !weekScrollRef.current) return;
     const weekContainsToday = weekDays.some(d => isSameDay(d, today));
-    weekScrollRef.current.scrollTop = weekContainsToday ? Math.max(0, nowPx * wRowH / ROW_H - 120) : 0;
+    weekScrollRef.current.scrollTop = weekContainsToday ? Math.max(0, nowPx - 120) : 0;
   }, [viewMode, currentWeek]); // eslint-disable-line react-hooks/exhaustive-deps
   const [form, setForm] = useState({
     teacherId: data.teachers.find(te => te.isActive)?.id ?? '',
@@ -935,7 +919,7 @@ export default function Schedule() {
       {/* overflow-clip: clips border-radius without creating a scroll container (so sticky header works) */}
       <div className={`border border-gray-200 dark:border-gray-700 rounded-xl overflow-clip ${bulkMode || viewMode === 'month' ? 'hidden' : 'hidden md:block'}`}>
         {/* Single scroll container — header + body share the same width so columns always align */}
-        <div ref={weekScrollRef} className="overflow-y-auto">
+        <div ref={weekScrollRef} className="overflow-y-auto max-h-[748px]">
           {/* Sticky header */}
           <div
             className="sticky top-0 z-10 grid border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
@@ -967,7 +951,7 @@ export default function Schedule() {
             className="bg-white dark:bg-gray-800"
             style={{
               display: 'grid',
-              gridTemplateRows: `repeat(${TIME_SLOTS.length}, ${wRowH}px)`,
+              gridTemplateRows: `repeat(${TIME_SLOTS.length}, ${ROW_H}px)`,
               gridTemplateColumns: '64px repeat(7, 1fr)',
             }}
           >
@@ -1024,8 +1008,8 @@ export default function Schedule() {
                 {/* Schedule notes — week view (dirender sebelum sesi → tampil di belakang sesi) */}
                 {data.scheduleNotes.filter(n => n.date === format(day, 'yyyy-MM-dd')).map(n => {
                   const isAllDay = n.startTime === '00:00' && n.endTime === '23:59';
-                  const topPx = isAllDay ? 0 : Math.max(0, wpx(n.startTime));
-                  const heightPx = isAllDay ? TIME_SLOTS.length * wRowH : Math.max(wRowH / 2, wpx(n.endTime) - wpx(n.startTime) - 2);
+                  const topPx = isAllDay ? 0 : Math.max(0, timeToPixels(n.startTime));
+                  const heightPx = isAllDay ? TIME_SLOTS.length * ROW_H : Math.max(ROW_H / 2, timeToPixels(n.endTime) - timeToPixels(n.startTime) - 2);
                   return (
                     <div
                       key={n.id}
@@ -1039,8 +1023,8 @@ export default function Schedule() {
                   );
                 })}
                 {layout.map(({ session: s, colIndex, totalCols }) => {
-                  const topPx = Math.max(0, wpx(s.startTime));
-                  const heightPx = Math.max(wRowH / 2, wpx(s.endTime) - wpx(s.startTime) - 2);
+                  const topPx = Math.max(0, timeToPixels(s.startTime));
+                  const heightPx = Math.max(ROW_H / 2, timeToPixels(s.endTime) - timeToPixels(s.startTime) - 2);
                   const widthPct = 100 / totalCols;
                   const leftPct = (colIndex / totalCols) * 100;
                   const student = data.students.find(st => st.id === s.studentId);
@@ -1100,7 +1084,7 @@ export default function Schedule() {
               }}
             >
               <div
-                style={{ position: 'absolute', top: nowPx * wRowH / ROW_H, left: 0, right: 0 }}
+                style={{ position: 'absolute', top: nowPx, left: 0, right: 0 }}
                 className="flex items-center"
               >
                 <div className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0 -ml-1" />
