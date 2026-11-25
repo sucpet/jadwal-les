@@ -1268,11 +1268,13 @@ function InvoiceModal({ student, onClose }: { student: Student; onClose: () => v
   // Portal ke body: kartu murid non-aktif pakai opacity-50 yang ikut membuat modal transparan.
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
-      <div className="w-full max-w-sm space-y-3 max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain" onClick={e => e.stopPropagation()}>
-        <div className="flex justify-center">
+      {/* Bulan & tombol tetap terlihat; hanya kartu invoice yang di-scroll kalau panjang */}
+      <div className="w-full max-w-sm flex flex-col gap-3 max-h-[calc(100dvh-2rem)]" onClick={e => e.stopPropagation()}>
+        <div className="flex justify-center shrink-0">
           <div className="bg-white dark:bg-gray-800 rounded-xl px-2 py-1.5"><MonthSelector month={month} onChange={setMonth} /></div>
         </div>
-        <div ref={ref} className="bg-white rounded-2xl p-6 shadow-xl font-sans">
+        <div className="min-h-0 overflow-y-auto overscroll-contain rounded-2xl shadow-xl">
+        <div ref={ref} className="bg-white rounded-2xl p-6 font-sans">
           <div className="text-center border-b border-gray-200 pb-4 mb-4">
             <h2 className="text-2xl font-bold tracking-tight text-gray-900">INVOICE</h2>
             {isFamily && <p className="text-[10px] uppercase tracking-wider text-gray-400 mt-1">{t('inv.family')}</p>}
@@ -1326,7 +1328,8 @@ function InvoiceModal({ student, onClose }: { student: Student; onClose: () => v
           </div>
           <p className="text-[10px] text-gray-300 text-center mt-5">{format(new Date(), 'd MMMM yyyy', { locale })}</p>
         </div>
-        <div className="flex gap-2">
+        </div>
+        <div className="flex gap-2 shrink-0">
           <button onClick={onClose}
             className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-gray-600 bg-gray-900 text-gray-300 hover:bg-gray-800 text-sm">
             <X size={14} /> {t('inv.close')}
