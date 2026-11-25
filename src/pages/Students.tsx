@@ -1247,10 +1247,16 @@ function InvoiceModal({ student, onClose }: { student: Student; onClose: () => v
     if (!ref.current) return;
     setDownloading(true);
     try {
-      const a = document.createElement('a');
-      a.href = await toPng(ref.current, { pixelRatio: 2, backgroundColor: '#ffffff' });
-      a.download = `invoice-${members.map(m => m.name).join('-').replace(/\s+/g, '-')}-${monthStr}.png`;
-      a.click();
+      // PDF satu halaman panjang setinggi kartu: gambar tinggi terpotong di pratinjau WhatsApp, PDF tidak.
+      const el = ref.current;
+      const [png, { jsPDF }] = await Promise.all([
+        toPng(el, { pixelRatio: 2, backgroundColor: '#ffffff' }),
+        import('jspdf'),
+      ]);
+      const w = el.offsetWidth, h = el.offsetHeight; // px CSS → unit 'px' jsPDF
+      const pdf = new jsPDF({ unit: 'px', format: [w, h], orientation: w > h ? 'landscape' : 'portrait', hotfixes: ['px_scaling'] });
+      pdf.addImage(png, 'PNG', 0, 0, w, h);
+      pdf.save(`invoice-${members.map(m => m.name).join('-').replace(/\s+/g, '-')}-${monthStr}.pdf`);
     } catch {
       toast.error(t('inv.downloadFail'));
     } finally {
