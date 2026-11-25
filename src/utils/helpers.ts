@@ -164,6 +164,24 @@ export function getFamilyInvoice(student: Student, students: Student[], sessions
   return { members, groups, total: groups.reduce((sum, g) => sum + g.subtotal, 0) };
 }
 
+export type FamilyInvoice = ReturnType<typeof getFamilyInvoice>;
+
+/** Semua invoice postpaid untuk satu bulan: satu per keluarga / murid, hanya yang ada sesinya. Urut nama. */
+export function getMonthlyInvoices(students: Student[], sessions: LessonSession[], monthStr: string) {
+  const seen = new Set<string>();
+  const invoices: (FamilyInvoice & { key: string; title: string })[] = [];
+  for (const s of students) {
+    if (!isInvoiceEligible(s)) continue;
+    const key = s.familyHeadId ?? s.id;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const inv = getFamilyInvoice(s, students, sessions, monthStr);
+    if (inv.groups.length === 0) continue;
+    invoices.push({ ...inv, key, title: inv.members.map(m => m.name).join(' · ') });
+  }
+  return invoices.sort((a, b) => a.title.localeCompare(b.title));
+}
+
 // Warna kelompok murid — sesuai badge di halaman Murid (blue/purple/emerald-500)
 export const GROUP_COLORS: Record<StudentGroup, string> = {
   pribadi:           '#3b82f6', // blue-500

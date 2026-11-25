@@ -1,16 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
-import { toPng } from 'html-to-image';
 import { useSearchParams } from 'react-router-dom';
-import { Plus, Pencil, Trash2, X, Check, ChevronDown, ChevronUp, Package, AlertTriangle, Clock, CalendarDays, CalendarClock, StickyNote, PowerOff, RotateCcw, Search, Wallet, MessageCircle, FileText, Download } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Check, ChevronDown, ChevronUp, Package, AlertTriangle, Clock, CalendarDays, CalendarClock, StickyNote, PowerOff, RotateCcw, Search, Wallet, MessageCircle } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { useApp } from '../store/AppContext';
 import { useLang } from '../store/LanguageContext';
 import { useConfirm } from '../store/ConfirmContext';
 import { useToast } from '../store/ToastContext';
 import { waLink, isValidPhone } from '../utils/whatsapp';
-import { formatCurrency, getPackageStatus, formatDate, getFamilyInvoice } from '../utils/helpers';
-import MonthSelector from '../components/MonthSelector';
+import { formatCurrency, getPackageStatus, formatDate } from '../utils/helpers';
 import { groupByMonth, groupByXuYuanCycle, totalDurationLabel, getPackageAttributedSessions } from '../utils/student-groups';
 import type { BillingType, Student, StudentGroup, SessionPackage, PackagePricingType, LessonSession } from '../types';
 import { STUDENT_GROUPS } from '../types';
@@ -934,7 +931,6 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
   const confirm = useConfirm();
   const toast = useToast();
   const [expanded, setExpanded] = useState(highlight ?? false);
-  const [showInvoice, setShowInvoice] = useState(false);
   const [editing, setEditing] = useState(false);
   const [addingPackage, setAddingPackage] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -1080,13 +1076,6 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
         </div>
 
         <div className="flex items-center gap-1">
-          {/* Invoice hanya untuk postpaid yang ditagih ke ortu (bukan XuYuan / dibayar lembaga) */}
-          {isPostpaid && student.group !== 'xuyuan' && !student.deferredPayment && (
-            <button onClick={() => setShowInvoice(true)} title={t('inv.button')}
-              className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors">
-              <FileText size={14} />
-            </button>
-          )}
           {isValidPhone(student.phone) && (
             <a
               href={waLink(student.phone)}
@@ -1222,126 +1211,7 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
 
         </div>
       )}
-      {showInvoice && <InvoiceModal student={student} onClose={() => setShowInvoice(false)} />}
     </div>
-  );
-}
-
-// ─── Invoice Modal (postpaid, per bulan) ──────────────────────────────────────
-// Kartu selalu terang agar hasil PNG sama di light/dark mode (pola ReceiptModal di FinanceDetail).
-
-function InvoiceModal({ student, onClose }: { student: Student; onClose: () => void }) {
-  const { data } = useApp();
-  const { t, locale } = useLang();
-  const toast = useToast();
-  const [month, setMonth] = useState(() => new Date());
-  const [downloading, setDownloading] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const monthStr = format(month, 'yyyy-MM');
-  // Anggota keluarga → selalu invoice gabungan (per anak + subtotal), dari kartu mana pun
-  const { members, groups, total } = getFamilyInvoice(student, data.students, data.sessions, monthStr);
-  const isFamily = members.length > 1;
-  const title = members.map(m => m.name).join(' · ');
-  const sessionCount = groups.reduce((n, g) => n + g.lines.length, 0);
-
-  const download = async () => {
-    if (!ref.current) return;
-    setDownloading(true);
-    try {
-      // PDF satu halaman panjang setinggi kartu: gambar tinggi terpotong di pratinjau WhatsApp, PDF tidak.
-      const el = ref.current;
-      const [png, { jsPDF }] = await Promise.all([
-        toPng(el, { pixelRatio: 2, backgroundColor: '#ffffff' }),
-        import('jspdf'),
-      ]);
-      const w = el.offsetWidth, h = el.offsetHeight; // px CSS → unit 'px' jsPDF
-      const pdf = new jsPDF({ unit: 'px', format: [w, h], orientation: w > h ? 'landscape' : 'portrait', hotfixes: ['px_scaling'] });
-      pdf.addImage(png, 'PNG', 0, 0, w, h);
-      pdf.save(`invoice-${members.map(m => m.name).join('-').replace(/\s+/g, '-')}-${monthStr}.pdf`);
-    } catch {
-      toast.error(t('inv.downloadFail'));
-    } finally {
-      setDownloading(false);
-    }
-  };
-
-  // Portal ke body: kartu murid non-aktif pakai opacity-50 yang ikut membuat modal transparan.
-  return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
-      {/* Bulan & tombol tetap terlihat; hanya kartu invoice yang di-scroll kalau panjang */}
-      <div className="w-full max-w-sm flex flex-col gap-3 max-h-[calc(100dvh-2rem)]" onClick={e => e.stopPropagation()}>
-        <div className="flex justify-center shrink-0">
-          <div className="bg-white dark:bg-gray-800 rounded-xl px-2 py-1.5"><MonthSelector month={month} onChange={setMonth} /></div>
-        </div>
-        <div className="min-h-0 overflow-y-auto overscroll-contain rounded-2xl shadow-xl">
-        <div ref={ref} className="bg-white rounded-2xl p-6 font-sans">
-          <div className="text-center border-b border-gray-200 pb-4 mb-4">
-            <h2 className="text-2xl font-bold tracking-tight text-gray-900">INVOICE</h2>
-            {isFamily && <p className="text-[10px] uppercase tracking-wider text-gray-400 mt-1">{t('inv.family')}</p>}
-            <p className={`text-sm text-gray-700 font-medium ${isFamily ? '' : 'mt-1'}`}>{title}</p>
-            <p className="text-sm text-gray-500">{format(month, 'MMMM yyyy', { locale })}</p>
-          </div>
-          {groups.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-4">{t('inv.empty')}</p>
-          ) : (
-            <table className="w-full text-sm mb-4">
-              <thead>
-                <tr className="text-xs text-gray-400 border-b border-gray-100">
-                  <th className="text-left pb-2 font-medium">{t('common.date')}</th>
-                  <th className="text-left pb-2 font-medium">{t('inv.time')}</th>
-                  <th className="text-right pb-2 font-medium">{t('inv.amount')}</th>
-                </tr>
-              </thead>
-              {groups.map(g => (
-                <tbody key={g.student.id}>
-                  {isFamily && (
-                    <tr>
-                      <td colSpan={3} className="pt-3 pb-1 text-xs font-semibold text-gray-700">{g.student.name}</td>
-                    </tr>
-                  )}
-                  {g.lines.map(({ session, amount }) => (
-                    <tr key={session.id} className="border-b border-gray-50">
-                      <td className="py-2 text-gray-800">{format(parseISO(session.date), 'EEE, d MMM', { locale })}</td>
-                      <td className="py-2 text-gray-500 tabular-nums">{session.startTime}–{session.endTime}</td>
-                      <td className="py-2 text-right tabular-nums text-gray-900">{formatCurrency(amount)}</td>
-                    </tr>
-                  ))}
-                  {isFamily && (
-                    <tr>
-                      <td colSpan={2} className="py-1.5 text-xs text-gray-500">{t('inv.subtotal', { n: g.lines.length })}</td>
-                      <td className="py-1.5 text-right text-xs tabular-nums font-medium text-gray-700">{formatCurrency(g.subtotal)}</td>
-                    </tr>
-                  )}
-                </tbody>
-              ))}
-            </table>
-          )}
-          <div className="border-t border-gray-200 pt-3 space-y-1">
-            <div className="flex justify-between text-sm text-gray-500">
-              <span>{t('inv.sessions')}</span>
-              <span className="tabular-nums font-medium text-gray-700">{sessionCount}</span>
-            </div>
-            <div className="flex justify-between text-base font-bold text-gray-900">
-              <span>Total</span>
-              <span className="tabular-nums">{formatCurrency(total)}</span>
-            </div>
-          </div>
-          <p className="text-[10px] text-gray-300 text-center mt-5">{format(new Date(), 'd MMMM yyyy', { locale })}</p>
-        </div>
-        </div>
-        <div className="flex gap-2 shrink-0">
-          <button onClick={onClose}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-gray-600 bg-gray-900 text-gray-300 hover:bg-gray-800 text-sm">
-            <X size={14} /> {t('inv.close')}
-          </button>
-          <button onClick={download} disabled={downloading || groups.length === 0}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium disabled:opacity-60">
-            <Download size={14} /> {downloading ? t('inv.saving') : t('set.download')}
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body,
   );
 }
 

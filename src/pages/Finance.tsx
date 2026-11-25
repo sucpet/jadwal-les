@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { format, parseISO, subMonths } from 'date-fns';
-import { Pencil, Check, X, Crown, ArrowRight, CalendarClock } from 'lucide-react';
+import { Pencil, Check, X, Crown, ArrowRight, CalendarClock, FileText } from 'lucide-react';
 import MonthSelector from '../components/MonthSelector';
+import PostpaidInvoicesModal from '../components/PostpaidInvoices';
 import { Link } from 'react-router-dom';
 import { useApp } from '../store/AppContext';
 import { useLang } from '../store/LanguageContext';
@@ -23,6 +24,7 @@ export default function Finance() {
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [showInvoices, setShowInvoices] = useState(false);
   const [editValue, setEditValue] = useState('');
   const [pendingHonorValue, setPendingHonorValue] = useState('');
   const [pendingDateValue, setPendingDateValue] = useState('');
@@ -90,6 +92,13 @@ export default function Finance() {
       </div>
 
       <MonthSelector month={month} onChange={setMonth} />
+
+      {/* Invoice bulanan ke ortu (postpaid): per keluarga / murid, satu-satu atau ZIP */}
+      <button onClick={() => setShowInvoices(true)}
+        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-sm font-medium">
+        <FileText size={15} /> {t('inv.button')}
+      </button>
+      {showInvoices && <PostpaidInvoicesModal month={month} onClose={() => setShowInvoices(false)} />}
 
       {/* ── Pemilik ── */}
       {owners.map(teacher => {

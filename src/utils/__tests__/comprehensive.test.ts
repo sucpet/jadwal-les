@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { ROW_H, timeToPixels, computeDayLayout, addOneHour, shiftDateByWeeks, dayOfWeek, diffMinutes, addMinutes } from '../calendar';
 import { xuYuanCycleStart, xuYuanCycleLabel, durationMinutes, formatDuration, formatRp } from '../xuyuan';
 import { groupByMonth, groupByXuYuanCycle, totalDurationLabel, getPackageAttributedSessions } from '../student-groups';
-import { getPackageStatus, getStudentInvoice, getFamilyMembers, getFamilyInvoice, effectiveRate, effectiveHonor, expiredBackups } from '../helpers';
+import { getPackageStatus, getStudentInvoice, getFamilyMembers, getFamilyInvoice, getMonthlyInvoices, effectiveRate, effectiveHonor, expiredBackups } from '../helpers';
 import type { LessonSession, SessionPackage, Student } from '../../types';
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
@@ -617,6 +617,22 @@ describe('family invoice', () => {
     ]);
     expect(inv.total).toBe(470_000);
     expect(inv.members).toHaveLength(3);
+  });
+
+  it('getMonthlyInvoices: one per family/student, only with sessions, postpaid only, sorted', () => {
+    const xy = post({ id: 'xy', name: 'A XuYuan', group: 'xuyuan' });
+    const inst = post({ id: 'inst', name: 'B Lembaga', deferredPayment: true });
+    const sessions = [
+      makeSession({ id: 'a1', studentId: 'adel', date: '2026-01-06' }),
+      makeSession({ id: 'l1', studentId: 'lone', date: '2026-01-07' }),
+      makeSession({ id: 'p1', studentId: 'pre',  date: '2026-01-05' }),
+      makeSession({ id: 'x1', studentId: 'xy',   date: '2026-01-05' }),
+      makeSession({ id: 'i1', studentId: 'inst', date: '2026-01-05' }),
+    ];
+    const all = getMonthlyInvoices([...students, xy, inst], sessions, '2026-01');
+    expect(all.map(i => i.title)).toEqual(['Ci Dessy · Adel · Aldrich D', 'Lone']);
+    expect(all.map(i => i.total)).toEqual([150_000, 150_000]);
+    expect(getMonthlyInvoices(students, sessions, '2026-02')).toEqual([]);
   });
 });
 
