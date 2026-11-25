@@ -138,6 +138,32 @@ export function getStudentInvoice(student: Student, sessions: LessonSession[], m
   return { lines, total: lines.reduce((sum, l) => sum + l.amount, 0) };
 }
 
+/** Murid yang dapat invoice bulanan ke ortu: postpaid, bukan XuYuan, bukan dibayar lembaga. */
+export function isInvoiceEligible(s: Student): boolean {
+  return s.billingType === 'per-session' && s.group !== 'xuyuan' && !s.deferredPayment;
+}
+
+/**
+ * Anggota keluarga untuk invoice gabungan: kepala (id = kunci) + semua yang familyHeadId = kunci.
+ * Kunci = familyHeadId ?? id, jadi tetap terkelompok walau kepala sudah dihapus.
+ * Hanya yang isInvoiceEligible; urutan: kepala dulu, lalu nama.
+ */
+export function getFamilyMembers(student: Student, students: Student[]): Student[] {
+  const key = student.familyHeadId ?? student.id;
+  const members = students.filter(s => (s.id === key || s.familyHeadId === key) && isInvoiceEligible(s));
+  if (!members.some(m => m.id === student.id)) members.push(student);
+  return members.sort((a, b) => (a.id === key ? -1 : b.id === key ? 1 : a.name.localeCompare(b.name)));
+}
+
+/** Invoice bulanan gabungan per keluarga: rincian per anak (yang ada sesinya) + total keseluruhan. */
+export function getFamilyInvoice(student: Student, students: Student[], sessions: LessonSession[], monthStr: string) {
+  const members = getFamilyMembers(student, students);
+  const groups = members
+    .map(m => { const { lines, total } = getStudentInvoice(m, sessions, monthStr); return { student: m, lines, subtotal: total }; })
+    .filter(g => g.lines.length > 0);
+  return { members, groups, total: groups.reduce((sum, g) => sum + g.subtotal, 0) };
+}
+
 // Warna kelompok murid — sesuai badge di halaman Murid (blue/purple/emerald-500)
 export const GROUP_COLORS: Record<StudentGroup, string> = {
   pribadi:           '#3b82f6', // blue-500

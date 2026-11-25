@@ -33,6 +33,7 @@ export interface Student {
   deferredPayment?: boolean;         // dibayar lembaga: pendapatan diakui saat pembayaran dicatat, bukan otomatis
   transportPayerId?: string;         // murid lain (satu rumah) yang menanggung ongkos jalan kalau les di hari yang sama
   transportFee?: number;             // ongkos jalan yang dipotong dari tarif saat itu terjadi
+  familyHeadId?: string;             // murid kepala keluarga: invoice bulanan digabung dengan anggota keluarga lain
   group: StudentGroup;
   xuYuanType?: 'private' | 'semi-group';
   phone?: string;                    // No. WhatsApp (opsional), disimpan format 62xxx

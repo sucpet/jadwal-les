@@ -9,7 +9,7 @@ import { useLang } from '../store/LanguageContext';
 import { useConfirm } from '../store/ConfirmContext';
 import { useToast } from '../store/ToastContext';
 import { waLink, isValidPhone } from '../utils/whatsapp';
-import { formatCurrency, getPackageStatus, formatDate, getStudentInvoice } from '../utils/helpers';
+import { formatCurrency, getPackageStatus, formatDate, getFamilyInvoice } from '../utils/helpers';
 import MonthSelector from '../components/MonthSelector';
 import { groupByMonth, groupByXuYuanCycle, totalDurationLabel, getPackageAttributedSessions } from '../utils/student-groups';
 import type { BillingType, Student, StudentGroup, SessionPackage, PackagePricingType, LessonSession } from '../types';
@@ -76,6 +76,11 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
   const [transportPayerId, setTransportPayerId] = useState(initial?.transportPayerId ?? '');
   const [transportFee, setTransportFee] = useState(initial?.transportFee != null ? String(initial.transportFee) : '');
 
+  // Keluarga: invoice bulanan digabung dengan murid kepala keluarga yang dipilih
+  const [familyHeadId, setFamilyHeadId] = useState(initial?.familyHeadId ?? '');
+  // Murid ini sudah jadi kepala keluarga (ada anggota yang menunjuk ke dia) → tidak bisa jadi anggota
+  const familyChildren = initial ? appData.students.filter(st => st.familyHeadId === initial.id) : [];
+
   // Package fields — only relevant for new prepaid students
   const [showErrors, setShowErrors] = useState(false);
   const [pricingType, setPricingType] = useState<PackagePricingType>('per-session');
@@ -129,6 +134,7 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
       deferredPayment: isXuYuan ? false : deferredPayment,
       transportPayerId: isPostpaid && transportPayerId ? transportPayerId : undefined,
       transportFee: isPostpaid && transportPayerId ? Number(transportFee) : undefined,
+      familyHeadId: isPostpaid && familyHeadId ? familyHeadId : undefined,
     };
     const pkgData: InitialPackageData | undefined = (isNew && isPrepaid) ? {
       totalSessions: pkgSessions,
@@ -432,6 +438,26 @@ function StudentForm({ initial, teachers, onSave, onCancel }: StudentFormProps) 
             </div>
           )}
           <p className="col-span-2 text-xs text-gray-400 -mt-1">{t('stu.transportDesc')}</p>
+        </div>
+      )}
+
+      {isPostpaid && (
+        <div>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('stu.family')}</label>
+          {familyChildren.length > 0 ? (
+            <p className="text-sm text-gray-700 dark:text-gray-300">
+              {t('stu.familyHeadOf', { names: familyChildren.map(st => st.name).sort((a, b) => a.localeCompare(b)).join(', ') })}
+            </p>
+          ) : (
+            <select value={familyHeadId} onChange={e => setFamilyHeadId(e.target.value)} className="input w-full">
+              <option value="">{t('stu.transportNone')}</option>
+              {appData.students
+                .filter(st => st.id !== initial?.id && !st.familyHeadId && (st.isActive || st.id === familyHeadId) && st.group !== 'xuyuan')
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map(st => <option key={st.id} value={st.id}>{st.name}</option>)}
+            </select>
+          )}
+          <p className="text-xs text-gray-400 mt-1">{t('stu.familyDesc')}</p>
         </div>
       )}
 
@@ -1211,7 +1237,11 @@ function InvoiceModal({ student, onClose }: { student: Student; onClose: () => v
   const [downloading, setDownloading] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const monthStr = format(month, 'yyyy-MM');
-  const { lines, total } = getStudentInvoice(student, data.sessions, monthStr);
+  // Anggota keluarga → selalu invoice gabungan (per anak + subtotal), dari kartu mana pun
+  const { members, groups, total } = getFamilyInvoice(student, data.students, data.sessions, monthStr);
+  const isFamily = members.length > 1;
+  const title = members.map(m => m.name).join(' · ');
+  const sessionCount = groups.reduce((n, g) => n + g.lines.length, 0);
 
   const download = async () => {
     if (!ref.current) return;
@@ -1219,7 +1249,7 @@ function InvoiceModal({ student, onClose }: { student: Student; onClose: () => v
     try {
       const a = document.createElement('a');
       a.href = await toPng(ref.current, { pixelRatio: 2, backgroundColor: '#ffffff' });
-      a.download = `invoice-${student.name.replace(/\s+/g, '-')}-${monthStr}.png`;
+      a.download = `invoice-${members.map(m => m.name).join('-').replace(/\s+/g, '-')}-${monthStr}.png`;
       a.click();
     } catch {
       toast.error(t('inv.downloadFail'));
@@ -1238,10 +1268,11 @@ function InvoiceModal({ student, onClose }: { student: Student; onClose: () => v
         <div ref={ref} className="bg-white rounded-2xl p-6 shadow-xl font-sans">
           <div className="text-center border-b border-gray-200 pb-4 mb-4">
             <h2 className="text-2xl font-bold tracking-tight text-gray-900">INVOICE</h2>
-            <p className="text-sm text-gray-700 mt-1 font-medium">{student.name}</p>
+            {isFamily && <p className="text-[10px] uppercase tracking-wider text-gray-400 mt-1">{t('inv.family')}</p>}
+            <p className={`text-sm text-gray-700 font-medium ${isFamily ? '' : 'mt-1'}`}>{title}</p>
             <p className="text-sm text-gray-500">{format(month, 'MMMM yyyy', { locale })}</p>
           </div>
-          {lines.length === 0 ? (
+          {groups.length === 0 ? (
             <p className="text-sm text-gray-400 text-center py-4">{t('inv.empty')}</p>
           ) : (
             <table className="w-full text-sm mb-4">
@@ -1252,21 +1283,34 @@ function InvoiceModal({ student, onClose }: { student: Student; onClose: () => v
                   <th className="text-right pb-2 font-medium">{t('inv.amount')}</th>
                 </tr>
               </thead>
-              <tbody>
-                {lines.map(({ session, amount }) => (
-                  <tr key={session.id} className="border-b border-gray-50">
-                    <td className="py-2 text-gray-800">{format(parseISO(session.date), 'EEE, d MMM', { locale })}</td>
-                    <td className="py-2 text-gray-500 tabular-nums">{session.startTime}–{session.endTime}</td>
-                    <td className="py-2 text-right tabular-nums text-gray-900">{formatCurrency(amount)}</td>
-                  </tr>
-                ))}
-              </tbody>
+              {groups.map(g => (
+                <tbody key={g.student.id}>
+                  {isFamily && (
+                    <tr>
+                      <td colSpan={3} className="pt-3 pb-1 text-xs font-semibold text-gray-700">{g.student.name}</td>
+                    </tr>
+                  )}
+                  {g.lines.map(({ session, amount }) => (
+                    <tr key={session.id} className="border-b border-gray-50">
+                      <td className="py-2 text-gray-800">{format(parseISO(session.date), 'EEE, d MMM', { locale })}</td>
+                      <td className="py-2 text-gray-500 tabular-nums">{session.startTime}–{session.endTime}</td>
+                      <td className="py-2 text-right tabular-nums text-gray-900">{formatCurrency(amount)}</td>
+                    </tr>
+                  ))}
+                  {isFamily && (
+                    <tr>
+                      <td colSpan={2} className="py-1.5 text-xs text-gray-500">{t('inv.subtotal', { n: g.lines.length })}</td>
+                      <td className="py-1.5 text-right text-xs tabular-nums font-medium text-gray-700">{formatCurrency(g.subtotal)}</td>
+                    </tr>
+                  )}
+                </tbody>
+              ))}
             </table>
           )}
           <div className="border-t border-gray-200 pt-3 space-y-1">
             <div className="flex justify-between text-sm text-gray-500">
               <span>{t('inv.sessions')}</span>
-              <span className="tabular-nums font-medium text-gray-700">{lines.length}</span>
+              <span className="tabular-nums font-medium text-gray-700">{sessionCount}</span>
             </div>
             <div className="flex justify-between text-base font-bold text-gray-900">
               <span>Total</span>
@@ -1280,7 +1324,7 @@ function InvoiceModal({ student, onClose }: { student: Student; onClose: () => v
             className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-gray-600 bg-gray-900 text-gray-300 hover:bg-gray-800 text-sm">
             <X size={14} /> {t('inv.close')}
           </button>
-          <button onClick={download} disabled={downloading || lines.length === 0}
+          <button onClick={download} disabled={downloading || groups.length === 0}
             className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium disabled:opacity-60">
             <Download size={14} /> {downloading ? t('inv.saving') : t('set.download')}
           </button>

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { ROW_H, timeToPixels, computeDayLayout, addOneHour, shiftDateByWeeks, dayOfWeek, diffMinutes, addMinutes } from '../calendar';
 import { xuYuanCycleStart, xuYuanCycleLabel, durationMinutes, formatDuration, formatRp } from '../xuyuan';
 import { groupByMonth, groupByXuYuanCycle, totalDurationLabel, getPackageAttributedSessions } from '../student-groups';
-import { getPackageStatus, getStudentInvoice, effectiveRate, effectiveHonor, expiredBackups } from '../helpers';
+import { getPackageStatus, getStudentInvoice, getFamilyMembers, getFamilyInvoice, effectiveRate, effectiveHonor, expiredBackups } from '../helpers';
 import type { LessonSession, SessionPackage, Student } from '../../types';
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
@@ -577,6 +577,46 @@ describe('getStudentInvoice', () => {
 
   it('no sessions → empty, total 0', () => {
     expect(getStudentInvoice(student, [], '2026-01')).toEqual({ lines: [], total: 0 });
+  });
+});
+
+// ─── helpers.ts — getFamilyMembers / getFamilyInvoice ────────────────────────
+
+describe('family invoice', () => {
+  const post = (o: Partial<Student>) => makeStudent({ billingType: 'per-session', ...o });
+  const dessy  = post({ id: 'dessy',  name: 'Ci Dessy', ratePerSession: 200_000 });
+  const adel   = post({ id: 'adel',   name: 'Adel',     familyHeadId: 'dessy' });
+  const aldr   = post({ id: 'aldr',   name: 'Aldrich D', familyHeadId: 'dessy' });
+  const prepay = makeStudent({ id: 'pre', name: 'Prepaid', familyHeadId: 'dessy' });
+  const lone   = post({ id: 'lone',   name: 'Lone' });
+  const students = [aldr, lone, prepay, adel, dessy];
+
+  it('same members from any card: head first, then by name; ineligible excluded', () => {
+    for (const s of [dessy, adel, aldr]) {
+      expect(getFamilyMembers(s, students).map(m => m.id)).toEqual(['dessy', 'adel', 'aldr']);
+    }
+    expect(getFamilyMembers(lone, students).map(m => m.id)).toEqual(['lone']);
+  });
+
+  it('members still grouped when head is deleted', () => {
+    expect(getFamilyMembers(adel, [adel, aldr]).map(m => m.id)).toEqual(['adel', 'aldr']);
+  });
+
+  it('per-child subtotals, hides children without sessions, grand total', () => {
+    const sessions = [
+      makeSession({ id: 'd1', studentId: 'dessy', date: '2026-01-05' }),
+      makeSession({ id: 'a1', studentId: 'adel',  date: '2026-01-06' }),
+      makeSession({ id: 'a2', studentId: 'adel',  date: '2026-01-03', rateSnapshot: 120_000 }),
+      makeSession({ id: 'x1', studentId: 'aldr',  date: '2026-02-01' }),   // beda bulan
+      makeSession({ id: 'p1', studentId: 'pre',   date: '2026-01-05' }),   // prepaid, tidak ikut
+    ];
+    const inv = getFamilyInvoice(adel, students, sessions, '2026-01');
+    expect(inv.groups.map(g => [g.student.id, g.lines.map(l => l.session.id), g.subtotal])).toEqual([
+      ['dessy', ['d1'], 200_000],
+      ['adel',  ['a2', 'a1'], 270_000],
+    ]);
+    expect(inv.total).toBe(470_000);
+    expect(inv.members).toHaveLength(3);
   });
 });
 
