@@ -1172,8 +1172,9 @@ function StudentCard({ student, dimmed, highlight }: { student: Student; dimmed?
             </>
           )}
 
-          {/* ── Pribadi: riwayat sesi dikelompokkan per bulan ── */}
-          {student.group === 'pribadi' && (
+          {/* ── Pribadi + WenWen postpaid: riwayat sesi dikelompokkan per bulan ──
+               (WenWen paket sudah punya daftar tanggal di tiap kartu paket) */}
+          {(student.group === 'pribadi' || (student.group === 'wenwen_aizhongwen' && student.billingType !== 'package')) && (
             <>
               <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
                 <CalendarDays size={13} /> {t('stu.lessonHistory')}
